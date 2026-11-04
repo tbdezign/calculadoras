@@ -1364,14 +1364,15 @@ async function copyBlock(i) {
 // QUOTE TABS — each client tab keeps its own method, styles, settings, logos and mockups
 // ════════════════════════════════════════════
 let quotes = [], activeQ = 0;
+const newQid = () => "aq" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 function blankQuote(m) {
-  return { name:"", method:m || method, numColors:1, numSides:1, extraSpots:0, tierPref:{ silk:true, dtf:false, v2:true, emb:true },
+  return { qid:newQid(), name:"", method:m || method, numColors:1, numSides:1, extraSpots:0, tierPref:{ silk:true, dtf:false, v2:true, emb:true },
            quoteMode:"options", quoteLang:"pt", splitSuppliers:false, v2Protection:"", embSet:{ rate:4, dig:true, suppShip:30, clientShip:25 },
            orderItems:null, frontPlace:"lc", oneSide:"front", logos:{ front:null, back:null, side:null, rside:null }, boxes:{}, shipMode:"auto", freeShipMin:200 };
 }
 function snapshotQuote() {
   const cur = quotes[activeQ] || {};
-  return { name:cur.name || "", method, numColors, numSides, extraSpots, tierPref:{ ...tierPref }, quoteMode, quoteLang, splitSuppliers, v2Protection, embSet:{ ...embSet },
+  return { qid:cur.qid || newQid(), name:cur.name || "", method, numColors, numSides, extraSpots, tierPref:{ ...tierPref }, quoteMode, quoteLang, splitSuppliers, v2Protection, embSet:{ ...embSet },
            orderItems, frontPlace:mk.frontPlace, oneSide:mk.oneSide, logos:mk.logos, boxes:mk.boxes, shipMode, freeShipMin };
 }
 function applyQuote(s) {
@@ -1389,7 +1390,7 @@ function switchQuote(i) { if (i === activeQ) return; quotes[activeQ] = snapshotQ
 function addQuote() { quotes[activeQ] = snapshotQuote(); quotes.push(blankQuote(method)); activeQ = quotes.length - 1; applyQuote(quotes[activeQ]); q("qName").focus(); }
 function duplicateQuote() {
   const cur = snapshotQuote(); quotes[activeQ] = cur;
-  const copy = { ...cur, name: cur.name ? cur.name + " (2)" : "", tierPref:{ ...cur.tierPref }, embSet:{ ...cur.embSet },
+  const copy = { ...cur, qid:newQid(), name: cur.name ? cur.name + " (2)" : "", tierPref:{ ...cur.tierPref }, embSet:{ ...cur.embSet },
     orderItems: cur.orderItems.map(it => ({ ...it, id: Date.now() + Math.random() })), logos:{ ...cur.logos }, boxes:{} };
   quotes.splice(activeQ + 1, 0, copy); activeQ++; applyQuote(copy);
 }
@@ -1605,7 +1606,8 @@ function renderLib() {
   panel.hidden = !libOpen;
   if (!libOpen) return;
   let h = '<div class="catalog-panel">';
-  h += '<div style="display:flex;gap:14px;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap"><button class="mk-link" onclick="exportLibrary()">Save backup file</button><button class="mk-link" onclick="document.getElementById(\'mkBackupFile\').click()">Restore backup</button></div>';
+  const uncleaned = Object.entries(photoLib).filter(([, p]) => !p.origBlob && !p.origAssetId).length;
+  h += '<div style="display:flex;gap:14px;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap">' + (uncleaned && libAvailable() ? '<button class="mk-link" onclick="cleanAllBackgrounds(this)">Remove background from all (' + uncleaned + ')</button>' : '') + '<button class="mk-link" onclick="exportLibrary()">Save backup file</button><button class="mk-link" onclick="document.getElementById(\'mkBackupFile\').click()">Restore backup</button></div>';
   if (!mkDb && localLib) h += '<div style="font-size:12px;color:#888;margin-bottom:8px">' + (TBDCloud.loggedIn ? 'Photos are saved online and show up on every device where you log in.' : 'Log in at the top to save photos online. Until then they stay only in this browser.') + '</div>';
   if (!libAvailable()) h += '<div style="font-size:12px;color:#b45309;margin-bottom:8px">The photo library isn\'t available in this view, so photos you add will only last until you close the page.</div>';
   if (!n) h += '<div style="font-size:12px;color:#888">No saved photos yet. Add a style in the Order Builder, type its color below, then upload the photo. It\'s saved here for next time.</div>';
@@ -1872,7 +1874,7 @@ function dropGarment(e, id, side) { e.preventDefault(); const f = [...(e.dataTra
 // Saves one garment photo to the library (Claude-hosted store, this browser, or session only).
 // ── Remove the photo background: plain background → white, then trim the empty space around the shirt ──
 function cleanBackgroundCanvas(img) {
-  const W = img.naturalWidth, H = img.naturalHeight;
+  const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const cx = c.getContext("2d"); cx.drawImage(img, 0, 0);
   const d = cx.getImageData(0, 0, W, H), p = d.data;
@@ -1904,11 +1906,14 @@ function cleanBackgroundCanvas(img) {
     if (nb) { const t = Math.max(0, Math.min(1, (dist(i) - tol) / (tol * 0.8))); for (let ch = 0; ch < 3; ch++) p[i+ch] = p[i+ch] * t + 255 * (1 - t); }
   }
   cx.putImageData(d, 0, 0);
-  // Trim to the shirt with a small margin.
-  const pad = Math.round(Math.max(x1 - x0, y1 - y0) * 0.05);
-  const cx0 = Math.max(0, x0 - pad), cy0 = Math.max(0, y0 - pad), cw = Math.min(W, x1 + pad + 1) - cx0, ch = Math.min(H, y1 + pad + 1) - cy0;
-  const out = document.createElement("canvas"); out.width = cw; out.height = ch;
-  const ox = out.getContext("2d"); ox.fillStyle = "#fff"; ox.fillRect(0, 0, cw, ch); ox.drawImage(c, cx0, cy0, cw, ch, 0, 0, cw, ch);
+  // Same framing for every photo: the shirt centered on a white square, filling 88% of it,
+  // so every style shows up the same size in the mockups.
+  const sw = x1 - x0 + 1, sh = y1 - y0 + 1, side = Math.max(sw, sh) / 0.88;
+  const S = Math.min(2400, Math.round(side)), k = S / side;
+  const out = document.createElement("canvas"); out.width = S; out.height = S;
+  const ox = out.getContext("2d"); ox.fillStyle = "#fff"; ox.fillRect(0, 0, S, S);
+  ox.imageSmoothingQuality = "high";
+  ox.drawImage(c, x0, y0, sw, sh, Math.round((S - sw * k) / 2), Math.round((S - sh * k) / 2), Math.round(sw * k), Math.round(sh * k));
   return out;
 }
 async function removeBackground(key, btn) {
@@ -1932,6 +1937,28 @@ async function removeBackground(key, btn) {
     renderLib(); renderMockRows(true); renderEditor();
   } catch (e) { mkMsg("Couldn't remove the background. Try again.", true); renderMockRows(true); }
 }
+// Runs "Remove background" on every photo that still has its original background.
+async function cleanAllBackgrounds(btn) {
+  const keys = Object.keys(photoLib).filter(k => !photoLib[k].origBlob && !photoLib[k].origAssetId);
+  if (!keys.length || !confirm("Remove the background from " + keys.length + " photos? Each one keeps its original (Undo under the photo). Saved logo positions on these photos are reset.")) return;
+  if (btn) btn.disabled = true;
+  let done = 0, skipped = 0;
+  for (const key of keys) {
+    mkMsg("Removing backgrounds… " + (done + skipped + 1) + " of " + keys.length);
+    const rec = photoLib[key];
+    try {
+      const img = await getPhotoImg(rec), out = img && cleanBackgroundCanvas(img);
+      if (!out) { skipped++; continue; }
+      const blob = await new Promise(r => out.toBlob(r, "image/jpeg", 0.95));
+      const { src, ...st } = rec, next = { ...st, blob, origBlob: rec.blob, place: {} };
+      await localPut(key, next); photoLib[key] = { ...next, src: URL.createObjectURL(blob) };
+      done++;
+    } catch (e) { skipped++; }
+  }
+  Object.keys(mk.boxes).forEach(k => delete mk.boxes[k]);
+  mkMsg("Background removed from " + done + " photo" + (done === 1 ? "" : "s") + (skipped ? ". " + skipped + " had no plain background and were kept as they are." : "."));
+  renderLib(); mk.sig = ""; renderMockRows(true); renderEditor();
+}
 async function undoBackground(key) {
   const rec = photoLib[key]; if (!rec) return;
   try {
@@ -1949,7 +1976,7 @@ async function undoBackground(key) {
   } catch (e) { mkMsg("Couldn't restore the original photo. Try again.", true); }
 }
 
-async function storePhoto(code, color, side, blob, place) {
+async function storePhoto(code, color, side, blob, place, origBlob) {
   const key = photoKey(code, color, side), old = photoLib[key];
   const keepPlace = place || (old && old.place) || {};
   if (mkDb && mkAssets) {
@@ -1958,6 +1985,7 @@ async function storePhoto(code, color, side, blob, place) {
     if (old && old.assetId && old.assetId !== up.id) { try { await mkAssets.delete(old.assetId); } catch (e) {} }
   } else if (localLib) {
     const rec = { code, color, side, blob, place: keepPlace, updatedAt: Date.now() };
+    if (origBlob) rec.origBlob = origBlob;
     await localPut(key, rec);
     photoLib[key] = { ...rec, src: URL.createObjectURL(blob) };
   } else {
@@ -2026,9 +2054,12 @@ async function handleGarmentFile(file, id, side) {
     const s = Math.min(1, 3000 / Math.max(src.naturalWidth, src.naturalHeight));
     const c = document.createElement("canvas"); c.width = Math.round(src.naturalWidth*s); c.height = Math.round(src.naturalHeight*s);
     const cx = c.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0,0,c.width,c.height); cx.drawImage(src,0,0,c.width,c.height);
-    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.95));
-    await storePhoto(code, color, side, blob, null);
-    mkMsg((mkDb || localLib) ? "Photo saved to the library as " + code + " · " + color + " · " + SIDE_EN[side] + "." : "Photo added for this session only. The library isn't available in this view.");
+    const orig = await new Promise(r => c.toBlob(r, "image/jpeg", 0.95));
+    // Remove the background automatically so every style is framed the same way (Undo keeps the original).
+    let cleaned = null; try { cleaned = cleanBackgroundCanvas(c); } catch (e) {}
+    const blob = cleaned ? await new Promise(r => cleaned.toBlob(r, "image/jpeg", 0.95)) : orig;
+    await storePhoto(code, color, side, blob, null, cleaned ? orig : null);
+    mkMsg((mkDb || localLib) ? "Photo saved to the library as " + code + " · " + color + " · " + SIDE_EN[side] + "." + (cleaned ? " Background removed automatically (Undo is under the photo)." : " No plain background found, so it was kept as it is.") : "Photo added for this session only. The library isn't available in this view.");
     mk.pasteTarget = null;
     orderItems.forEach(o => { if (o.code.toUpperCase() === code && slugPart(o.color) === slugPart(color)) delete mk.boxes[boxKey(o, side)]; });
     renderLib(); mk.sig = ""; renderMockRows(true);
@@ -2420,6 +2451,102 @@ function initMockup() { renderMockup(); renderBrand(); }
 // ──── QUOTE TABS ────
 
 // ════════════════════════════════════════════
+// OPEN QUOTES: kept until you close them, for up to 30 days after the last change.
+// Saved online (every device sees them) and in this browser (works offline).
+// ════════════════════════════════════════════
+const QUOTES_LS = "tbd-open-quotes", QUOTE_DAYS = 30, DAY = 86400000;
+function logoToJSON(lg) {
+  if (!lg || !lg.raw) return null;
+  if (!lg._data) {
+    const r = lg.raw, sc = Math.min(1, 1600 / Math.max(r.naturalWidth, r.naturalHeight));
+    const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(r.naturalWidth * sc)); c.height = Math.max(1, Math.round(r.naturalHeight * sc));
+    c.getContext("2d").drawImage(r, 0, 0, c.width, c.height);
+    lg._data = c.toDataURL("image/png");
+  }
+  return { data: lg._data, removeWhite: !!lg.removeWhite };
+}
+async function logoFromJSON(j) {
+  if (!j || !j.data) return null;
+  try { const raw = await loadImage(j.data); const lg = { raw, url: j.data, removeWhite: !!j.removeWhite, canvas: null, _data: j.data }; buildLogo(lg); return lg; } catch (e) { return null; }
+}
+function quoteToJSON(sq) {
+  const logos = {}; Object.entries(sq.logos || {}).forEach(([k, v]) => logos[k] = logoToJSON(v));
+  return { ...sq, logos, orderItems: (sq.orderItems || []).map(it => ({ ...it, logo: logoToJSON(it.logo) })) };
+}
+async function quoteFromJSON(j) {
+  const logos = {}; for (const [k, v] of Object.entries(j.logos || {})) logos[k] = await logoFromJSON(v);
+  const items = []; for (const it of (j.orderItems || [])) items.push({ ...it, logo: await logoFromJSON(it.logo) });
+  return { ...blankQuote(j.method), ...j, logos: { front:null, back:null, side:null, rside:null, ...logos }, orderItems: items.length ? items : null, boxes: j.boxes || {} };
+}
+function quoteIsBlank(sq) { return !(sq.name || "").trim() && !(sq.orderItems || []).some(it => (it.code || "").trim()); }
+let savedQuotes = {}, quotesLoaded = false;
+function currentQuotesJSON() {
+  quotes[activeQ] = snapshotQuote();
+  const out = {}; quotes.forEach(sq => { if (!quoteIsBlank(sq)) out[sq.qid] = JSON.stringify(quoteToJSON(sq)); });
+  return out;
+}
+async function saveOpenQuotes() {
+  const now = currentQuotesJSON(), t = Date.now();
+  // this browser
+  try {
+    const prev = JSON.parse(localStorage.getItem(QUOTES_LS) || "{}"), next = {};
+    Object.entries(now).forEach(([id, js]) => next[id] = { t: prev[id] && prev[id].js === js ? prev[id].t : t, js, c: !!(prev[id] && prev[id].c) || id in savedQuotes });
+    localStorage.setItem(QUOTES_LS, JSON.stringify(next));
+  } catch (e) {}
+  // online
+  if (!TBDCloud.loggedIn || !quotesLoaded) return;
+  const ups = Object.entries(now).filter(([id, js]) => savedQuotes[id] !== js), dels = Object.keys(savedQuotes).filter(id => !(id in now));
+  if (!ups.length && !dels.length) return;
+  const ok = await TBDCloud.write(async sb => {
+    if (ups.length) { const r = await sb.from("open_quotes").upsert(ups.map(([id, js]) => ({ id, app: "apparel", data: JSON.parse(js) }))); if (r.error) return r; }
+    if (dels.length) { const r = await sb.from("open_quotes").delete().in("id", dels); if (r.error) return r; }
+    return {};
+  });
+  if (ok) { ups.forEach(([id, js]) => savedQuotes[id] = js); dels.forEach(id => delete savedQuotes[id]); }
+}
+// Puts quotes back as tabs (keeps tabs already open here; a blank first tab is replaced).
+async function openSavedQuotes(list) {
+  const have = new Set(quotes.map(sq => sq.qid)), add = [];
+  for (const j of list) if (j && j.qid && !have.has(j.qid)) add.push(await quoteFromJSON(j));
+  if (!add.length) return;
+  quotes[activeQ] = snapshotQuote();
+  if (quotes.length === 1 && quoteIsBlank(quotes[0])) { quotes = add; activeQ = 0; applyQuote(quotes[0]); }
+  else { quotes.push(...add); renderQuoteTabs(); }
+}
+async function restoreLocalQuotes() {
+  try {
+    const st = JSON.parse(localStorage.getItem(QUOTES_LS) || "{}"), limit = Date.now() - QUOTE_DAYS * DAY;
+    const list = Object.values(st).filter(v => v && v.t > limit).sort((a, b) => a.t - b.t).map(v => JSON.parse(v.js));
+    await openSavedQuotes(list);
+  } catch (e) {}
+}
+TBDCloud.onLoad(async () => {
+  if (quotesLoaded) return;
+  const sb = TBDCloud.sb, cutoff = new Date(Date.now() - QUOTE_DAYS * DAY).toISOString();
+  await sb.from("open_quotes").delete().eq("app", "apparel").lt("updated_at", cutoff);   // older than 30 days
+  const { data, error } = await sb.from("open_quotes").select("id,data,updated_at").eq("app", "apparel").order("updated_at", { ascending: true });
+  if (error) throw error;
+  (data || []).forEach(r => savedQuotes[r.id] = JSON.stringify(r.data));
+  // Quotes that were online before but aren't anymore were closed on another device (or expired): close them here too.
+  try {
+    const st = JSON.parse(localStorage.getItem(QUOTES_LS) || "{}");
+    const gone = Object.keys(st).filter(id => st[id] && st[id].c && !(id in savedQuotes));
+    if (gone.length) {
+      gone.forEach(id => delete st[id]); localStorage.setItem(QUOTES_LS, JSON.stringify(st));
+      quotes[activeQ] = snapshotQuote();
+      const keep = quotes.filter(sq => !gone.includes(sq.qid));
+      quotes = keep.length ? keep : [blankQuote(method)]; activeQ = 0; applyQuote(quotes[0]);
+    }
+  } catch (e) {}
+  // Quotes only in this browser (made before logging in) stay as tabs and get uploaded by the next save.
+  await openSavedQuotes((data || []).map(r => r.data));
+  quotesLoaded = true;
+  saveOpenQuotes();
+});
+setInterval(() => { saveOpenQuotes().catch(() => {}); }, 3000);
+window.addEventListener("pagehide", () => { try { saveOpenQuotes(); } catch (e) {} });
+
+// ════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════
 loadCatalogs();
@@ -2427,6 +2554,7 @@ quotes = [snapshotQuote()];
 renderAll();
 renderBrand();
 renderQuoteTabs();
+restoreLocalQuotes();
 </script>
 </body>
 </html>

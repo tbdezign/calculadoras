@@ -500,6 +500,9 @@ const load = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k)); r
 const store = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
 
 let quotes = load(DRAFT_KEY, null);
+// Open products stay until you remove them, for up to 30 days after the last change.
+const DRAFT_T_KEY = DRAFT_KEY + '-t', DRAFT_DAYS = 30;
+if ((load(DRAFT_T_KEY, Date.now())) < Date.now() - DRAFT_DAYS * 86400000) quotes = null;
 quotes = Array.isArray(quotes) && quotes.length ? quotes.map(normalize) : [newQuote()];
 let logItems = load(LOG_KEY, []);
 if (!Array.isArray(logItems)) logItems = [];
@@ -1152,6 +1155,47 @@ TBDCloud.onLoad(async () => {
   render(); renderCatalog();
   uploadCatalogImages(catalog).catch(() => {}); // first time on a computer that has the mockups: put them online
 });
+
+// ── Open products (draft) online, so the same list shows up on every device ──
+const DRAFT_ID = 'pricing-draft';
+const draftJSON = () => JSON.stringify(quotes.map(q => { const c = { ...q }; delete c.collapsed; return c; }));
+let draftSaved = null, draftLocal = draftJSON(), draftLoaded = false;
+const draftBlank = () => quotes.every(isBlank);
+async function saveDraft() {
+  const js = draftJSON();
+  if (js !== draftLocal) { draftLocal = js; store(DRAFT_T_KEY, Date.now()); }
+  if (!TBDCloud.loggedIn || !draftLoaded || js === draftSaved) return;
+  const blank = draftBlank();
+  const ok = await TBDCloud.write(async sb => {
+    if (blank) return await sb.from('open_quotes').delete().eq('id', DRAFT_ID);
+    const up = await uploadCatalogImages(quotes.map(q => ({ data: q })));
+    if (!up) return { error: { message: 'image upload failed' } };
+    return await sb.from('open_quotes').upsert({ id: DRAFT_ID, app: 'pricing', data: { quotes: JSON.parse(js) } });
+  });
+  if (ok) draftSaved = js;
+}
+TBDCloud.onLoad(async () => {
+  if (draftLoaded) return;
+  const sb = TBDCloud.sb, cutoff = new Date(Date.now() - DRAFT_DAYS * 86400000).toISOString();
+  await sb.from('open_quotes').delete().eq('id', DRAFT_ID).lt('updated_at', cutoff);
+  const { data, error } = await sb.from('open_quotes').select('data,updated_at').eq('id', DRAFT_ID).maybeSingle();
+  if (error) throw error;
+  const localT = load(DRAFT_T_KEY, 0);
+  if (data && data.data && Array.isArray(data.data.quotes)) {
+    const remoteJs = JSON.stringify(data.data.quotes), remoteT = Date.parse(data.updated_at) || 0;
+    draftSaved = remoteJs;
+    // The newer list wins: the one saved online, unless this device changed its list later.
+    if (remoteJs !== draftJSON() && (draftBlank() || remoteT >= localT)) {
+      quotes = data.data.quotes.map(q => normalize({ ...q, collapsed: true }));
+      draftLocal = draftJSON(); store(DRAFT_KEY, quotes); store(DRAFT_T_KEY, remoteT);
+      render();
+    }
+  }
+  draftLoaded = true;
+  saveDraft();
+});
+setInterval(() => { saveDraft().catch(() => {}); }, 3000);
+window.addEventListener('pagehide', () => { try { saveDraft(); } catch (e) {} });
 
 function isBlank(q) {
   return !q.title.trim() && !q.cat.trim() && SPECS.every(([k]) => !(q[k] || '').trim()) && !q.turnaround.trim()
