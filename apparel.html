@@ -1339,6 +1339,7 @@ function renderQuote() {
         const p = prod(it), ls = sizeLines(it); if (!ls.length) return;
         if (i) L.push("");
         L.push("*" + styleTitle(it, p) + "*", displayName(it, p));
+        const d = descFor(p); if (d.trim()) L.push(d.trim());
         if (prints.length > 1) L.push(itemPrint(it));
         ls.forEach(l => { sum += l.r.perPiece * l.q; L.push((hasSizes(it) ? SIZE_LABEL[l.size] + ": " : "") + L0.pcs(l.q) + " x " + fmt(l.r.perPiece) + " = " + fmt(l.r.perPiece * l.q)); });
       });
