@@ -1621,7 +1621,7 @@ function setFrontPlace(p) { mk.frontPlace = p; mk.sig = ""; renderQuote(); rende
 // ── logos ──
 function renderLogos() {
   const el = document.getElementById("mkLogos"), extras = usedExtraSides();
-  const zone = (which, title, lg, extra) => '<div class="mk-logo' + (mk.pasteTarget && mk.pasteTarget.kind==="logo" && mk.pasteTarget.side===which ? ' target':'') + '" tabindex="0" onfocus="mk.pasteTarget={kind:\'logo\',side:\'' + which + '\'};renderLogos()" ondragover="event.preventDefault()" ondrop="dropLogo(event,\'' + which + '\')">'
+  const zone = (which, title, lg, extra) => '<div class="mk-logo' + (mk.pasteTarget && mk.pasteTarget.kind==="logo" && mk.pasteTarget.side===which ? ' target':'') + '" tabindex="0" onfocus="mk.pasteTarget={kind:\'logo\',side:\'' + which + '\'};document.querySelectorAll(\'#mkLogos .mk-logo\').forEach(e=>e.classList.toggle(\'target\',e===this))" ondragover="event.preventDefault()" ondrop="dropLogo(event,\'' + which + '\')">'
     + (lg ? '<img src="' + lg.url + '" alt="">' : '<div class="mk-logo-empty">Logo</div>')
     + '<div class="grow"><b style="color:#1A1A1A">' + title + '</b><br>' + (lg ? 'Paste or drop another to swap it.' : 'Paste, drop, or choose the file. PNG with a transparent background works best.')
     + (lg ? '<label class="mk-inline"><input type="checkbox" ' + (lg.removeWhite?'checked':'') + ' onchange="setRemoveWhite(\'' + which + '\',this.checked)"> Remove white background</label>' : '') + (extra||'') + '</div>'
