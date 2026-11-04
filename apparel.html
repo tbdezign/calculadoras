@@ -417,6 +417,7 @@
 </style>
 <div id="tbdCloud"><img class="tc-logo" src="https://cdn.shopify.com/s/files/1/0730/9158/0092/files/logo-png.png?v=1773444846" alt="TBDezign"><span class="tc-dot"></span><span class="tc-msg">Conectando…</span></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script src="pricing.js"></script>
 <script>
 window.TBDCloud = (function () {
   const SB_URL = "https://fipimpagtmdhuznclqdn.supabase.co";
@@ -519,10 +520,10 @@ const METHOD_KEYS = ["silk", "dtf", "v2", "emb"];
 let method = "silk";
 let numColors = 1, numSides = 1, extraSpots = 0;            // Silk Screen print options
 let tierPref = { silk:true, dtf:false, v2:true, emb:true };  // tier breaks on/off per method
-let shipMode = "auto", freeShipMin = 200;   // supplier shipping: auto (free at freeShipMin in blanks) / on (always charge) / off (free)
+let shipMode = "auto", freeShipMin = TBDPricing.CONFIG.freeShipMin;   // supplier shipping: auto (free at freeShipMin in blanks) / on (always charge) / off (free)
 let quoteMode = "options", quoteLang = "pt", splitSuppliers = false;
 let v2Protection = "";                                       // Vendor 2 purchase protection
-let embSet = { rate:4, dig:true, suppShip:30, clientShip:25 }; // Embroidery settings
+let embSet = { rate:TBDPricing.CONFIG.emb.rate, dig:true, suppShip:TBDPricing.CONFIG.emb.suppShip, clientShip:TBDPricing.CONFIG.emb.clientShip }; // Embroidery settings (defaults from pricing.js)
 function defaultPlacement(m) { return m === "v2" ? "front" : "lc"; }
 function newItem() { return { id: Date.now() + Math.random(), code:"", qty:"", color:"", supplier:"", placementId: defaultPlacement(method), extraSpots:0, extraSize:"small", decoration:"dtf", name:"" }; }
 let orderItems = [newItem()];
@@ -842,18 +843,12 @@ function displayName(it, p) { return (method === "v2" && it.name && it.name.trim
 // METHOD ENGINES — each keeps the formula from its own calculator
 // ════════════════════════════════════════════
 // ── Silk Screen ──
-const RATES = {1:1.10, 2:1.30, 3:1.50, 4:1.50}, MINS = {1:24, 2:24, 3:36, 4:48};
-const SCREEN = 15, SHIP_IN = 30, SHIP_OUT = 25;
+// Formulas and rates live in pricing.js (shared with the website and the agent).
+const PCFG = TBDPricing.CONFIG;
+const RATES = PCFG.silk.rates, MINS = PCFG.silk.mins;
+const SCREEN = PCFG.silk.screen, SHIP_IN = PCFG.silk.shipIn, SHIP_OUT = PCFG.silk.shipOut;
 function silkCalc(blankCost, tq, shipQty, shipIn) {
-  shipQty = shipQty || tq; shipIn = shipIn == null ? SHIP_IN : shipIn;
-  const rate = RATES[numColors], minQ = MINS[numColors], totalSpots = numSides + extraSpots;
-  const divisor = blankCost < 3 ? 0.50 : 0.55;
-  const blankRetail = ceil10(blankCost / divisor + shipIn / shipQty);
-  const printCostVendor = tq < minQ ? (rate * minQ * totalSpots) / tq : rate * totalSpots;
-  const printAddon = ceil10(printCostVendor * 2 + SHIP_OUT / tq);
-  const perPiece = blankRetail + printAddon;
-  const unitCost = blankCost + shipIn / shipQty + printCostVendor + SHIP_OUT / tq;
-  return { perPiece, unitCost, divisor, shipQty, shipIn, blankRetail, printAddon };
+  return TBDPricing.silk({ blankCost, tq, shipQty, shipIn, colors: numColors, spots: numSides + extraSpots });
 }
 function silkViews() {
   if (numSides === 2) return [["front", mk.frontPlace], ["back", "fb"]];
@@ -861,25 +856,19 @@ function silkViews() {
 }
 // ── DTF Vendor 1 ──
 const DTF_PL = [
-  { id:"lc", label:"Left Chest", vendorCost:3.5, retail:8, views:[["front","lc"]] },
-  { id:"front", label:"Full Front", vendorCost:7, retail:15, views:[["front","ff"]] },
-  { id:"back", label:"Full Back", vendorCost:7, retail:15, views:[["back","fb"]] },
-  { id:"front_back", label:"Front + Back", vendorCost:14, retail:30, views:[["front","ff"],["back","fb"]] },
-  { id:"lc_fb", label:"LC + Full Back", vendorCost:10.5, retail:20, views:[["front","lc"],["back","fb"]] },
-];
-const DTF_EXTRA = { small:{ vendorCost:3.5, retail:8 }, large:{ vendorCost:7, retail:15 } };
+  { id:"lc", label:"Left Chest", views:[["front","lc"]] },
+  { id:"front", label:"Full Front", views:[["front","ff"]] },
+  { id:"back", label:"Full Back", views:[["back","fb"]] },
+  { id:"front_back", label:"Front + Back", views:[["front","ff"],["back","fb"]] },
+  { id:"lc_fb", label:"LC + Full Back", views:[["front","lc"],["back","fb"]] },
+].map(p => ({ ...p, ...PCFG.dtf.placements[p.id] }));
+const DTF_EXTRA = PCFG.dtf.extra;
 function dtfPl(it) { return DTF_PL.find(p => p.id === it.placementId) || DTF_PL[0]; }
 function dtfCalc(cost, pl, tq, shipQty, es, esz, shipIn) {
-  shipQty = shipQty || tq; shipIn = shipIn == null ? 30 : shipIn;
-  const ex = DTF_EXTRA[esz || "small"], divisor = cost < 3 ? 0.5 : 0.55;
-  const blankRetail = cost / divisor + shipIn / shipQty;
-  const printAddon = pl.retail + (es * ex.retail) + 20 / tq;
-  const totalRetail = round10(blankRetail + printAddon);
-  const totalCost = cost + pl.vendorCost + (es * ex.vendorCost) + shipIn / shipQty + 20 / tq;
-  return { perPiece: totalRetail, unitCost: totalCost, divisor, shipQty, shipIn };
+  return TBDPricing.dtf({ cost, pl, tq, shipQty, shipIn, extras: Array(es || 0).fill(esz || "small") });
 }
 // ── DTF / Embroidery Vendor 2 ──
-const BLIND_SHIP = 10, V2_SHIPPING = 16, V2_SHIP_THRESHOLD = 59, V2_TIERS = [2,4,8,16];
+const BLIND_SHIP = PCFG.v2.blindShip, V2_SHIPPING = PCFG.v2.shipping, V2_SHIP_THRESHOLD = PCFG.v2.shipThreshold, V2_TIERS = PCFG.v2.tiers;
 const V2_PL = [
   { id:"lc", label:"Left Chest", views:[["front","lc"]] },
   { id:"front", label:"Full Front", views:[["front","ff"]] },
@@ -888,19 +877,19 @@ const V2_PL = [
   { id:"lc_fb", label:"LC + Full Back", views:[["front","lc"],["back","fb"]] },
 ];
 function v2Pl(it) { return V2_PL.find(p => p.id === it.placementId) || V2_PL[1]; }
-function v2Tier(qty) { for (let i = V2_TIERS.length - 1; i >= 0; i--) if (qty >= V2_TIERS[i]) return V2_TIERS[i]; return V2_TIERS[0]; }
+function v2Tier(qty) { return TBDPricing.v2Tier(qty); }
 function v2VendorPrice(it) { const p = prod(it); return p ? (p["t" + v2Tier(parseInt(it.qty)||0)] || 0) : 0; }
-function v2Fees(vendorSub) { const ship = vendorSub < V2_SHIP_THRESHOLD ? V2_SHIPPING : 0; return { ship, fees: ship + BLIND_SHIP + (parseFloat(v2Protection) || 0) }; }
+function v2Fees(vendorSub) { return TBDPricing.v2Fees(vendorSub, v2Protection); }
 function v2Order() {
   let vendorSub = 0;
   validItems().forEach(it => { const vp = v2VendorPrice(it), qn = parseInt(it.qty) || 0; if (vp > 0 && qn > 0) vendorSub += vp * qn; });
   const f = v2Fees(vendorSub), tq = totalQty();
   return { vendorSub, ...f, fpu: tq > 0 ? f.fees / tq : 0 };
 }
-function v2Base(vp) { return vp >= 20 ? vp / 0.55 : vp * 2; }
+function v2Base(vp) { return TBDPricing.v2Base(vp); }
 // ── Embroidery ──
 const EMB_PL = [ { id:"lc", label:"Left Chest", views:[["front","lc"]] }, { id:"cc", label:"Center Chest", views:[["front","cc"]] } ];
-const DIG_COST = 5, DIG_RETAIL = 20;
+const DIG_COST = PCFG.emb.digCost, DIG_RETAIL = PCFG.emb.digRetail;
 function embPl(it) { return EMB_PL.find(p => p.id === it.placementId) || EMB_PL[0]; }
 // Caps: Center / Left / Right front, plus optional Side and Back spots (each with its own photo on the mockup).
 const CAP_PL = [ { id:"cf", label:"Center Front" }, { id:"lf", label:"Left Front" }, { id:"rf", label:"Right Front" } ];
@@ -937,34 +926,29 @@ function embSpots(it) { if (!it) return 0; if (isCap(it)) return (it.capSide ? 1
 // Digitizing: one per embroidery location (main spot + extra spots), using the style with the most spots.
 function embDigCount() { return 1 + validItems().reduce((m, it) => Math.max(m, embSpots(it)), 0); }
 function embCalc(blank, tq, extra, suppShip) {
-  const spots = 1 + (extra || 0);
-  // Both shippings are pass-through: added to the client's price (÷ total pieces) and counted in your cost.
-  const ship = ((suppShip == null ? embSet.suppShip : suppShip) + embSet.clientShip) / tq;
-  const rp = ceil10((blank * 2) + (embSet.rate * 2 * spots) + ship);
-  const cp = blank + embSet.rate * spots + ship;
-  return { perPiece: rp, unitCost: cp };
+  return TBDPricing.emb({ blank, tq, extra, rate: embSet.rate, suppShip: suppShip == null ? embSet.suppShip : suppShip, clientShip: embSet.clientShip });
 }
 
 const METHODS = {
   silk: {
-    label:"Silk Screen", min:10, tiers:[10,15,20,25], split:true,
+    label:"Silk Screen", min:PCFG.silk.minPieces, tiers:PCFG.silk.tiers, split:true,
     views: it => silkViews(),
     print: it => T().silk + " · " + T().colors(numColors) + " · " + placeText(silkViews(), extraSpots),
     price(it, size) { const c = sizeCost(it, size), r = silkCalc(c, totalQty(), shipQtyFor(it), suppShipFor(it, SHIP_IN)); return { ...r, detail: fmt(c) + "÷" + r.divisor + (r.shipIn ? " + $" + r.shipIn + "/" + r.shipQty : " + free supplier ship") + " + print + $25/" + totalQty() }; },
     tierPrice(it, t, size) { return silkCalc(sizeCost(it, size), t, tierShipQty(t), tierSuppShip(sizeCost(it, "std"), t, SHIP_IN)).perPiece; },
     setup() { const n = numColors * (numSides + extraSpots), multi = validItems().length > 1, L = T();
       return { total: n * SCREEN, cost: 0, lines: ["Screen setup: " + fmt(n * SCREEN) + (n > 1 ? " (" + L.screens(n) + ")" : ""), (multi ? L.once : L.oneTime(n)) + L.kept(n)] }; },
-    ship: () => T().ship(7, 12, true), tierNote: () => T().tierNote,
+    ship: () => T().ship(PCFG.silk.days[0], PCFG.silk.days[1], true), tierNote: () => T().tierNote,
   },
   dtf: {
-    label:"DTF · Vendor 1", min:0, tiers:[4,8,16,32], split:true,
+    label:"DTF · Vendor 1", min:0, tiers:PCFG.dtf.tiers, split:true,
     views: it => dtfPl(it).views,
     print: it => T().dtf + " · " + placeText(dtfPl(it).views, it.extraSpots || 0),
     price(it) { const p = prod(it), pl = dtfPl(it), r = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, it.extraSize, suppShipFor(it, 30));
       const ex = DTF_EXTRA[it.extraSize || "small"];
       return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() }; },
     tierPrice(it, t) { const c = prod(it).cost; return dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, it.extraSize, tierSuppShip(c, t, 30)).perPiece; },
-    setup: () => null, ship: () => T().ship(7, 12, true), tierNote: () => T().tierNoteMix,
+    setup: () => null, ship: () => T().ship(PCFG.dtf.days[0], PCFG.dtf.days[1], true), tierNote: () => T().tierNoteMix,
   },
   v2: {
     label:"DTF / Emb · Vendor 2", min:0, tiers:[2,4,8,16], split:false,
@@ -980,7 +964,7 @@ const METHODS = {
     tierNote: () => T().tierNoteMix,
   },
   emb: {
-    label:"Embroidery", min:6, tiers:[6,12,24,48], split:false,
+    label:"Embroidery", min:PCFG.emb.minPieces, tiers:PCFG.emb.tiers, split:false,
     views: it => embViews(it),
     print: it => T().emb + " · " + placeText(embPrintViews(it), isCap(it) ? 0 : embSpots(it)),
     price(it, size) { const c = sizeCost(it, size), es = embSpots(it), sp = suppShipFor(it, embSet.suppShip), r = embCalc(c, totalQty(), es, sp);
@@ -988,7 +972,7 @@ const METHODS = {
     tierPrice(it, t, size) { return embCalc(sizeCost(it, size), t, embSpots(it), tierSuppShip(sizeCost(it, "std"), t, embSet.suppShip)).perPiece; },
     setup() { if (!embSet.dig) return null; const L = T(), n = embDigCount();
       return { total: n * DIG_RETAIL, cost: n * DIG_COST, lines: [L.digit + ": " + (n > 1 ? n + " × " + fmt(DIG_RETAIL) + " = " : "") + fmt(n * DIG_RETAIL), L.digitNote] }; },
-    ship: () => T().ship(7, 10, true), tierNote: () => T().tierNoteMix,
+    ship: () => T().ship(PCFG.emb.days[0], PCFG.emb.days[1], true), tierNote: () => T().tierNoteMix,
   },
 };
 function viewsOf(it) {
@@ -1368,8 +1352,8 @@ let quotes = [], activeQ = 0;
 const newQid = () => "aq" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 function blankQuote(m) {
   return { qid:newQid(), name:"", method:m || method, numColors:1, numSides:1, extraSpots:0, tierPref:{ silk:true, dtf:false, v2:true, emb:true },
-           quoteMode:"options", quoteLang:"pt", splitSuppliers:false, v2Protection:"", embSet:{ rate:4, dig:true, suppShip:30, clientShip:25 },
-           orderItems:null, frontPlace:"lc", oneSide:"front", logos:{ front:null, back:null, side:null, rside:null }, boxes:{}, shipMode:"auto", freeShipMin:200 };
+           quoteMode:"options", quoteLang:"pt", splitSuppliers:false, v2Protection:"", embSet:{ rate:TBDPricing.CONFIG.emb.rate, dig:true, suppShip:TBDPricing.CONFIG.emb.suppShip, clientShip:TBDPricing.CONFIG.emb.clientShip },
+           orderItems:null, frontPlace:"lc", oneSide:"front", logos:{ front:null, back:null, side:null, rside:null }, boxes:{}, shipMode:"auto", freeShipMin:TBDPricing.CONFIG.freeShipMin };
 }
 function snapshotQuote() {
   const cur = quotes[activeQ] || {};
