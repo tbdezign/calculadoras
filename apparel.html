@@ -954,7 +954,7 @@ const METHODS = {
     tierPrice(it, t, size) { return silkCalc(sizeCost(it, size), t, tierShipQty(t), tierSuppShip(sizeCost(it, "std"), t, SHIP_IN)).perPiece; },
     setup() { const n = numColors * (numSides + extraSpots), multi = validItems().length > 1, L = T();
       return { total: n * SCREEN, cost: 0, lines: ["Screen setup: " + fmt(n * SCREEN) + (n > 1 ? " (" + L.screens(n) + ")" : ""), (multi ? L.once : L.oneTime(n)) + L.kept(n)] }; },
-    ship: () => T().ship(7, 12, false), tierNote: () => T().tierNote,
+    ship: () => T().ship(7, 12, true), tierNote: () => T().tierNote,
   },
   dtf: {
     label:"DTF · Vendor 1", min:0, tiers:[4,8,16,32], split:true,
@@ -964,7 +964,7 @@ const METHODS = {
       const ex = DTF_EXTRA[it.extraSize || "small"];
       return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() }; },
     tierPrice(it, t) { const c = prod(it).cost; return dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, it.extraSize, tierSuppShip(c, t, 30)).perPiece; },
-    setup: () => null, ship: () => T().ship(7, 10, false), tierNote: () => T().tierNoteMix,
+    setup: () => null, ship: () => T().ship(7, 12, true), tierNote: () => T().tierNoteMix,
   },
   v2: {
     label:"DTF / Emb · Vendor 2", min:0, tiers:[2,4,8,16], split:false,
@@ -988,7 +988,7 @@ const METHODS = {
     tierPrice(it, t, size) { return embCalc(sizeCost(it, size), t, embSpots(it), tierSuppShip(sizeCost(it, "std"), t, embSet.suppShip)).perPiece; },
     setup() { if (!embSet.dig) return null; const L = T(), n = embDigCount();
       return { total: n * DIG_RETAIL, cost: n * DIG_COST, lines: [L.digit + ": " + (n > 1 ? n + " × " + fmt(DIG_RETAIL) + " = " : "") + fmt(n * DIG_RETAIL), L.digitNote] }; },
-    ship: () => T().ship(6, 8, true), tierNote: () => T().tierNoteMix,
+    ship: () => T().ship(7, 10, true), tierNote: () => T().tierNoteMix,
   },
 };
 function viewsOf(it) {
