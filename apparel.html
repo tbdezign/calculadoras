@@ -1,0 +1,2364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Poppins:wght@400;500;600;700&display=swap">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TBDezign Apparel Quotes</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #f0f0f0; color: #051024; min-height: 100vh; padding: 24px 16px; }
+  .container { max-width: 560px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 2px; }
+  .subtitle { font-size: 13px; color: #999; margin-bottom: 24px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 12px; border: 1px solid #E8E8E8; }
+  .card-label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .row { display: flex; gap: 12px; }
+  .field { flex: 1; }
+  .field label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; }
+  .field input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: 'SF Mono','Fira Code',monospace; text-align: center; outline: none; transition: border-color 0.2s; }
+  .field input:focus { border-color: #1a7698; box-shadow: 0 0 0 3px rgba(65,169,204,0.18); }
+  .hint { font-size: 11px; color: #999; margin-top: 6px; font-family: 'SF Mono','Fira Code',monospace; }
+  .hint-right { text-align: right; }
+  .btn-group { display: flex; gap: 6px; }
+  .btn { flex: 1; padding: 10px 0; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; background: #F0F0F0; color: #666; font-family: inherit; }
+  .btn:hover { background: #E0E0E0; }
+  .btn.active { background: #051024; color: #fff; }
+  .info-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+  .info-row span { font-size: 12px; color: #999; }
+  .mono { font-family: 'SF Mono','Fira Code',monospace; }
+  .setup-row { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 12px; border-top: 1px solid #F0F0F0; }
+  .setup-row .label { font-size: 14px; color: #666; }
+  .setup-row .value { font-size: 14px; font-family: 'SF Mono','Fira Code',monospace; font-weight: 600; }
+  .tabs { display: flex; border-bottom: 1px solid #E8E8E8; }
+  .tab { flex: 1; padding: 12px 0; text-align: center; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: none; color: #999; border-bottom: 2px solid transparent; transition: all 0.15s; font-family: inherit; }
+  .tab.active { color: #051024; border-bottom-color: #051024; }
+  .tab-content { padding: 20px; }
+  .tier-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+  .tier-table th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #E8E8E8; }
+  .tier-table th.right, .tier-table td.right { text-align: right; }
+  .tier-table td { padding: 10px; border-bottom: 1px solid #F0F0F0; font-family: 'SF Mono','Fira Code',monospace; }
+  .tier-table td.label-cell { font-family: inherit; font-weight: 500; color: #555; }
+  .tier-table .blank-price { color: #051024; font-weight: 600; }
+  .tier-table .addon-price { color: #1a7698; font-weight: 600; }
+  .tier-table .total-price { color: #051024; font-weight: 700; font-size: 15px; }
+  .tier-table .profit-cell { color: #2E7D32; }
+  .breakdown .section-label { font-size: 10px; font-weight: 700; color: #bbb; text-transform: uppercase; letter-spacing: 0.5px; margin: 8px 0 4px; }
+  .breakdown .line { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; }
+  .breakdown .line .l { color: #888; }
+  .breakdown .line .v { font-family: 'SF Mono','Fira Code',monospace; color: #555; }
+  .breakdown .line.blue .l, .breakdown .line.blue .v { color: #1a7698; font-weight: 600; }
+  .legend { display: flex; gap: 16px; justify-content: center; margin-bottom: 12px; font-size: 11px; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .legend .dot-blank { background: #051024; }
+  .legend .dot-addon { background: #1a7698; }
+  .config-bar { background: #051024; border-radius: 12px; padding: 16px 20px; margin-top: 12px; color: #fff; }
+  .config-bar .config-title { font-size: 11px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .config-bar .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 13px; }
+  .config-bar .config-grid .ck { color: #888; }
+  .config-bar .config-grid .cv { text-align: right; font-family: 'SF Mono','Fira Code',monospace; }
+  .footer { text-align: center; font-size: 11px; color: #bbb; margin: 20px 0 8px; line-height: 1.5; }
+
+  /* Catalog */
+  .catalog-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #1a7698; cursor: pointer; font-weight: 600; padding: 6px 12px; border-radius: 20px; border: 1px solid #cfe9f3; background: #e8f5fa; transition: all .15s; }
+  .catalog-toggle:hover { background: #cfe9f3; }
+  .catalog-panel { background: #F8F8F5; border: 1px solid #E8E8E8; border-radius: 10px; padding: 14px; margin-bottom: 16px; }
+  .catalog-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #fff; border-radius: 6px; cursor: pointer; border: 1px solid #E8E8E8; font-size: 13px; margin-bottom: 5px; transition: border-color .15s; }
+  .catalog-item:hover, .catalog-item.active { border-color: #1a7698; }
+  .cat-form { margin-top: 10px; padding: 12px; background: #fff; border-radius: 8px; border: 1px solid #E8E8E8; }
+  .cat-form .form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .cat-form input, .cat-form textarea { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; outline: none; font-family: inherit; }
+  .cat-form input:focus, .cat-form textarea:focus { border-color: #1a7698; }
+  .cat-form .form-actions { display: flex; gap: 6px; }
+  .cat-form .save-btn { flex: 1; padding: 8px; border: none; border-radius: 6px; background: #1a7698; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .cat-form .del-btn { padding: 8px 12px; background: #fff; border: 1px solid #fca5a5; border-radius: 6px; color: #dc2626; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .cat-form .cancel-btn { padding: 8px 12px; background: #F0F0F0; border: none; border-radius: 6px; color: #666; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .add-btn { width: 100%; padding: 8px; background: #fff; border: 1.5px dashed #ddd; border-radius: 6px; color: #999; font-size: 12px; cursor: pointer; font-family: inherit; margin-top: 8px; }
+
+  /* Order builder */
+  .order-item { position: relative; background: #F8F8F5; border: 1px solid #E8E8E8; border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+  .split-toggle { margin-left:auto; display:flex; align-items:center; gap:6px; font-size:12px; color:#555; cursor:pointer; }
+  .vend-tag { display:inline-block; font-size:10px; font-weight:600; color:#6b4e00; background:#FFF4D6; border:1px solid #F5DFA3; border-radius:4px; padding:0 5px; margin-left:4px; vertical-align:1px; }
+  .vend-line { display:block; font-size:11px; color:#8a6d1f; margin-top:2px; white-space:pre-wrap; }
+  .vend-line .vend-tag { margin-left:0; }
+  .int-box { background:#FFFBEF; border:1px dashed #F5DFA3; border-radius:6px; padding:8px 10px 2px; margin:8px 0; }
+  .int-head { font-size:10px; font-weight:700; color:#8a6d1f; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+  .oi-supplier { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12px; color:#888; }
+  .oi-supplier input { flex:1; min-width:0; padding:7px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px; font-family:inherit; outline:none; background:#fff; }
+  .oi-supplier input:focus { border-color:#1a7698; }
+  .oi-suggest { position: absolute; left: 14px; right: 14px; top: 54px; z-index: 6; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.12); overflow: hidden; max-height: 320px; overflow-y: auto; }
+  .oi-suggest button { display: flex; gap: 10px; align-items: baseline; width: 100%; padding: 10px 12px; border: none; background: #fff; text-align: left; font-size: 13px; cursor: pointer; font-family: inherit; border-bottom: 1px solid #F0F0F0; }
+  .oi-suggest button:last-child { border-bottom: none; }
+  .oi-suggest button b { flex: none; min-width: 64px; font-family: 'SF Mono','Fira Code',monospace; color: #051024; }
+  .oi-suggest button span { color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .oi-suggest button.hl, .oi-suggest button:hover { background: #e8f5fa; }
+  .oi-suggest button em { flex:none; font-style:normal; font-size:10px; color:#1a7698; font-weight:600; }
+  .oi-suggest button i.sg-r { margin-left:auto; flex:none; display:flex; gap:10px; align-items:baseline; font-style:normal; }
+  .oi-suggest button i.sg-r u { text-decoration:none; font-family:'SF Mono','Fira Code',monospace; font-size:12px; font-weight:600; color:#051024; }
+  .order-item .oi-top { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .order-item .oi-code { flex: 0 0 90px; }
+  .order-item .oi-code input { width: 100%; padding: 8px; border: 2px solid #1a7698; border-radius: 6px; font-size: 14px; font-weight: 700; text-align: center; outline: none; text-transform: uppercase; font-family: 'SF Mono','Fira Code',monospace; }
+  .order-item .oi-qty { flex: 0 0 60px; }
+  .order-item .oi-qty input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; text-align: center; outline: none; font-family: 'SF Mono','Fira Code',monospace; }
+  .order-item .oi-info { flex: 1; font-size: 12px; color: #555; min-height: 20px; display: flex; align-items: center; }
+  .order-item .oi-info .pname { font-weight: 600; color: #051024; }
+  .order-item .oi-info { flex-wrap: wrap; }
+  .order-item .oi-info .vend-line { flex-basis: 100%; }
+  .order-item .oi-info .notfound { color: #dc2626; }
+  .order-item .oi-remove { background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer; padding: 0 4px; }
+  .order-item .oi-result { display: flex; justify-content: space-between; align-items: baseline; padding-top: 8px; border-top: 1px solid #E8E8E8; }
+  .order-item .oi-result .price { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .order-item .oi-result .detail { font-size: 11px; color: #888; font-family: 'SF Mono','Fira Code',monospace; }
+  .order-item .oi-result .profit { font-size: 11px; color: #2E7D32; }
+  .total-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 1px solid #E8E8E8; background: #fff; color: #555; margin-right: 8px; }
+  .total-pill b { color: #051024; }
+  .min-warn { font-size: 11px; color: #dc2626; margin-top: 4px; }
+
+  /* Quote */
+  .quote-card { background: #fff; border: 1px solid #E8E8E8; border-radius: 12px; overflow: hidden; margin-top: 12px; }
+  .quote-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid #E8E8E8; }
+  .quote-header span { font-size: 12px; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .copy-btn { padding: 6px 14px; background: #1a7698; border: none; border-radius: 6px; color: #fff; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .2s; }
+  .copy-btn.copied { background: #16a34a; }
+  .quote-header { flex-wrap:wrap; gap:8px; }
+  .qmode { display:flex; background:#F0F0F0; border-radius:8px; padding:3px; gap:2px; }
+  .qmode button { border:none; background:none; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; color:#666; cursor:pointer; font-family:inherit; }
+  .qmode button.active { background:#051024; color:#fff; }
+  .qmode-bar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 16px; font-size:12px; color:#888; border-bottom:1px solid #E8E8E8; }
+  .qmode-bar label { display:flex; align-items:center; gap:6px; color:#555; cursor:pointer; font-weight:600; }
+  .qblock + .qblock { border-top:6px solid #f0f0f0; }
+  .qblock-head { display:flex; justify-content:space-between; align-items:center; padding:10px 16px 0; font-size:12px; font-weight:700; color:#999; text-transform:uppercase; letter-spacing:.5px; }
+  .quote-text { padding: 14px 16px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; color: #333; }
+
+  /* Mockup */
+  .mk-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; gap:8px; flex-wrap:wrap; }
+  .mk-fields { display:flex; gap:12px; margin-bottom:12px; }
+  .mk-fields .field input { text-align:left; }
+  .mk-sub { display:block; font-size:12px; color:#888; margin-bottom:6px; }
+  .mk-stage { position:relative; margin-top:12px; border-radius:10px; overflow:hidden; background:#F0F0EB; border:1px solid #E8E8E8; }
+  .mk-stage canvas { display:block; width:100%; height:auto; touch-action:none; cursor:move; }
+  .mk-drop { padding:28px 18px; text-align:center; font-size:13px; color:#666; line-height:1.55; border:1.5px dashed #cfcfc8; border-radius:10px; background:#FAFAF7; cursor:pointer; outline:none; }
+  .mk-drop:focus, .mk-drop.target { border-color:#1a7698; background:#e8f5fa; }
+  .mk-drop b { color:#051024; }
+  .mk-style { border:1px solid #E8E8E8; border-radius:10px; padding:12px; margin-top:12px; background:#FAFAF7; }
+  .mk-style-head { display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:13px; margin-bottom:8px; }
+  .mk-style-head span { color:#888; }
+  .mk-style .field input { text-align:left; background:#fff; }
+  .mk-views { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-top:10px; }
+  .mk-view { min-width:0; outline:none; }
+  .mk-view.editing .mk-thumb { outline:2px solid #1a7698; outline-offset:2px; }
+  .mk-thumb { display:block; width:100%; height:auto; border-radius:8px; background:#F0F0EB; cursor:pointer; }
+  .mk-view-tools { margin-top:2px; }
+  .mk-view-tools .mk-link:disabled { color:#999; cursor:default; }
+  .mk-view-cap { display:flex; justify-content:space-between; font-size:11px; color:#888; margin-top:4px; gap:6px; }
+  .mk-slot { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; text-align:center; min-height:150px; padding:12px; border:1.5px dashed #cfcfc8; border-radius:8px; background:#fff; font-size:12px; font-weight:600; color:#555; }
+  .mk-slot span { font-weight:400; color:#999; font-size:11px; }
+  .mk-slot-up { cursor:pointer; outline:none; }
+  .mk-slot-up:focus { border-color:#1a7698; background:#e8f5fa; }
+  .mk-slot .mk-upbtn { margin-bottom:4px; color:#fff; font-size:12px; font-weight:600; }
+  .mk-final { margin-top:14px; padding:12px; border:1.5px solid #051024; border-radius:10px; }
+  .mk-final-title { font-size:13px; font-weight:700; color:#051024; }
+  .mk-final-sub { font-size:12px; color:#888; margin-top:2px; }
+  .mk-all { width:100%; margin-top:12px; padding:12px 0; border-radius:8px; border:1.5px solid #051024; background:#fff; color:#051024; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .mk-editor { margin-top:14px; padding:12px; border:1px solid #1a7698; border-radius:10px; }
+  .mk-logo-empty { width:48px; height:48px; border-radius:6px; background:#F0F0EB; display:flex; align-items:center; justify-content:center; font-size:10px; color:#999; flex:none; }
+  .mk-inline { display:flex; align-items:center; gap:6px; margin-top:4px; font-size:12px; color:#555; cursor:pointer; }
+  .mk-sub { margin-top:4px; }
+  .mk-upbtn { display:inline-block; margin-bottom:10px; padding:10px 18px; border-radius:8px; background:#051024; color:#fff; font-weight:600; font-size:13px; }
+  .mk-drop .tip { display:block; margin-top:8px; font-size:11px; color:#999; }
+  .mk-status { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:12px; color:#888; margin-top:10px; flex-wrap:wrap; }
+  .mk-link { color:#1a7698; cursor:pointer; font-weight:600; background:none; border:none; font-size:12px; font-family:inherit; padding:0; }
+  .mk-logo { display:flex; align-items:center; gap:12px; margin-top:12px; padding:10px; border:1px solid #E8E8E8; border-radius:10px; background:#FAFAF7; outline:none; }
+  .mk-logo.target { border-color:#1a7698; }
+  .mk-logo img { width:48px; height:48px; object-fit:contain; background:repeating-conic-gradient(#e5e5e0 0 25%, #fff 0 50%) 0 0/12px 12px; border-radius:6px; }
+  .mk-logo .grow { flex:1; min-width:0; font-size:12px; color:#666; }
+  .mk-ctrl { display:grid; grid-template-columns:110px 1fr 44px; align-items:center; gap:8px; margin-top:10px; font-size:12px; color:#888; }
+  .mk-ctrl input[type=range] { width:100%; }
+  .mk-ctrl .mono { text-align:right; color:#555; }
+  .mk-checks { display:flex; gap:16px; flex-wrap:wrap; margin-top:10px; font-size:12px; color:#555; }
+  .mk-checks label { display:flex; align-items:center; gap:6px; cursor:pointer; }
+  .mk-actions { display:flex; gap:8px; margin-top:14px; }
+  .mk-actions button { flex:1; padding:11px 0; border-radius:8px; border:none; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .mk-primary { background:#051024; color:#fff; }
+  .mk-secondary { background:#F0F0F0; color:#051024; }
+  .mk-actions button:disabled { opacity:.4; cursor:default; }
+  .mk-msg { font-size:12px; color:#2E7D32; margin-top:8px; min-height:16px; }
+  .mk-msg.err { color:#dc2626; }
+  .lib-group { margin-bottom:10px; }
+  .lib-group h4 { font-size:11px; font-weight:700; color:#999; letter-spacing:.5px; margin-bottom:6px; }
+  .lib-items { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px; }
+  .lib-item { background:#fff; border:1px solid #E8E8E8; border-radius:8px; padding:6px; font-size:11px; color:#555; }
+  .lib-item img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:5px; background:#F0F0EB; cursor:pointer; }
+  .lib-item .row2 { display:flex; justify-content:space-between; align-items:center; margin-top:4px; gap:4px; }
+  .lib-item .del { background:none; border:none; color:#bbb; font-size:11px; cursor:pointer; font-family:inherit; padding:0; }
+  .lib-item .del.confirm { color:#dc2626; font-weight:700; }
+  .lib-color { margin-top:4px; font-weight:600; color:#051024; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .lib-rename input { width:100%; margin-top:4px; padding:5px 6px; border:1px solid #1a7698; border-radius:5px; font-size:12px; font-family:inherit; outline:none; }
+  .mk-link.small { font-size:11px; }
+
+  /* Quote tabs */
+  .qbar { position:sticky; top:env(safe-area-inset-top, 0px); z-index:5; background:#f0f0f0; padding:8px 0 10px; margin-bottom:12px; border-bottom:1px solid #E8E8E8; }
+  .qtop { display:flex; gap:6px; align-items:stretch; }
+  .qtabs { flex:1; min-width:0; display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; }
+  .qtab { flex:none; display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px; border:1px solid #E0E0DA; background:#fff; font-size:13px; font-weight:600; color:#666; cursor:pointer; font-family:inherit; max-width:200px; }
+  .qtab span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .qtab small { font-weight:400; color:#999; font-size:11px; }
+  .qtab.active { background:#051024; border-color:#051024; color:#fff; }
+  .qtab.active small { color:#bbb; }
+  .qtab-add { flex:none; width:38px; padding:8px 0; border-radius:8px; border:1.5px dashed #cfcfc8; background:transparent; font-size:18px; line-height:1; color:#666; cursor:pointer; font-family:inherit; }
+  .qtab-add:hover { border-color:#051024; color:#051024; }
+  .qbar-row { display:flex; align-items:center; gap:14px; margin-top:8px; }
+  .qbar-row input { flex:1; min-width:0; padding:8px 10px; border:1px solid #ddd; border-radius:8px; font-size:13px; font-family:inherit; outline:none; background:#fff; }
+  .qbar-row input:focus { border-color:#1a7698; }
+  .qclose { color:#999; }
+  .qclose.confirm { color:#dc2626; }
+
+  @media (max-width: 480px) {
+    .mk-fields { flex-direction:column; gap:8px; }
+    .mk-ctrl { grid-template-columns:90px 1fr 40px; }
+    body { padding: 16px 12px; }
+    .tier-table { font-size: 12px; }
+    .tier-table td, .tier-table th { padding: 8px 6px; }
+  }
+
+  [hidden] { display:none !important; }
+  .muted { color:#888; } .small { font-size:11px; } .strong { font-weight:700; } .right { text-align:right; }
+  .lbl { display:block; font-size:11px; color:#888; margin:0 0 4px; }
+  .panel-note { font-size:12px; color:#888; margin-bottom:8px; line-height:1.5; }
+  .row-end { display:flex; gap:14px; justify-content:flex-end; flex-wrap:wrap; margin-top:10px; }
+  .err-text { font-size:11px; color:#dc2626; margin-top:6px; }
+  .cat-form textarea { resize:vertical; margin-bottom:8px; }
+  .cat-form .lbl { margin-top:2px; }
+  .catalog-item .mono.small { color:#888; white-space:nowrap; margin-left:8px; }
+  .catalog-item > span:first-child { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* Method tabs */
+  .mtabs { display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:12px; }
+  .mtab { padding:10px 6px; border-radius:10px; border:1.5px solid #E0E0DA; background:#fff; font-size:12px; font-weight:700; color:#666; cursor:pointer; font-family:inherit; line-height:1.25; }
+  .mtab.active { border-color:#051024; background:#051024; color:#fff; }
+  /* Settings */
+  .fee-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:9px 0; font-size:13px; color:#555; }
+  .fee-row + .fee-row { border-top:1px solid #F0F0F0; }
+  .fee-row small { display:block; font-size:11px; color:#999; }
+  .fee-row input[type=number] { width:96px; padding:7px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px; text-align:right; font-family:'SF Mono','Fira Code',monospace; outline:none; }
+  .fee-row input:focus { border-color:#1a7698; }
+  .switch { position:relative; width:42px; height:24px; flex:none; }
+  .switch input { opacity:0; width:0; height:0; position:absolute; }
+  .switch span { position:absolute; inset:0; background:#d3d1c7; border-radius:12px; transition:.2s; cursor:pointer; }
+  .switch span:before { content:""; position:absolute; width:18px; height:18px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.2s; }
+  .switch input:checked + span { background:#1a7698; }
+  .switch input:checked + span:before { transform:translateX(18px); }
+  .switch input:focus-visible + span { outline:2px solid #1a7698; outline-offset:2px; }
+  .setup-row { display:flex; justify-content:space-between; align-items:center; padding-top:12px; margin-top:12px; border-top:1px solid #F0F0F0; font-size:13px; color:#666; }
+  .ymq { margin-top:14px; border-top:1px solid #F0F0F0; padding-top:10px; }
+  .ymq summary { cursor:pointer; font-size:12px; font-weight:700; color:#1a7698; }
+  .ymq input { width:100%; padding:7px 8px; border:1px solid #ddd; border-radius:6px; font-size:13px; text-align:center; font-family:'SF Mono','Fira Code',monospace; }
+  .table-wrap { overflow-x:auto; }
+  .tier-table td.blue { color:#1a7698; font-weight:600; } .tier-table td.green { color:#2E7D32; }
+  .ymq-break { margin-top:10px; padding:12px; background:#f0f0f0; border-radius:8px; font-size:12px; }
+  /* Order items per method */
+  .pl-row { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
+  .pl-btn { padding:7px 10px; border-radius:6px; border:1.5px solid #E0E0DA; background:#fff; color:#666; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .pl-btn.active { border-color:#051024; background:#051024; color:#fff; }
+  .pl-price { margin-left:5px; font-weight:400; opacity:.7; }
+  .pl-gap { width:8px; }
+  .size-toggle { margin:2px 0 8px; display:inline-block; }
+  .size-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:2px 0 8px; font-size:12px; color:#888; }
+  .size-row label { display:flex; align-items:center; gap:6px; font-weight:700; color:#555; }
+  .size-row input { width:64px; padding:7px 8px; border:1px solid #ddd; border-radius:6px; font-size:14px; text-align:center; font-family:'SF Mono','Fira Code',monospace; outline:none; }
+  .size-row input:focus { border-color:#1a7698; }
+  .oi-result + .oi-result { border-top:none; padding-top:4px; }
+  .oi-name { width:100%; padding:7px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px; font-family:inherit; outline:none; margin-bottom:8px; }
+  .oi-name:focus { border-color:#1a7698; }
+  .v2-tiers { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px; font-size:11px; font-family:'SF Mono','Fira Code',monospace; color:#999; }
+  .v2-tiers span { padding:3px 6px; border-radius:4px; }
+  .v2-tiers span.on { background:#051024; color:#fff; }
+  .oi-result .margin { font-size:11px; display:block; }
+  .oi-result .margin.good { color:#2E7D32; } .oi-result .margin.warn { color:#b45309; } .oi-result .margin.bad { color:#dc2626; }
+  .oi-result .detail { max-width:60%; }
+  .oi-info .notfound a { color:#1a7698; cursor:pointer; text-decoration:underline; }
+  .sum-row { display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+  .sum-total { font-size:28px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .sum-row.profit { margin-top:8px; padding-top:8px; border-top:1px solid #F0F0F0; }
+  .sum-row.profit span:last-child { font-size:15px; font-weight:600; color:#2E7D32; }
+  .sum-sub { font-size:12px; color:#999; margin-top:6px; }
+  .cchips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .cchip { display:flex; align-items:center; gap:6px; padding:4px 10px 4px 4px; border-radius:20px; border:1.5px solid #E0E0DA; background:#fff; font-size:12px; font-weight:600; color:#444; cursor:pointer; font-family:inherit; }
+  .cchip img { width:26px; height:26px; border-radius:50%; object-fit:cover; background:#F0F0EB; }
+  .cchip.on { border-color:#051024; background:#051024; color:#fff; }
+  .cchips-empty { font-size:12px; color:#999; margin-bottom:8px; }
+  .mk-print { font-size:11px; color:#888; margin:-4px 0 8px; }
+  .qtab { flex-direction:column; align-items:flex-start; gap:0; }
+  .qtab small { font-size:10px; }
+  .min-warn { margin-top:0; }
+  @media (max-width: 480px) { .mtabs { grid-template-columns:repeat(2, 1fr); } }
+
+  /* ── TBDezign brand ── */
+  body { font-family: Poppins, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+  h1 { font-family: Montserrat, Poppins, sans-serif; font-weight: 700; color: #051024; letter-spacing: -0.2px; }
+  button, input, select, textarea { font-family: inherit; }
+  .card-label, .tab { font-family: Montserrat, Poppins, sans-serif; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Apparel Quotes</h1>
+  <p class="subtitle">Silk Screen, DTF and Embroidery · quotes and mockups in PT, EN and ES.</p>
+
+  <!-- Client tabs -->
+  <div class="qbar">
+    <div class="qtop"><div class="qtabs" id="qTabs"></div><button class="qtab-add" onclick="addQuote()" title="New quote" aria-label="New quote">+</button></div>
+    <div class="qbar-row">
+      <input id="qName" placeholder="Client name (optional)" oninput="onQuoteName(this.value)">
+      <button class="mk-link" onclick="duplicateQuote()">Duplicate</button>
+      <button class="mk-link qclose" id="qClose" onclick="closeQuote(this)">Close quote</button>
+    </div>
+  </div>
+
+  <!-- Method tabs -->
+  <div class="mtabs" id="methodTabs"></div>
+
+  <!-- Products -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div class="card-label" style="margin:0">Product Catalog</div>
+      <span class="catalog-toggle" onclick="toggleCatalog()"><span id="catalogLabel"></span></span>
+    </div>
+    <div id="catalogPanel" hidden style="margin-top:12px"></div>
+  </div>
+
+  <!-- Method settings -->
+  <div class="card" id="settingsCard"></div>
+
+  <!-- Order builder -->
+  <div class="card">
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <div class="card-label" style="margin:0">Order Builder</div>
+      <span class="total-pill" id="orderQtyPill"></span>
+      <span id="minWarn" class="min-warn" hidden></span>
+      <label class="split-toggle" id="splitWrap"><input type="checkbox" id="splitToggle" onchange="toggleSplitSuppliers(this.checked)"> Different suppliers</label>
+    </div>
+    <datalist id="supplierList"><option value="S&amp;S Activewear"><option value="SanMar"></datalist>
+    <div id="orderItems"></div>
+    <button class="add-btn" onclick="addOrderItem()">+ Add style</button>
+  </div>
+
+  <div id="orderSummary" hidden></div>
+
+  <!-- WhatsApp quote -->
+  <div class="quote-card" id="quoteCard" hidden>
+    <div class="quote-header">
+      <span>WhatsApp Quote</span>
+      <div class="qmode" id="qLangBtns">
+        <button data-lang="pt" onclick="setQuoteLang('pt')">PT</button>
+        <button data-lang="en" onclick="setQuoteLang('en')">EN</button>
+        <button data-lang="es" onclick="setQuoteLang('es')">ES</button>
+      </div>
+      <div class="qmode" id="qModeBtns">
+        <button onclick="setQuoteMode('options')">Options</button>
+        <button onclick="setQuoteMode('final')">Final order</button>
+      </div>
+    </div>
+    <div class="qmode-bar" id="qModeBar"></div>
+    <div id="quoteBody"></div>
+  </div>
+
+  <!-- Mockup -->
+  <div class="card" id="mockupCard" style="margin-top:12px">
+    <div class="mk-head">
+      <div class="card-label" style="margin:0">Quick Mockup</div>
+      <span class="catalog-toggle" onclick="toggleLib()"><span id="libLabel">Photo library</span></span>
+    </div>
+    <div id="libPanel" hidden></div>
+    <div id="mkPlacement"></div>
+    <div id="mkLogos"></div>
+    <div id="mkRows"></div>
+    <div id="mkEditor" class="mk-editor" hidden>
+      <div class="mk-status" style="margin-top:0"><b id="mkEditTitle" style="color:#1A1A1A"></b><button class="mk-link" onclick="closeEditor()">Done</button></div>
+      <div class="mk-stage" id="mkStage"><canvas id="mkCanvas"></canvas></div>
+      <div class="mk-ctrl"><span>Logo size</span><input type="range" id="mkSize" min="3" max="60" step="0.5" oninput="onMkSize(this.value)"><span class="mono" id="mkSizeVal"></span></div>
+      <div class="mk-status"><span>Drag the logo to move it, or tap where it should go.</span><button class="mk-link" id="mkSavePos" onclick="savePosition()">Save position for this photo</button></div>
+    </div>
+    <div class="mk-ctrl" style="margin-top:14px"><span>Fabric shading</span><input type="range" id="mkShade" min="0" max="100" value="70" oninput="mk.shade=this.value/100;document.getElementById('mkShadeVal').textContent=this.value+'%';refreshViews()"><span class="mono" id="mkShadeVal">70%</span></div>
+    <div class="mk-logo" id="mkBrandZone" tabindex="0" onfocus="mk.pasteTarget={kind:'brand'}" ondragover="event.preventDefault()" ondrop="dropBrand(event)" style="margin-top:12px"></div>
+    <div class="mk-msg" id="mkMsg"></div>
+    <input type="file" id="mkBackupFile" accept=".json,application/json" hidden onchange="if(this.files[0])importLibrary(this.files[0]);this.value=''">
+    <input type="file" id="mkBrandFile" accept="image/png,image/*" hidden onchange="if(this.files[0])handleBrandFile(this.files[0]);this.value=''">
+    <input type="file" id="mkGarmentFile" accept="image/*" hidden onchange="if(this.files[0])onGarmentPicked(this.files[0]);this.value=''">
+    <input type="file" id="mkLogoFile" accept="image/*" hidden onchange="if(this.files[0])handleLogoFile(this.files[0], mk.logoPick);this.value=''">
+  </div>
+
+  <p class="footer" id="footerNote"></p>
+</div>
+
+<!-- ═══ TBDezign Cloud (Supabase): login + shared product database ═══ -->
+<style>
+  #tbdCloud { position: sticky; top: 0; z-index: 50; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 12px; margin: -24px -16px 16px; background: #051024; color: #fff; font: 13px Poppins, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; border-bottom: 4px solid transparent; border-image: linear-gradient(90deg, #91bc4d, #41a9cc, #b5b5f7) 1; }
+  #tbdCloud .tc-logo { height: 12px; width: auto; filter: brightness(0) invert(1); margin-right: 6px; flex: none; }
+  #tbdCloud .tc-msg { color: #b9c7d6 !important; }
+  #tbdCloud button { background: #fff; color: #051024; }
+  #tbdCloud button.tc-ghost { color: #b9c7d6; border-color: #2a3b55; }
+  #tbdCloud input { background: #0d1f3c; border-color: #2a3b55; }
+  #tbdCloud .tc-dot { width: 8px; height: 8px; border-radius: 50%; background: #9ca3af; flex: none; }
+  #tbdCloud.ok .tc-dot { background: #4ade80; }
+  #tbdCloud.warn .tc-dot { background: #fbbf24; }
+  #tbdCloud .tc-msg { flex: 1; min-width: 160px; color: #ddd; }
+  #tbdCloud input { padding: 6px 8px; border-radius: 6px; border: 1px solid #444; background: #262626; color: #fff; font: inherit; min-width: 0; width: 170px; }
+  #tbdCloud button { padding: 6px 12px; border-radius: 6px; border: none; background: #fff; color: #1A1A1A; font: inherit; font-weight: 600; cursor: pointer; }
+  #tbdCloud button.tc-ghost { background: transparent; color: #bbb; border: 1px solid #444; }
+  #tbdCloud form { display: flex; gap: 6px; flex-wrap: wrap; }
+  @media (max-width: 520px) { #tbdCloud input { width: 100%; } #tbdCloud form { width: 100%; } }
+</style>
+<div id="tbdCloud"><img class="tc-logo" src="https://cdn.shopify.com/s/files/1/0730/9158/0092/files/logo-png.png?v=1773444846" alt="TBDezign"><span class="tc-dot"></span><span class="tc-msg">Conectando…</span></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script>
+window.TBDCloud = (function () {
+  const SB_URL = "https://fipimpagtmdhuznclqdn.supabase.co";
+  const SB_KEY = "sb_publishable_dvFXA862qt2K3RvnHw03wg_PMZzo5Ch";
+  const bar = document.getElementById("tbdCloud");
+  const body = document.body; body.insertBefore(bar, body.firstChild);
+  let sb = null, user = null, lastSync = null, pending = 0, lastErr = "", lastAlert = 0;
+  const handlers = [];
+  try { if (window.supabase) sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: "tbd-cloud-auth" } }); } catch (e) { sb = null; }
+
+  function esc(s) { const d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
+  function time(d) { return d ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""; }
+  function render() {
+    bar.className = "";
+    if (!sb) { bar.className = "warn"; bar.innerHTML = '<img class="tc-logo" src="https://cdn.shopify.com/s/files/1/0730/9158/0092/files/logo-png.png?v=1773444846" alt="TBDezign"><span class="tc-dot"></span><span class="tc-msg">Sem conexão com o banco (verifique a internet e recarregue). Usando a cópia salva neste navegador; produtos não podem ser editados.</span>'; return; }
+    if (!user) {
+      bar.className = "warn";
+      bar.innerHTML = '<img class="tc-logo" src="https://cdn.shopify.com/s/files/1/0730/9158/0092/files/logo-png.png?v=1773444846" alt="TBDezign"><span class="tc-dot"></span><span class="tc-msg">' + (lastErr ? esc(lastErr) : "Entre para carregar e salvar os produtos.") + '</span>'
+        + '<form id="tcForm"><input id="tcEmail" type="email" autocomplete="username" placeholder="Email" value="info@tbdezign.com"><input id="tcPass" type="password" autocomplete="current-password" placeholder="Senha"><button type="submit">Entrar</button></form>';
+      document.getElementById("tcForm").onsubmit = async e => {
+        e.preventDefault(); lastErr = "";
+        const btn = e.target.querySelector("button"); btn.disabled = true; btn.textContent = "Entrando…";
+        const { error } = await sb.auth.signInWithPassword({ email: document.getElementById("tcEmail").value.trim(), password: document.getElementById("tcPass").value });
+        if (error) { lastErr = /invalid/i.test(error.message) ? "Email ou senha incorretos." : "Não foi possível entrar: " + error.message; render(); }
+      };
+      return;
+    }
+    bar.className = lastErr ? "warn" : "ok";
+    const status = lastErr ? esc(lastErr) : pending ? "Salvando…" : lastSync ? "Sincronizado " + time(lastSync) : "Carregando produtos…";
+    bar.innerHTML = '<img class="tc-logo" src="https://cdn.shopify.com/s/files/1/0730/9158/0092/files/logo-png.png?v=1773444846" alt="TBDezign"><span class="tc-dot"></span><span class="tc-msg">' + esc(user.email) + ' · ' + status + '</span><button class="tc-ghost" id="tcReload">Atualizar</button><button class="tc-ghost" id="tcOut">Sair</button>';
+    document.getElementById("tcOut").onclick = async () => { await sb.auth.signOut(); };
+    document.getElementById("tcReload").onclick = () => scheduleLoad();
+  }
+
+  let loadTimer = null;
+  function scheduleLoad() { clearTimeout(loadTimer); loadTimer = setTimeout(load, 0); }
+  async function load() {
+    if (!sb || !user) return;
+    lastErr = ""; render();
+    for (const h of handlers) {
+      try { await h(); } catch (e) { lastErr = "Erro ao carregar produtos: " + (e.message || e); }
+    }
+    if (!lastErr) lastSync = new Date();
+    render();
+  }
+
+  // Run a write; shows status and errors in the bar. Returns true on success.
+  async function write(fn) {
+    if (!sb || !user) { lastErr = "Entre (login) para salvar produtos."; render(); if (Date.now() - lastAlert > 5000) { lastAlert = Date.now(); alert("Você precisa entrar (login) no topo da página para salvar produtos."); } return false; }
+    pending++; render();
+    try {
+      const res = await fn(sb);
+      if (res && res.error) throw res.error;
+      lastSync = new Date(); lastErr = ""; return true;
+    } catch (e) {
+      lastErr = "Não salvou: " + (e.message || e) + ". Verifique a internet e tente de novo."; return false;
+    } finally { pending--; render(); }
+  }
+
+  if (sb) {
+    sb.auth.onAuthStateChange((event, session) => {
+      const was = user && user.email;
+      user = session ? session.user : null;
+      render();
+      if (user && was !== user.email) scheduleLoad();
+    });
+  }
+  render();
+
+  // Reload when coming back to the tab after a while (picks up changes made on another device)
+  let lastFocus = Date.now();
+  window.addEventListener("focus", () => { if (Date.now() - lastFocus > 60000) scheduleLoad(); lastFocus = Date.now(); });
+  window.addEventListener("blur", () => { lastFocus = Date.now(); });
+
+  return {
+    get sb() { return sb; },
+    get user() { return user; },
+    get loggedIn() { return !!(sb && user); },
+    onLoad(fn) { handlers.push(fn); if (sb && user) scheduleLoad(); },
+    write, load,
+  };
+})();
+</script>
+<!-- ═══ end TBDezign Cloud ═══ -->
+
+<script>
+// ════════════════════════════════════════════
+// SHARED HELPERS
+// ════════════════════════════════════════════
+function fmt(n) { return "$" + Number(n).toFixed(2); }
+const ceil10 = n => Math.ceil(n * 10) / 10;    // Silk Screen + Embroidery rounding (up)
+const round10 = n => Math.round(n * 10) / 10;  // DTF Vendor 1 + Vendor 2 rounding (nearest)
+function esc(s) { const d = document.createElement("div"); d.textContent = s == null ? "" : s; return d.innerHTML; }
+function q(id) { return document.getElementById(id); }
+
+// ════════════════════════════════════════════
+// STATE (one set per quote tab)
+// ════════════════════════════════════════════
+const METHOD_KEYS = ["silk", "dtf", "v2", "emb"];
+let method = "silk";
+let numColors = 1, numSides = 1, extraSpots = 0;            // Silk Screen print options
+let tierPref = { silk:true, dtf:false, v2:true, emb:true };  // tier breaks on/off per method
+let shipMode = "auto", freeShipMin = 200;   // supplier shipping: auto (free at freeShipMin in blanks) / on (always charge) / off (free)
+let quoteMode = "options", quoteLang = "pt", splitSuppliers = false;
+let v2Protection = "";                                       // Vendor 2 purchase protection
+let embSet = { rate:4, dig:true, suppShip:30, clientShip:25 }; // Embroidery settings
+function defaultPlacement(m) { return m === "v2" ? "front" : "lc"; }
+function newItem() { return { id: Date.now() + Math.random(), code:"", qty:"", color:"", supplier:"", placementId: defaultPlacement(method), extraSpots:0, extraSize:"small", decoration:"dtf", name:"" }; }
+let orderItems = [newItem()];
+function itemById(id) { return orderItems.find(i => String(i.id) === String(id)); }
+
+// ════════════════════════════════════════════
+// PRODUCT CATALOGS (one per method, each with its own cost fields)
+// ════════════════════════════════════════════
+const UV = "Proteção UV\nDry fit / Tecido com secagem rápida";
+const CAT_DEFAULTS = { silk:{}, dtf:{}, v2:{}, emb:{} }; // products come from the database
+// Same browser keys as the separate calculators, so products saved there show up here.
+const CAT_LS = { silk:"ss-catalog", dtf:"dtf-catalog", v2:"v2-catalog", emb:"emb-cat" };
+const CAT_DB = { silk:"catalog", dtf:"catalog_dtf", v2:"catalog_v2", emb:"catalog_emb" };
+const CAT_FIELDS = {
+  silk:[ {k:"costStd", l:"XS-XL"}, {k:"cost2xl", l:"2XL"}, {k:"cost3xl", l:"3XL"} ],
+  dtf: [ {k:"cost", l:"Blank cost"} ],
+  v2:  [ {k:"t2", l:"2 pc"}, {k:"t4", l:"4 pc"}, {k:"t8", l:"8 pc"}, {k:"t16", l:"16 pc"} ],
+  emb: [ {k:"cStd", l:"XS-XL"}, {k:"c2xl", l:"2XL"}, {k:"c3xl", l:"3XL"} ],
+};
+const CAT_HINT = { silk:"Blank cost from the supplier", dtf:"Blank cost from the supplier", v2:"Vendor price per tier", emb:"Blank cost from the supplier" };
+let cats = {};
+function cat() { return cats[method]; }
+function allVendors() { const s = new Set(SUPPLIER_LIST); METHOD_KEYS.forEach(k => Object.values(cats[k] || {}).forEach(p => { if (p && p.vendor) s.add(p.vendor); })); return [...s].sort((a, b) => a.localeCompare(b)); }
+function loadCatalogs() {
+  METHOD_KEYS.forEach(k => {
+    cats[k] = { ...CAT_DEFAULTS[k] };
+    try {
+      const s = localStorage.getItem(CAT_LS[k]); if (!s) return;
+      const raw = JSON.parse(s);
+      if (k === "v2") Object.values(raw).forEach(p => { if (p.cost && !p.t2) { p.t2 = p.t4 = p.t8 = p.t16 = p.cost; } });
+      Object.assign(cats[k], raw);
+    } catch {}
+  });
+}
+function saveCatLS(k) { try { localStorage.setItem(CAT_LS[k], JSON.stringify(cats[k])); } catch {} }
+function catDocId(code) { return String(code).toUpperCase().replace(/[^A-Z0-9]+/g,"-").replace(/^-+|-+$/g,"") || "X"; }
+const catDbReady = {};
+function initCatalogDb(k) {
+  if (!mkDb) return;
+  mkDb.collection(CAT_DB[k]).onSnapshot(async snap => {
+    const fromDb = {};
+    snap.docs.forEach(d => { const p = d.data(); if (p && p.code) fromDb[p.code] = p; });
+    // One-time copy of products saved in this browser into the calculator's own storage.
+    let done = false; try { done = localStorage.getItem(CAT_LS[k] + "-imported") === "1"; } catch {}
+    if (!done && !catDbReady[k]) {
+      for (const p of Object.values(cats[k])) {
+        if (p && p.code && !fromDb[p.code]) { try { await mkDb.doc(CAT_DB[k] + "/" + catDocId(p.code)).set(p); fromDb[p.code] = p; } catch {} }
+      }
+      try { localStorage.setItem(CAT_LS[k] + "-imported", "1"); } catch {}
+    }
+    catDbReady[k] = true;
+    if (Object.keys(fromDb).length) { cats[k] = fromDb; saveCatLS(k); }
+    if (k === method) { renderCatalog(); renderOrderItems(); }
+  }, () => {});
+}
+async function saveProduct(k, p) {
+  if (!mkDb) {
+    const ok = await TBDCloud.write(sb => sb.from("apparel_products").upsert({ method:k, code:p.code, data:p }));
+    if (!ok) return false;
+  }
+  cats[k][p.code] = p; saveCatLS(k);
+  if (mkDb) { try { await mkDb.doc(CAT_DB[k] + "/" + catDocId(p.code)).set(p); } catch {} }
+  return true;
+}
+async function removeProduct(k, code) {
+  if (!mkDb) {
+    const ok = await TBDCloud.write(sb => sb.from("apparel_products").delete().eq("method", k).eq("code", code));
+    if (!ok) return false;
+  }
+  delete cats[k][code]; saveCatLS(k);
+  if (mkDb) { try { await mkDb.doc(CAT_DB[k] + "/" + catDocId(code)).delete(); } catch {} }
+  return true;
+}
+// Products come from the shared database (Supabase); this browser keeps a copy for when you're offline.
+TBDCloud.onLoad(async () => {
+  const fromDb = {}; METHOD_KEYS.forEach(k => fromDb[k] = {});
+  const { data, error } = await TBDCloud.sb.from("apparel_products").select("method,code,data").limit(5000);
+  if (error) throw error;
+  (data || []).forEach(r => { if (fromDb[r.method]) fromDb[r.method][r.code] = r.data; });
+  METHOD_KEYS.forEach(k => { cats[k] = fromDb[k]; saveCatLS(k); });
+  renderCatalog(); renderOrderItems();
+});
+function cleanProduct(k, p) {
+  if (!p || !p.code || !p.name) return null;
+  const o = { code:String(p.code).toUpperCase(), name:String(p.name), desc:String(p.desc||""), desc_en:String(p.desc_en||""), desc_es:String(p.desc_es||""), vendor:String(p.vendor||"").trim(), memo:String(p.memo||"") };
+  let ok = false;
+  CAT_FIELDS[k].forEach(f => { o[f.k] = +p[f.k] || 0; if (o[f.k] > 0) ok = true; });
+  if (k === "silk") { o.cost2xl = o.cost2xl || o.costStd; o.cost3xl = o.cost3xl || o.costStd; ok = o.costStd > 0; }
+  if (k === "emb") { o.c2xl = o.c2xl || o.cStd; o.c3xl = o.c3xl || o.cStd; ok = o.cStd > 0; }
+  if (k === "dtf") ok = o.cost > 0;
+  return ok ? o : null;
+}
+async function addProducts(k, list) {
+  let n = 0;
+  for (const p of (Array.isArray(list) ? list : Object.values(list || {}))) { const c = cleanProduct(k, p); if (c && await saveProduct(k, c)) n++; }
+  return n;
+}
+
+// ── Copy a blank from another method's catalog (Vendor 2 excluded: its price already includes the decoration) ──
+const BLANK_SOURCES = ["silk", "emb", "dtf"];
+function findElsewhere(code) {
+  if (method === "v2" || !code) return null;
+  code = String(code).toUpperCase();
+  for (const k of BLANK_SOURCES) if (k !== method && cats[k][code]) return { k, p: cats[k][code] };
+  return null;
+}
+function blankCosts(k, p) {
+  if (k === "silk") return { std:p.costStd, x2:p.cost2xl, x3:p.cost3xl };
+  if (k === "emb") return { std:p.cStd, x2:p.c2xl, x3:p.c3xl };
+  return { std:p.cost, x2:p.cost, x3:p.cost };
+}
+function convertProduct(m, src) {
+  const c = blankCosts(src.k, src.p), p = src.p;
+  const o = { code:p.code, name:p.name, desc:p.desc || "", desc_en:p.desc_en || "", desc_es:p.desc_es || "", vendor:p.vendor || "", memo:p.memo || "" };
+  if (m === "silk") Object.assign(o, { costStd:c.std, cost2xl:c.x2, cost3xl:c.x3 });
+  else if (m === "emb") Object.assign(o, { cStd:c.std, c2xl:c.x2, c3xl:c.x3 });
+  else if (m === "dtf") o.cost = c.std;
+  return o;
+}
+async function pullProduct(code, id) {
+  const src = findElsewhere(code); if (!src) return;
+  const prodNew = cleanProduct(method, convertProduct(method, src)); if (!prodNew) return;
+  if (!await saveProduct(method, prodNew)) return;
+  renderCatalog();
+  const it = id != null ? itemById(id) : null;
+  if (it) { it.code = prodNew.code; }
+  renderOrderItems();
+  const qn = it ? q("oiq-" + it.id) : null; if (qn) qn.focus();
+}
+
+// ── Catalog panel ──
+let showCatalog = false, editProduct = null, showImport = false;
+function toggleCatalog() { showCatalog = !showCatalog; editProduct = null; showImport = false; renderCatalog(); }
+function costSummary(p) {
+  if (method === "v2") return ["t2","t4","t8","t16"].map(t => fmt(p[t]||0)).join(" / ");
+  return CAT_FIELDS[method].map(f => fmt(p[f.k]||0)).join(" / ");
+}
+function renderCatalog() {
+  q("catalogLabel").textContent = Object.keys(cat()).length + " products";
+  const panel = q("catalogPanel");
+  if (!showCatalog) { panel.hidden = true; return; }
+  panel.hidden = false;
+  let h = '<div class="catalog-panel"><div class="panel-note">' + METHODS[method].label + ' products · tap one to edit</div>';
+  Object.values(cat()).sort((a,b) => a.code.localeCompare(b.code)).forEach(p => {
+    h += '<div class="catalog-item' + (editProduct === p.code ? ' active' : '') + '" onclick="editProduct=editProduct===\'' + esc(p.code) + '\'?null:\'' + esc(p.code) + '\';renderCatalog()">'
+      + '<span><b>' + esc(p.code) + '</b>' + (p.vendor ? '<span class="vend-tag">' + esc(p.vendor) + '</span>' : '') + ' <span class="muted">— ' + esc(p.name) + '</span></span><span class="mono small">' + costSummary(p) + '</span></div>';
+    if (editProduct === p.code) h += productFormHTML(p);
+  });
+  h += '<button class="add-btn" onclick="editProduct=\'__new__\';renderCatalog()">+ New product</button>';
+  if (editProduct === "__new__") h += productFormHTML(null);
+  h += '<div class="row-end"><button class="mk-link" onclick="exportCatalog(this)">Copy product list</button><button class="mk-link" onclick="showImport=!showImport;renderCatalog()">Paste product list</button></div>';
+  if (showImport) h += '<div class="cat-form"><label class="lbl">Paste a ' + METHODS[method].label + ' product list (from Copy product list, or the translated list Claude sends back)</label><textarea id="importBox" rows="4" class="mono small"></textarea><div class="form-actions"><button class="save-btn" onclick="importCatalog()">Add products</button><button class="cancel-btn" onclick="showImport=false;renderCatalog()">Cancel</button></div><div id="importMsg" class="err-text"></div></div>';
+  panel.innerHTML = h + '</div>';
+}
+function productFormHTML(p) {
+  const isNew = !p;
+  p = p || { code:"", name:"", desc: method === "v2" ? "" : UV };
+  return '<div class="cat-form" onclick="event.stopPropagation()">'
+    + '<div class="form-row"><div style="flex:0 0 90px"><label class="lbl">Code</label><input id="pf_code" value="' + esc(p.code) + '" ' + (isNew ? '' : 'disabled') + ' placeholder="TT11" oninput="this.value=this.value.toUpperCase()"></div>'
+    + '<div style="flex:1"><label class="lbl">Name</label><input id="pf_name" value="' + esc(p.name) + '" placeholder="Product name"></div></div>'
+    + '<label class="lbl">Description (quote)</label><textarea id="pf_desc" rows="2">' + esc(p.desc) + '</textarea>'
+    + '<div class="form-row"><div style="flex:1"><label class="lbl">Description EN (optional)</label><textarea id="pf_den" rows="2" placeholder="Leave empty to translate automatically">' + esc(p.desc_en||"") + '</textarea></div>'
+    + '<div style="flex:1"><label class="lbl">Description ES (optional)</label><textarea id="pf_des" rows="2" placeholder="Leave empty to translate automatically">' + esc(p.desc_es||"") + '</textarea></div></div>'
+    + '<div class="int-box"><div class="int-head">Internal only · never shown to the client</div><div class="form-row"><div style="flex:0 0 180px"><label class="lbl">Vendor (where this price came from)</label><input id="pf_vendor" list="vendorList" value="' + esc(p.vendor||"") + '" placeholder="e.g. SanMar"></div>'
+    + '<div style="flex:1"><label class="lbl">Memo</label><textarea id="pf_memo" rows="2" placeholder="e.g. price checked 11/03, item #, contact…">' + esc(p.memo||"") + '</textarea></div></div></div>'
+    + '<datalist id="vendorList">' + allVendors().map(v => '<option value="' + esc(v) + '">').join("") + '</datalist>'
+    + '<label class="lbl">' + CAT_HINT[method] + '</label><div class="form-row">'
+    + CAT_FIELDS[method].map(f => '<div style="flex:1"><label class="lbl">' + f.l + '</label><input type="number" step="0.01" id="pf_' + f.k + '" value="' + (p[f.k] != null ? p[f.k] : "") + '" placeholder="0.00"></div>').join("")
+    + '</div><div class="form-actions"><button class="save-btn" onclick="saveProductForm()">Save</button>'
+    + (isNew ? '' : '<button class="del-btn" onclick="deleteProductForm(\'' + esc(p.code) + '\')">Delete</button>')
+    + '<button class="cancel-btn" onclick="editProduct=null;renderCatalog()">Cancel</button></div></div>';
+}
+async function saveProductForm() {
+  const raw = { code:q("pf_code").value.trim(), name:q("pf_name").value.trim(), desc:q("pf_desc").value, desc_en:q("pf_den").value, desc_es:q("pf_des").value, vendor:q("pf_vendor").value, memo:q("pf_memo").value };
+  CAT_FIELDS[method].forEach(f => { raw[f.k] = parseFloat(q("pf_" + f.k).value); });
+  const p = cleanProduct(method, raw); if (!p) return;
+  if (!await saveProduct(method, p)) return; editProduct = null; renderCatalog(); renderOrderItems();
+}
+async function deleteProductForm(code) { if (!await removeProduct(method, code)) return; editProduct = null; renderCatalog(); renderOrderItems(); }
+async function exportCatalog(btn) {
+  const txt = JSON.stringify(Object.values(cat()));
+  try { await navigator.clipboard.writeText(txt); btn.textContent = "Copied " + Object.keys(cat()).length + " products"; }
+  catch { showImport = true; renderCatalog(); const b = q("importBox"); b.value = txt; b.select(); }
+  setTimeout(() => { btn.textContent = "Copy product list"; }, 2500);
+}
+async function importCatalog() {
+  let list; try { list = JSON.parse(q("importBox").value); } catch { q("importMsg").textContent = "That text isn't a product list. Use Copy product list, then paste it here."; return; }
+  const n = await addProducts(method, list);
+  showImport = false; renderCatalog(); renderOrderItems();
+  q("catalogLabel").textContent = Object.keys(cat()).length + " products (" + n + " added)";
+}
+
+// ════════════════════════════════════════════
+// LANGUAGE (quote text + mockup images)
+// ════════════════════════════════════════════
+const I18N = {
+  pt: { perPc:" por peça", pcs:n => n + (n === 1 ? " peça" : " peças"), plus:n => n + "+ peças", each:" cada", perPiece:"Preço por peça", code:"Cód.",
+        silk:"Silk Screen", dtf:"DTF Transfer · Colorido", emb:"Bordado", colors:n => n + (n === 1 ? " cor" : " cores"),
+        front:"Frente", back:"Costas", side:"Lateral", sleeve:"Manga", sleeveL:"Manga esquerda", sleeveR:"Manga direita", capBack:"Atrás", place:{ lc:"peito esquerdo", cc:"centro do peito", ff:"frente inteira", cf:"centro", lf:"lado esquerdo", rf:"lado direito" },
+        extra:n => n + " extra" + (n > 1 ? "s" : "") + " (manga)",
+        screens:n => n + " telas", once:"Cobrado uma única vez para o pedido todo. ",
+        oneTime:n => "Taxa única para criar " + (n > 1 ? "as telas" : "a tela") + " de impressão da sua arte. ",
+        kept:n => n > 1 ? "As telas ficam salvas e não são cobradas nos próximos pedidos." : "A tela fica salva e não é cobrada nos próximos pedidos.",
+        digit:"Digitalização", digitNote:"Taxa única para preparar sua arte para o bordado.",
+        tierNote:"A faixa de preço vale pela quantidade total do pedido. Pode misturar modelos e cores do mesmo tom.",
+        tierNoteMix:"A faixa de preço vale pela quantidade total do pedido. Pode misturar modelos e cores.",
+        ship:(a,b,bd) => "Frete grátis · Produção: " + a + " a " + b + " dias" + (bd ? " úteis" : "") + " após aprovação da arte",
+        total:"Total", order:"Pedido",
+        disclaimer:"Mockup ilustrativo. A prova final é enviada para aprovação após a confirmação do pedido." },
+  en: { perPc:" per piece", pcs:n => n + " pcs", plus:n => n + "+ pcs", each:" each", perPiece:"Price per piece", code:"Code",
+        silk:"Screen print", dtf:"DTF transfer · Full color", emb:"Embroidery", colors:n => n + (n === 1 ? " color" : " colors"),
+        front:"Front", back:"Back", side:"Side", sleeve:"Sleeve", sleeveL:"Left sleeve", sleeveR:"Right sleeve", capBack:"Back", place:{ lc:"left chest", cc:"center chest", ff:"full front", cf:"center", lf:"left side", rf:"right side" },
+        extra:n => n + " extra (sleeve" + (n > 1 ? "s" : "") + ")",
+        screens:n => n + " screens", once:"Charged only once for the whole order. ",
+        oneTime:n => "One-time fee to create the print screen" + (n > 1 ? "s" : "") + " for your artwork. ",
+        kept:n => n > 1 ? "The screens are kept on file and aren't charged again on future orders." : "The screen is kept on file and isn't charged again on future orders.",
+        digit:"Digitizing", digitNote:"One-time fee to prepare your artwork for embroidery.",
+        tierNote:"Pricing is based on the total order quantity. You can mix styles and colors of the same tone.",
+        tierNoteMix:"Pricing is based on the total order quantity. You can mix styles and colors.",
+        ship:(a,b,bd) => "Free shipping · Production: " + a + "–" + b + (bd ? " business" : "") + " days after artwork approval",
+        total:"Total", order:"Order",
+        disclaimer:"Illustrative mockup. The final proof is sent for approval after the order is confirmed." },
+  es: { perPc:" por pieza", pcs:n => n + (n === 1 ? " pieza" : " piezas"), plus:n => n + "+ piezas", each:" c/u", perPiece:"Precio por pieza", code:"Cód.",
+        silk:"Serigrafía", dtf:"Transfer DTF · A todo color", emb:"Bordado", colors:n => n + (n === 1 ? " color" : " colores"),
+        front:"Frente", back:"Espalda", side:"Lateral", sleeve:"Manga", sleeveL:"Manga izquierda", sleeveR:"Manga derecha", capBack:"Atrás", place:{ lc:"pecho izquierdo", cc:"centro del pecho", ff:"frente completo", cf:"centro", lf:"lado izquierdo", rf:"lado derecho" },
+        extra:n => n + " extra" + (n > 1 ? "s" : "") + " (manga)",
+        screens:n => n + " pantallas", once:"Se cobra una sola vez por todo el pedido. ",
+        oneTime:n => "Cargo único para crear " + (n > 1 ? "las pantallas" : "la pantalla") + " de impresión de su arte. ",
+        kept:n => n > 1 ? "Las pantallas quedan guardadas y no se cobran en los próximos pedidos." : "La pantalla queda guardada y no se cobra en los próximos pedidos.",
+        digit:"Digitalización", digitNote:"Cargo único para preparar su arte para el bordado.",
+        tierNote:"El precio se basa en la cantidad total del pedido. Puede combinar modelos y colores del mismo tono.",
+        tierNoteMix:"El precio se basa en la cantidad total del pedido. Puede combinar modelos y colores.",
+        ship:(a,b,bd) => "Envío gratis · Producción: " + a + " a " + b + " días" + (bd ? " hábiles" : "") + " después de aprobar el arte",
+        total:"Total", order:"Pedido",
+        disclaimer:"Mockup ilustrativo. La prueba final se envía para aprobación después de confirmar el pedido." },
+};
+function T() { return I18N[quoteLang] || I18N.pt; }
+function sideLabel(side, cap) { const L = T(); return side === "back" ? (cap ? L.capBack : L.back) : side === "side" ? (cap ? L.side : L.sleeveL) : side === "rside" ? L.sleeveR : L.front; }
+function setQuoteLang(l) { quoteLang = l; renderQuote(); renderMockRows(true); }
+// Product descriptions: your EN/ES text wins; otherwise common phrases are translated.
+const DESC_PHRASES = [
+  ["Tecido com secagem rápida", "Quick-dry fabric", "Tela de secado rápido"], ["Tecido com secagem rapida", "Quick-dry fabric", "Tela de secado rápido"],
+  ["Secagem rápida", "Quick-dry", "Secado rápido"], ["Secagem rapida", "Quick-dry", "Secado rápido"],
+  ["Proteção UV", "UV protection", "Protección UV"], ["Protecao UV", "UV protection", "Protección UV"],
+  ["poliéster microfibra", "microfiber polyester", "poliéster microfibra"],
+  ["poliéster/algodão", "polyester/cotton", "poliéster/algodón"],
+  ["poliéster", "polyester", "poliéster"], ["algodão", "cotton", "algodón"], ["Algodao", "Cotton", "Algodón"], ["Algodão", "Cotton", "Algodón"],
+  ["Anti-odor", "Odor control", "Antiolor"], ["Não amassa", "Wrinkle-resistant", "No se arruga"],
+  ["Manga raglan", "Raglan sleeves", "Manga raglán"],
+  ["Elasticidade mecânica (sem spandex)", "Mechanical stretch (no spandex)", "Elasticidad mecánica (sin spandex)"],
+  ["Não puxa fio", "Snag-resistant", "No se engancha"], ["Alta durabilidade em lavagens", "Holds up wash after wash", "Alta durabilidad en lavados"],
+  ["Gola V", "V-neck", "Cuello en V"], ["Gola redonda", "Crew neck", "Cuello redondo"],
+  ["Bolsos frontais com loop para acessórios", "Front pockets with accessory loop", "Bolsillos frontales con presilla para accesorios"],
+  ["Abertura lateral", "Side vents", "Aberturas laterales"],
+  ["Manga longa", "Long sleeve", "Manga larga"], ["Manga curta", "Short sleeve", "Manga corta"],
+  ["Polo feminino", "Women's polo", "Polo de mujer"],
+  ["Tecido leve", "Lightweight fabric", "Tela ligera"], ["Tecido macio", "Soft fabric", "Tela suave"], ["Respirável", "Breathable", "Transpirable"],
+  ["Unissex", "Unisex", "Unisex"], ["Feminina", "Women's", "De mujer"], ["Masculina", "Men's", "De hombre"],
+];
+function descFor(p) {
+  if (!p) return "";
+  if (quoteLang === "pt") return p.desc || "";
+  const own = p["desc_" + quoteLang]; if (own && own.trim()) return own;
+  let d = p.desc || ""; const col = quoteLang === "en" ? 1 : 2;
+  DESC_PHRASES.forEach(r => { d = d.split(r[0]).join(r[col]); });
+  return d;
+}
+// "Frente (peito esquerdo) + Costas" from a style's views.
+function placeText(views, extras) {
+  const L = T(), parts = views.map(([side, place]) => side === "back" ? (place === "cb" ? L.capBack : L.back) : side === "side" ? L.side : L.front + " (" + (L.place[place] || L.place.lc) + ")");
+  let t = parts.join(" + ");
+  if (extras > 0) t += " + " + L.extra(extras);
+  return t;
+}
+
+// ════════════════════════════════════════════
+// SUPPLIER SHIPPING SPLIT (Silk Screen + DTF Vendor 1)
+// ════════════════════════════════════════════
+const SUPPLIER_LIST = ["S&S Activewear", "SanMar"];
+function supplierOf(it) { const p = cat()[(it.code || "").toUpperCase()]; return (it.supplier || "").trim() || (p && p.vendor) || SUPPLIER_LIST[0]; }
+function supplierGroups() { const g = {}; validItems().forEach(it => { const k = supplierOf(it).toLowerCase(); g[k] = (g[k] || 0) + itemQty(it); }); return g; }
+function shipQtyFor(it) { const t = totalQty(); if (!splitSuppliers || !METHODS[method].split) return t; return supplierGroups()[supplierOf(it).toLowerCase()] || t; }
+function tierShipQty(t) { if (!splitSuppliers || !METHODS[method].split) return t; return t / (Object.keys(supplierGroups()).length || 1); }
+function toggleSplitSuppliers(on) { splitSuppliers = on; renderOrderItems(); }
+function onSupplier(id, v) { const it = itemById(id); if (it) { it.supplier = v; updateOrderResults(); } }
+
+function validItems() { return orderItems.filter(it => cat()[(it.code||"").toUpperCase()]); }
+// Sizes: XS–XL in the Qty box; 2XL / 3XL boxes appear when "+ 2XL / 3XL" is turned on (Silk Screen and Embroidery).
+const SIZE_COST = { silk:{ std:"costStd", x2:"cost2xl", x3:"cost3xl" }, emb:{ std:"cStd", x2:"c2xl", x3:"c3xl" } };
+const SIZE_LABEL = { std:"XS–XL", x2:"2XL", x3:"3XL" };
+function hasSizes(it) { return !!(SIZE_COST[method] && it.sizes); }
+function sizeQtys(it) { const o = { std: parseInt(it.qty) || 0 }; if (hasSizes(it)) { o.x2 = parseInt(it.q2) || 0; o.x3 = parseInt(it.q3) || 0; } return o; }
+function itemQty(it) { const z = sizeQtys(it); return z.std + (z.x2 || 0) + (z.x3 || 0); }
+function sizeCost(it, size) { const p = prod(it), f = SIZE_COST[method]; return f ? (p[f[size || "std"]] || p[f.std]) : 0; }
+// Price per size that has pieces: [{ size, q, r }]
+function sizeLines(it) { return Object.entries(sizeQtys(it)).filter(([, n]) => n > 0).map(([size, n]) => ({ size, q:n, r: METHODS[method].price(it, size) })).filter(l => l.r); }
+function totalQty() { return validItems().reduce((s, it) => s + itemQty(it), 0); }
+function prod(it) { return cat()[(it.code||"").toUpperCase()]; }
+// ── Free supplier shipping: blanks from one supplier at $200+ ship free (Silk, DTF Vendor 1, Embroidery) ──
+function blankSubtotal(it) {
+  const p = prod(it); if (!p) return 0;
+  if (!SIZE_COST[method]) return (p.cost || 0) * itemQty(it);
+  return Object.entries(sizeQtys(it)).reduce((s, [size, n]) => s + sizeCost(it, size) * n, 0);
+}
+// Blank subtotal of the supplier order this style ships in (its supplier group when suppliers are split).
+function groupBlankSubtotal(it) {
+  const split = splitSuppliers && METHODS[method].split, k = supplierOf(it).toLowerCase();
+  return validItems().filter(o => !split || supplierOf(o).toLowerCase() === k).reduce((s, o) => s + blankSubtotal(o), 0);
+}
+function shipWaived(subtotal) { return shipMode === "off" || (shipMode === "auto" && subtotal >= freeShipMin); }
+function suppShipFor(it, amt) { return shipWaived(groupBlankSubtotal(it)) ? 0 : amt; }
+// Tier breaks: assume the tier's pieces of this style (split across suppliers when on).
+function tierSuppShip(cost, t, amt) { return shipWaived(cost * tierShipQty(t)) ? 0 : amt; }
+function displayName(it, p) { return (method === "v2" && it.name && it.name.trim()) ? it.name.trim() : (p ? p.name : ""); }
+
+// ════════════════════════════════════════════
+// METHOD ENGINES — each keeps the formula from its own calculator
+// ════════════════════════════════════════════
+// ── Silk Screen ──
+const RATES = {1:1.10, 2:1.30, 3:1.50, 4:1.50}, MINS = {1:24, 2:24, 3:36, 4:48};
+const SCREEN = 15, SHIP_IN = 30, SHIP_OUT = 25;
+function silkCalc(blankCost, tq, shipQty, shipIn) {
+  shipQty = shipQty || tq; shipIn = shipIn == null ? SHIP_IN : shipIn;
+  const rate = RATES[numColors], minQ = MINS[numColors], totalSpots = numSides + extraSpots;
+  const divisor = blankCost < 3 ? 0.50 : 0.55;
+  const blankRetail = ceil10(blankCost / divisor + shipIn / shipQty);
+  const printCostVendor = tq < minQ ? (rate * minQ * totalSpots) / tq : rate * totalSpots;
+  const printAddon = ceil10(printCostVendor * 2 + SHIP_OUT / tq);
+  const perPiece = blankRetail + printAddon;
+  const unitCost = blankCost + shipIn / shipQty + printCostVendor + SHIP_OUT / tq;
+  return { perPiece, unitCost, divisor, shipQty, shipIn, blankRetail, printAddon };
+}
+function silkViews() {
+  if (numSides === 2) return [["front", mk.frontPlace], ["back", "fb"]];
+  return mk.oneSide === "back" ? [["back", "fb"]] : [["front", mk.frontPlace]];
+}
+// ── DTF Vendor 1 ──
+const DTF_PL = [
+  { id:"lc", label:"Left Chest", vendorCost:3.5, retail:8, views:[["front","lc"]] },
+  { id:"front", label:"Full Front", vendorCost:7, retail:15, views:[["front","ff"]] },
+  { id:"back", label:"Full Back", vendorCost:7, retail:15, views:[["back","fb"]] },
+  { id:"front_back", label:"Front + Back", vendorCost:14, retail:30, views:[["front","ff"],["back","fb"]] },
+  { id:"lc_fb", label:"LC + Full Back", vendorCost:10.5, retail:20, views:[["front","lc"],["back","fb"]] },
+];
+const DTF_EXTRA = { small:{ vendorCost:3.5, retail:8 }, large:{ vendorCost:7, retail:15 } };
+function dtfPl(it) { return DTF_PL.find(p => p.id === it.placementId) || DTF_PL[0]; }
+function dtfCalc(cost, pl, tq, shipQty, es, esz, shipIn) {
+  shipQty = shipQty || tq; shipIn = shipIn == null ? 30 : shipIn;
+  const ex = DTF_EXTRA[esz || "small"], divisor = cost < 3 ? 0.5 : 0.55;
+  const blankRetail = cost / divisor + shipIn / shipQty;
+  const printAddon = pl.retail + (es * ex.retail) + 20 / tq;
+  const totalRetail = round10(blankRetail + printAddon);
+  const totalCost = cost + pl.vendorCost + (es * ex.vendorCost) + shipIn / shipQty + 20 / tq;
+  return { perPiece: totalRetail, unitCost: totalCost, divisor, shipQty, shipIn };
+}
+// ── DTF / Embroidery Vendor 2 ──
+const BLIND_SHIP = 10, V2_SHIPPING = 16, V2_SHIP_THRESHOLD = 59, V2_TIERS = [2,4,8,16];
+const V2_PL = [
+  { id:"lc", label:"Left Chest", views:[["front","lc"]] },
+  { id:"front", label:"Full Front", views:[["front","ff"]] },
+  { id:"back", label:"Full Back", views:[["back","fb"]] },
+  { id:"fb", label:"Front + Back", views:[["front","ff"],["back","fb"]] },
+  { id:"lc_fb", label:"LC + Full Back", views:[["front","lc"],["back","fb"]] },
+];
+function v2Pl(it) { return V2_PL.find(p => p.id === it.placementId) || V2_PL[1]; }
+function v2Tier(qty) { for (let i = V2_TIERS.length - 1; i >= 0; i--) if (qty >= V2_TIERS[i]) return V2_TIERS[i]; return V2_TIERS[0]; }
+function v2VendorPrice(it) { const p = prod(it); return p ? (p["t" + v2Tier(parseInt(it.qty)||0)] || 0) : 0; }
+function v2Fees(vendorSub) { const ship = vendorSub < V2_SHIP_THRESHOLD ? V2_SHIPPING : 0; return { ship, fees: ship + BLIND_SHIP + (parseFloat(v2Protection) || 0) }; }
+function v2Order() {
+  let vendorSub = 0;
+  validItems().forEach(it => { const vp = v2VendorPrice(it), qn = parseInt(it.qty) || 0; if (vp > 0 && qn > 0) vendorSub += vp * qn; });
+  const f = v2Fees(vendorSub), tq = totalQty();
+  return { vendorSub, ...f, fpu: tq > 0 ? f.fees / tq : 0 };
+}
+function v2Base(vp) { return vp >= 20 ? vp / 0.55 : vp * 2; }
+// ── Embroidery ──
+const EMB_PL = [ { id:"lc", label:"Left Chest", views:[["front","lc"]] }, { id:"cc", label:"Center Chest", views:[["front","cc"]] } ];
+const DIG_COST = 5, DIG_RETAIL = 20;
+function embPl(it) { return EMB_PL.find(p => p.id === it.placementId) || EMB_PL[0]; }
+// Caps: Center / Left / Right front, plus optional Side and Back spots (each with its own photo on the mockup).
+const CAP_PL = [ { id:"cf", label:"Center Front" }, { id:"lf", label:"Left Front" }, { id:"rf", label:"Right Front" } ];
+const CAP_WORDS = /\b(cap|caps|bon[eé]s?|hat|hats|snapback|trucker|visor|beanie)\b/i;
+function isCap(it) { if (!it) return false; if (it.garment) return it.garment === "cap"; const p = cat()[(it.code||"").toUpperCase()]; return !!p && CAP_WORDS.test((p.name || "") + " " + (p.desc || "")); }
+function capItem(it) { return method === "emb" && isCap(it); }
+// Print views: only the spots that get embroidery (used for the quote text).
+function embPrintViews(it) {
+  if (!isCap(it)) return embPl(it).views;
+  const pl = CAP_PL.some(c => c.id === it.capPlace) ? it.capPlace : "cf", v = [["front", pl]];
+  if (it.capSide) v.push(["side", "sd"]); if (it.capBack) v.push(["back", "cb"]);
+  return v;
+}
+// Mockup views: caps also show the side and back as plain photos ("none" = no logo), unless turned off.
+function embViews(it) {
+  if (!isCap(it)) return embPl(it).views;
+  const v = embPrintViews(it);
+  if (!it.capSide && it.showSide !== false) v.splice(1, 0, ["side", "none"]);
+  if (!it.capBack && it.showBack !== false) v.push(["back", "none"]);
+  return v;
+}
+function photoOnly(it, side) { return placeOf(it, side) === "none"; }
+// Optional views are skipped in the image when their photo is missing (cap side/back, shirt sleeve).
+function optView(it, side) { return photoOnly(it, side) || (side === "side" && !capItem(it)) || side === "rside"; }
+// Shirt sleeves get the logo for each extra spot (sleeve print), left sleeve first; the rest are plain photos.
+function sleeveSpots(it) {
+  if (method === "silk") return extraSpots;
+  if (method === "dtf") return it.extraSpots || 0;
+  if (method === "emb") return isCap(it) ? 0 : (it.extraSpots || 0);
+  return 0;
+}
+function sleevePrinted(it) { return sleeveSpots(it) > 0; }
+function embSpots(it) { if (!it) return 0; if (isCap(it)) return (it.capSide ? 1 : 0) + (it.capBack ? 1 : 0); return Math.min(2, it.extraSpots || 0); }
+// Digitizing: one per embroidery location (main spot + extra spots), using the style with the most spots.
+function embDigCount() { return 1 + validItems().reduce((m, it) => Math.max(m, embSpots(it)), 0); }
+function embCalc(blank, tq, extra, suppShip) {
+  const spots = 1 + (extra || 0);
+  // Both shippings are pass-through: added to the client's price (÷ total pieces) and counted in your cost.
+  const ship = ((suppShip == null ? embSet.suppShip : suppShip) + embSet.clientShip) / tq;
+  const rp = ceil10((blank * 2) + (embSet.rate * 2 * spots) + ship);
+  const cp = blank + embSet.rate * spots + ship;
+  return { perPiece: rp, unitCost: cp };
+}
+
+const METHODS = {
+  silk: {
+    label:"Silk Screen", min:10, tiers:[10,15,20,25], split:true,
+    views: it => silkViews(),
+    print: it => T().silk + " · " + T().colors(numColors) + " · " + placeText(silkViews(), extraSpots),
+    price(it, size) { const c = sizeCost(it, size), r = silkCalc(c, totalQty(), shipQtyFor(it), suppShipFor(it, SHIP_IN)); return { ...r, detail: fmt(c) + "÷" + r.divisor + (r.shipIn ? " + $" + r.shipIn + "/" + r.shipQty : " + free supplier ship") + " + print + $25/" + totalQty() }; },
+    tierPrice(it, t, size) { return silkCalc(sizeCost(it, size), t, tierShipQty(t), tierSuppShip(sizeCost(it, "std"), t, SHIP_IN)).perPiece; },
+    setup() { const n = numColors * (numSides + extraSpots), multi = validItems().length > 1, L = T();
+      return { total: n * SCREEN, cost: 0, lines: ["Screen setup: " + fmt(n * SCREEN) + (n > 1 ? " (" + L.screens(n) + ")" : ""), (multi ? L.once : L.oneTime(n)) + L.kept(n)] }; },
+    ship: () => T().ship(7, 12, false), tierNote: () => T().tierNote,
+  },
+  dtf: {
+    label:"DTF · Vendor 1", min:0, tiers:[4,8,16,32], split:true,
+    views: it => dtfPl(it).views,
+    print: it => T().dtf + " · " + placeText(dtfPl(it).views, it.extraSpots || 0),
+    price(it) { const p = prod(it), pl = dtfPl(it), r = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, it.extraSize, suppShipFor(it, 30));
+      const ex = DTF_EXTRA[it.extraSize || "small"];
+      return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() }; },
+    tierPrice(it, t) { const c = prod(it).cost; return dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, it.extraSize, tierSuppShip(c, t, 30)).perPiece; },
+    setup: () => null, ship: () => T().ship(7, 10, false), tierNote: () => T().tierNoteMix,
+  },
+  v2: {
+    label:"DTF / Emb · Vendor 2", min:0, tiers:[2,4,8,16], split:false,
+    views: it => v2Pl(it).views,
+    print: it => (it.decoration === "emb" ? T().emb : T().dtf) + " · " + placeText(v2Pl(it).views, 0),
+    price(it) { const vp = v2VendorPrice(it), o = v2Order(), qn = parseInt(it.qty) || 0;
+      if (!(vp > 0)) return null;
+      const r = round10(v2Base(vp) + o.fpu);
+      return { perPiece: r, unitCost: vp + o.fpu, detail: fmt(vp) + (vp >= 20 ? " ÷ 0.55" : " × 2") + " (" + v2Tier(qn) + "pc) + " + fmt(o.fpu) + " fees/unit" }; },
+    tierPrice(it, t) { const p = prod(it), vp = p ? (p["t" + t] || 0) : 0; if (!(vp > 0)) return null; return round10(v2Base(vp) + v2Fees(vp * t).fees / t); },
+    setup: () => null,
+    ship: () => validItems().length && validItems().every(it => it.decoration === "emb") ? T().ship(6, 8, true) : T().ship(7, 10, false),
+    tierNote: () => T().tierNoteMix,
+  },
+  emb: {
+    label:"Embroidery", min:6, tiers:[6,12,24,48], split:false,
+    views: it => embViews(it),
+    print: it => T().emb + " · " + placeText(embPrintViews(it), isCap(it) ? 0 : embSpots(it)),
+    price(it, size) { const c = sizeCost(it, size), es = embSpots(it), sp = suppShipFor(it, embSet.suppShip), r = embCalc(c, totalQty(), es, sp);
+      return { ...r, detail: fmt(c) + "×2 + " + fmt(embSet.rate) + "×2" + (es > 0 ? "×" + (1 + es) + " spots" : "") + " + $" + (sp + embSet.clientShip) + " ship/" + totalQty() + (sp ? "" : " (supplier ship free)") }; },
+    tierPrice(it, t, size) { return embCalc(sizeCost(it, size), t, embSpots(it), tierSuppShip(sizeCost(it, "std"), t, embSet.suppShip)).perPiece; },
+    setup() { if (!embSet.dig) return null; const L = T(), n = embDigCount();
+      return { total: n * DIG_RETAIL, cost: n * DIG_COST, lines: [L.digit + ": " + (n > 1 ? n + " × " + fmt(DIG_RETAIL) + " = " : "") + fmt(n * DIG_RETAIL), L.digitNote] }; },
+    ship: () => T().ship(6, 8, true), tierNote: () => T().tierNoteMix,
+  },
+};
+function viewsOf(it) {
+  const v = METHODS[method].views(it).slice();
+  if (!capItem(it)) {
+    const sl = []; if (it.showSleeve) sl.push("side"); if (it.showRSleeve) sl.push("rside");
+    const n = sleeveSpots(it);
+    sl.forEach((sd, i) => v.push([sd, i < n ? (sd === "side" ? "sl" : "sr") : "none"]));
+  }
+  return v;
+}
+// Optional logo just for this style (e.g. a different file for the apron than for the polos).
+function itemLogoHTML(it) {
+  const pick = 'mk.logoPick=\'item:' + it.id + '\';document.getElementById(\'mkLogoFile\').click()';
+  if (!it.logo) return '<div class="mk-status" style="margin-top:6px"><span>Uses the main client logo.</span><button class="mk-link" onclick="' + pick + '">Use a different logo for this style</button></div>';
+  return '<div class="mk-logo" style="margin-top:8px" ondragover="event.preventDefault()" ondrop="dropItemLogo(event,\'' + it.id + '\')"><img src="' + it.logo.url + '" alt="">'
+    + '<div class="grow"><b style="color:#1A1A1A">Logo for this style</b><br>Only ' + esc(it.code.toUpperCase()) + ' uses this file.'
+    + '<label class="mk-inline"><input type="checkbox" ' + (it.logo.removeWhite ? 'checked' : '') + ' onchange="setRemoveWhite(\'item:' + it.id + '\',this.checked)"> Remove white background</label>'
+    + '<button class="mk-link" onclick="clearItemLogo(\'' + it.id + '\')">Use the main logo</button></div>'
+    + '<button class="mk-link" onclick="' + pick + '">Change</button></div>';
+}
+function clearItemLogo(id) { const it = itemById(id); if (!it) return; it.logo = null; clearBoxesFor(it.id); mk.sig = ""; renderMockRows(true); renderEditor(); }
+function dropItemLogo(e, id) { e.preventDefault(); const f = [...(e.dataTransfer.files||[])].find(f => f.type.startsWith("image/")); if (f) handleLogoFile(f, "item:" + id); }
+function sleeveChecksHTML(it) {
+  const vs = viewsOf(it), st = sd => { const v = vs.find(x => x[0] === sd); return v ? (v[1] === "none" ? " · photo only" : " · with print") : ""; };
+  const cb = (f, sd, label) => '<label class="mk-inline"><input type="checkbox" ' + (it[f] ? 'checked' : '') + ' onchange="toggleSleeve(\'' + it.id + '\',\'' + f + '\')"> ' + label + st(sd) + '</label>';
+  return '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">' + cb("showSleeve", "side", "Left sleeve") + cb("showRSleeve", "rside", "Right sleeve") + '</div>';
+}
+function toggleSleeve(id, f) { const it = itemById(id); if (!it) return; f = f || "showSleeve"; it[f] = !it[f]; if (mk.edit && String(mk.edit.id) === String(id)) mk.edit = null; mk.sig = ""; renderMockRows(true); }
+function itemPrint(it) { return METHODS[method].print(it); }
+function methodLabel() { return method === "silk" ? T().silk : method === "emb" ? T().emb : T().dtf; }
+function showTiers() { return !!tierPref[method]; }
+
+// ════════════════════════════════════════════
+// METHOD TABS + SETTINGS
+// ════════════════════════════════════════════
+function setMethod(m) {
+  if (m === method) return;
+  method = m;
+  const valid = { silk:null, dtf:DTF_PL, v2:V2_PL, emb:EMB_PL }[m];
+  orderItems.forEach(it => { if (valid && !valid.some(p => p.id === it.placementId)) it.placementId = defaultPlacement(m); });
+  showCatalog = false; editProduct = null; mk.sig = ""; mk.edit = null;
+  renderAll();
+}
+function renderMethodTabs() {
+  q("methodTabs").innerHTML = METHOD_KEYS.map(k => '<button class="mtab' + (k === method ? ' active' : '') + '" onclick="setMethod(\'' + k + '\')">' + METHODS[k].label + '</button>').join("");
+}
+function renderSettings() {
+  renderSettingsBody();
+  if (["silk", "dtf", "emb"].includes(method)) { const el = q("settingsCard"), y = q("ymqBox"), h = shipCtlHTML(); if (y) y.insertAdjacentHTML("beforebegin", h); else el.insertAdjacentHTML("beforeend", h); }
+}
+function renderSettingsBody() {
+  const el = q("settingsCard");
+  if (method === "silk") {
+    const btns = (fn, vals, cur, labels) => vals.map((v, i) => '<button class="btn' + (v === cur ? ' active' : '') + '" onclick="' + fn + '(' + v + ')">' + labels[i] + '</button>').join("");
+    const n = numColors * (numSides + extraSpots);
+    el.innerHTML = '<div class="card-label">Print Options</div>'
+      + '<label class="lbl">Ink colors</label><div class="btn-group">' + btns("setColors", [1,2,3,4], numColors, ["1 Color","2 Colors","3 Colors","4 Colors"]) + '</div>'
+      + '<div class="info-row"><span>Vendor rate</span><span class="mono">' + fmt(RATES[numColors]) + '/pc/spot · Min ' + MINS[numColors] + ' pcs</span></div>'
+      + '<label class="lbl" style="margin-top:12px">Placement</label><div class="btn-group">' + btns("setSides", [1,2], numSides, ["One side","Front + Back"]) + '</div>'
+      + '<label class="lbl" style="margin-top:12px">Extra spots (sleeves, etc.)</label><div class="btn-group">' + btns("setExtra", [0,1,2], extraSpots, ["None","+1 Spot","+2 Spots"]) + '</div>'
+      + '<div class="setup-row"><span>Screen setup (one-time)</span><span class="mono strong">' + n + ' x ' + fmt(SCREEN) + ' = ' + fmt(n * SCREEN) + '</span></div>'
+      + '<details class="ymq" id="ymqBox"' + (ymqOpen ? ' open' : '') + ' ontoggle="ymqOpen=this.open;if(this.open)renderYmq()"><summary>Shopify / YMQ tier reference</summary><div id="ymqBody"></div></details>';
+    if (ymqOpen) renderYmq();
+  } else if (method === "dtf") {
+    el.innerHTML = '<div class="card-label">DTF · Vendor 1</div><div class="panel-note">Each style picks its own placement and extra spots below. Supplier shipping ($30) and client shipping ($20) are split across the order.</div>';
+  } else if (method === "v2") {
+    const o = v2Order();
+    el.innerHTML = '<div class="card-label">Internal costs <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">(not shown in the quote)</span></div>'
+      + '<div class="fee-row"><span>Vendor shipping <small>$16 if vendor subtotal is under $59</small></span><span class="mono strong" id="v2ShipVal">' + fmt(o.ship) + '</span></div>'
+      + '<div class="fee-row"><span>Blind ship</span><span class="mono strong">' + fmt(BLIND_SHIP) + '</span></div>'
+      + '<div class="fee-row"><span>Purchase protection <small>Amount from the vendor</small></span><input type="number" step="0.01" min="0" id="v2Prot" value="' + esc(v2Protection) + '" placeholder="0.00" oninput="v2Protection=this.value;updateOrderResults()"></div>';
+  } else {
+    el.innerHTML = '<div class="card-label">Embroidery</div>'
+      + '<div class="fee-row"><span>Rate / piece <small>retail ×2 = <b id="embRetail">' + fmt(embSet.rate * 2) + '</b></small></span><input type="number" step="0.01" min="0" value="' + embSet.rate + '" oninput="embSet.rate=parseFloat(this.value)||0;q(\'embRetail\').textContent=fmt(embSet.rate*2);updateOrderResults()"></div>'
+      + '<div class="fee-row"><span>Digitizing <small>$5 cost / $20 retail per location, once</small></span><label class="switch"><input type="checkbox" ' + (embSet.dig ? 'checked' : '') + ' onchange="embSet.dig=this.checked;updateOrderResults()"><span></span></label></div>'
+      + '<div class="fee-row"><span>Supplier shipping <small>÷ total pcs, added to price</small></span><input type="number" step="0.01" min="0" value="' + embSet.suppShip + '" oninput="embSet.suppShip=parseFloat(this.value)||0;updateOrderResults()"></div>'
+      + '<div class="fee-row"><span>Client shipping <small>÷ total pcs, added to price</small></span><input type="number" step="0.01" min="0" value="' + embSet.clientShip + '" oninput="embSet.clientShip=parseFloat(this.value)||0;updateOrderResults()"></div>';
+  }
+}
+function shipCtlHTML() {
+  const b = (v, l) => '<button class="btn' + (shipMode === v ? ' active' : '') + '" onclick="setShipMode(\'' + v + '\')">' + l + '</button>';
+  return '<div class="ship-ctl" style="margin-top:12px;padding-top:12px;border-top:1px solid #F0F0F0"><label class="lbl">Supplier shipping</label><div class="btn-group">' + b("auto", "Auto") + b("on", "Charge") + b("off", "Free") + '</div>'
+    + (shipMode === "auto" ? '<div class="fee-row" style="margin-top:8px"><span>Free when blanks reach <small>vendor blank cost × pieces</small></span><input type="number" step="1" min="0" value="' + freeShipMin + '" oninput="freeShipMin=parseFloat(this.value)||0;updateOrderResults()"></div>'
+      : '<div class="info-row"><span>' + (shipMode === "on" ? "Always added to the price, whatever the order size." : "Never added. Use when the supplier waives shipping.") + '</span></div>') + '</div>';
+}
+function setShipMode(m) { shipMode = m; renderSettings(); updateOrderResults(); }
+function setColors(n) { numColors = n; renderSettings(); updateOrderResults(); }
+function setSides(n) { numSides = n; mk.sig = ""; renderSettings(); updateOrderResults(); renderMockup(); }
+function setExtra(n) { extraSpots = n; renderSettings(); updateOrderResults(); renderPlacement(); }
+
+// ── Silk: Shopify / YMQ tier reference (kept from the Silk Screen calculator) ──
+let ymqOpen = false, ymqCosts = { std:7.47, x2:8.50, x3:10.56 };
+function ymqCalc(blankCost, qty) {
+  const rate = RATES[numColors], minQ = MINS[numColors], spots = numSides + extraSpots, div = blankCost < 3 ? 0.50 : 0.55;
+  const blankRetail = Math.ceil((blankCost / div + SHIP_IN / qty) * 10) / 10;
+  const pcv = qty < minQ ? (rate * minQ * spots) / qty : rate * spots;
+  const printAddon = Math.ceil((pcv * 2 + SHIP_OUT / qty) * 10) / 10;
+  const perPiece = blankRetail + printAddon, profit = perPiece - (blankCost + SHIP_IN / qty + pcv) - SHIP_OUT / qty;
+  return { blankRetail, printAddon, perPiece, profit };
+}
+function ymqTiers() {
+  if (numColors <= 2) return [{label:"10-19 pcs",qty:10},{label:"20-24 pcs",qty:20},{label:"25+ pcs",qty:25}];
+  if (numColors === 3) return [{label:"10-19 pcs",qty:10},{label:"20-35 pcs",qty:20},{label:"36+ pcs",qty:36}];
+  return [{label:"10-19 pcs",qty:10},{label:"20-47 pcs",qty:20},{label:"48+ pcs",qty:48}];
+}
+function renderYmq() {
+  const body = q("ymqBody"); if (!body) return;
+  const costs = [{label:"XS - XL", k:"std"}, {label:"2XL", k:"x2"}, {label:"3XL", k:"x3"}];
+  const tiers = ymqTiers();
+  let h = '<div class="form-row" style="margin-top:10px">' + costs.map(c => '<div style="flex:1"><label class="lbl">' + c.label + ' blank</label><input type="number" step="0.01" value="' + ymqCosts[c.k] + '" oninput="ymqCosts.' + c.k + '=parseFloat(this.value)||0;renderYmqTable()"></div>').join("") + '</div>';
+  h += '<div class="panel-note">Load a product: ' + Object.values(cats.silk).map(p => '<button class="mk-link" onclick="ymqCosts={std:' + p.costStd + ',x2:' + p.cost2xl + ',x3:' + p.cost3xl + '};renderYmq()">' + esc(p.code) + '</button>').join(" · ") + '</div>';
+  h += '<div class="table-wrap"><table class="tier-table" id="ymqTable"></table></div><div id="ymqBreak"></div>';
+  body.innerHTML = h; renderYmqTable();
+}
+function renderYmqTable() {
+  const costs = [{label:"XS - XL", c:ymqCosts.std}, {label:"2XL", c:ymqCosts.x2}, {label:"3XL", c:ymqCosts.x3}], tiers = ymqTiers();
+  let t = '<tr><th>Size</th><th>Tier</th><th class="right">Blank</th><th class="right">Add-on</th><th class="right">Total</th><th class="right">Profit</th></tr>';
+  costs.forEach(c => tiers.forEach((tr, i) => { const r = ymqCalc(c.c, tr.qty);
+    t += '<tr>' + (i === 0 ? '<td class="label-cell" rowspan="' + tiers.length + '">' + c.label + '</td>' : '') + '<td class="label-cell">' + tr.label + '</td><td class="right">' + fmt(r.blankRetail) + '</td><td class="right blue">' + fmt(r.printAddon) + '</td><td class="right strong">' + fmt(r.perPiece) + '</td><td class="right green">' + fmt(r.profit) + '</td></tr>'; }));
+  q("ymqTable").innerHTML = t;
+  const base = ymqCalc(costs[0].c, tiers[tiers.length - 1].qty).blankRetail;
+  let b = '<div class="ymq-break"><div class="card-label" style="margin:0 0 4px">YMQ formula values (surcharge over Shopify base ' + fmt(base) + ')</div>';
+  costs.forEach(c => { b += '<div class="strong" style="margin-top:6px">' + c.label + '</div>'; tiers.forEach(tr => { const s = +(ymqCalc(c.c, tr.qty).blankRetail - base).toFixed(2); b += '<div class="info-row"><span>' + tr.label + '</span><span class="mono">+' + fmt(s) + '</span></div>'; }); });
+  q("ymqBreak").innerHTML = b + '</div>';
+}
+
+// ════════════════════════════════════════════
+// ORDER BUILDER
+// ════════════════════════════════════════════
+function addOrderItem() { orderItems.push(newItem()); renderOrderItems(); }
+function removeOrderItem(id) { orderItems = orderItems.filter(i => String(i.id) !== String(id)); if (!orderItems.length) orderItems.push(newItem()); renderOrderItems(); }
+function onOrderCode(id, el) { el.value = el.value.toUpperCase(); const it = itemById(id); if (!it) return; it.code = el.value; updateItemInfo(it); updateOrderResults(); }
+function onOrderQty(id, el) { const it = itemById(id); if (!it) return; it.qty = el.value; if (method === "v2") updateItemInfo(it); updateOrderResults(); }
+function setItemField(id, f, v) { const it = itemById(id); if (!it) return; it[f] = v; renderOrderItems(); }
+function toggleCapView(id, f) { const it = itemById(id); if (!it) return; it[f] = it[f] === false; renderOrderItems(); }
+function toggleCapSpot(id, f) { const it = itemById(id); if (!it) return; it[f] = !it[f]; renderOrderItems(); }
+function toggleSizes(id) { const it = itemById(id); if (!it) return; it.sizes = !it.sizes; renderOrderItems(); }
+function onSizeQty(id, f, v) { const it = itemById(id); if (!it) return; it[f] = v; updateOrderResults(); }
+function onItemName(id, v) { const it = itemById(id); if (it) { it.name = v; updateOrderResults(); } }
+
+// Product dropdown while typing a code (matches code or name).
+function codeMatches(s) {
+  s = (s || "").trim().toUpperCase();
+  const own = Object.values(cat()).sort((a,b) => a.code.localeCompare(b.code));
+  // Blanks saved in other methods (not Vendor 2), shown after this method's own products.
+  const seen = new Set(own.map(p => p.code.toUpperCase())), other = [];
+  if (method !== "v2") BLANK_SOURCES.forEach(k => { if (k === method) return; Object.values(cats[k]).forEach(p => { const c = p.code.toUpperCase(); if (!seen.has(c)) { seen.add(c); other.push({ ...p, _from:k }); } }); });
+  const match = list => {
+    if (!s) return list;
+    const starts = list.filter(p => p.code.toUpperCase().startsWith(s));
+    return starts.concat(list.filter(p => !starts.includes(p) && (p.code.toUpperCase().includes(s) || p.name.toUpperCase().includes(s))));
+  };
+  return match(own).concat(s ? match(other) : []).slice(0, 8);
+}
+function showCodeSuggest(id) {
+  const box = q("oiac-" + id), inp = q("oic-" + id); if (!box || !inp) return;
+  const list = codeMatches(inp.value);
+  if (!list.length || (list.length === 1 && list[0].code.toUpperCase() === inp.value.trim().toUpperCase())) { box.hidden = true; return; }
+  box.innerHTML = list.map((p, i) => { const c = suggestCost(p);
+    return '<button type="button" class="' + (i === 0 ? 'hl' : '') + '" onmousedown="event.preventDefault();pickCode(\'' + id + '\',\'' + esc(p.code).replace(/'/g, "\\'") + '\')"><b>' + esc(p.code) + '</b><span>' + esc(p.name) + '</span>'
+      + '<i class="sg-r">' + (p._from ? '<em>from ' + METHODS[p._from].label + '</em>' : '') + (c > 0 ? '<u title="Vendor blank cost">' + fmt(c) + '</u>' : '') + '</i></button>'; }).join("");
+  box.hidden = false;
+}
+// Vendor blank cost shown in the dropdown (Vendor 2: price at its smallest tier).
+function suggestCost(p) {
+  if (p._from) return blankCosts(p._from, p).std || 0;
+  if (method === "v2") { const t = V2_TIERS.find(t => p["t" + t] > 0); return t ? p["t" + t] : 0; }
+  return blankCosts(method, p).std || 0;
+}
+function hideCodeSuggest(id) { const box = q("oiac-" + id); if (box) box.hidden = true; }
+function pickCode(id, code) {
+  const inp = q("oic-" + id); if (!inp) return;
+  hideCodeSuggest(id);
+  if (!cat()[code.toUpperCase()] && findElsewhere(code)) { const it = itemById(id); if (it) it.code = code; pullProduct(code, id); return; }
+  inp.value = code; onOrderCode(id, inp); const qn = q("oiq-" + id); if (qn) qn.focus();
+}
+function codeSuggestKey(e, id) {
+  const box = q("oiac-" + id); if (!box || box.hidden) return;
+  const btns = [...box.querySelectorAll("button")]; let i = btns.findIndex(b => b.classList.contains("hl"));
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); if (i >= 0) btns[i].classList.remove("hl"); i = (i + (e.key === "ArrowDown" ? 1 : -1) + btns.length) % btns.length; btns[i].classList.add("hl"); }
+  else if (e.key === "Enter" && i >= 0) { e.preventDefault(); btns[i].dispatchEvent(new MouseEvent("mousedown")); }
+  else if (e.key === "Escape") hideCodeSuggest(id);
+}
+
+function itemControlsHTML(it) {
+  const id = it.id, pb = (field, val, cur, label, extra) => '<button class="pl-btn' + (val === cur ? ' active' : '') + '" onclick="setItemField(\'' + id + '\',\'' + field + '\',' + (typeof val === "number" ? val : '\'' + val + '\'') + ')">' + label + (extra ? '<span class="pl-price">' + extra + '</span>' : '') + '</button>';
+  if (method === "dtf") {
+    const es = it.extraSpots || 0, esz = it.extraSize || "small";
+    return '<div class="pl-row">' + DTF_PL.map(p => pb("placementId", p.id, it.placementId, p.label, fmt(p.retail))).join("") + '</div>'
+      + '<label class="lbl">Extra spots (sleeves, etc.)</label><div class="pl-row">' + pb("extraSpots", 0, es, "None") + pb("extraSpots", 1, es, "+1 Spot") + pb("extraSpots", 2, es, "+2 Spots")
+      + (es > 0 ? '<span class="pl-gap"></span>' + pb("extraSize", "small", esz, "Small", "$8.00") + pb("extraSize", "large", esz, "Large", "$15.00") : '') + '</div>';
+  }
+  if (method === "v2") {
+    return '<input class="oi-name" value="' + esc(it.name || "") + '" placeholder="Item name in the quote (optional)" oninput="onItemName(\'' + id + '\',this.value)">'
+      + '<div class="pl-row">' + pb("decoration", "dtf", it.decoration, "DTF") + pb("decoration", "emb", it.decoration, "Embroidery") + '</div>'
+      + '<div class="pl-row">' + V2_PL.map(p => pb("placementId", p.id, it.placementId, p.label)).join("") + '</div><div id="oitiers-' + id + '"></div>';
+  }
+  if (method === "emb") { const es = embSpots(it), cap = isCap(it);
+    const kind = '<div class="pl-row">' + pb("garment", "shirt", cap ? "cap" : "shirt", "Shirt") + pb("garment", "cap", cap ? "cap" : "shirt", "Cap") + '</div>';
+    if (cap) {
+      const tg = (f, label) => '<button class="pl-btn' + (it[f] ? ' active' : '') + '" onclick="toggleCapSpot(\'' + id + '\',\'' + f + '\')">' + label + '<span class="pl-price">+' + fmt(embSet.rate * 2) + '/pc · +' + fmt(DIG_RETAIL) + ' dig.</span></button>';
+      const cur = CAP_PL.some(c => c.id === it.capPlace) ? it.capPlace : "cf";
+      const vw = (f, emb, label) => it[emb]
+        ? '<button class="pl-btn active" disabled title="Already shown because it has embroidery">' + label + '<span class="pl-price">embroidered</span></button>'
+        : '<button class="pl-btn' + (it[f] !== false ? ' active' : '') + '" onclick="toggleCapView(\'' + id + '\',\'' + f + '\')">' + label + '<span class="pl-price">' + (it[f] !== false ? 'shown' : 'hidden') + '</span></button>';
+      return kind + '<div class="pl-row">' + CAP_PL.map(c => pb("capPlace", c.id, cur, c.label)).join("") + '</div>'
+        + '<label class="lbl">Extra spots</label><div class="pl-row">' + tg("capSide", "+ Side") + tg("capBack", "+ Back") + '</div>'
+        + '<label class="lbl">Show on mockup (photo only, no embroidery)</label><div class="pl-row">' + vw("showSide", "capSide", "Side view") + vw("showBack", "capBack", "Back view") + '</div>';
+    }
+    return kind + '<div class="pl-row">' + EMB_PL.map(p => pb("placementId", p.id, it.placementId, p.label)).join("") + '</div>'
+      + '<label class="lbl">Extra spots (sleeves, etc.)</label><div class="pl-row">' + pb("extraSpots", 0, es, "None") + pb("extraSpots", 1, es, "+1 Spot", "+" + fmt(embSet.rate * 2) + " · +" + fmt(DIG_RETAIL) + " dig.") + pb("extraSpots", 2, es, "+2 Spots") + '</div>'
+      + sizesHTML(it); }
+  if (method === "silk") return sizesHTML(it);
+  return "";
+}
+function sizesHTML(it) {
+  if (!it.sizes) return '<button class="mk-link small size-toggle" onclick="toggleSizes(\'' + it.id + '\')">+ 2XL / 3XL</button>';
+  return '<div class="size-row"><span>Qty above = XS–XL</span>'
+    + '<label>2XL<input type="number" min="0" value="' + esc(it.q2 || "") + '" placeholder="0" oninput="onSizeQty(\'' + it.id + '\',\'q2\',this.value)"></label>'
+    + '<label>3XL<input type="number" min="0" value="' + esc(it.q3 || "") + '" placeholder="0" oninput="onSizeQty(\'' + it.id + '\',\'q3\',this.value)"></label>'
+    + '<button class="mk-link small" onclick="toggleSizes(\'' + it.id + '\')">Remove</button></div>';
+}
+function renderOrderItems() {
+  const M = METHODS[method];
+  q("splitWrap").hidden = !M.split;
+  q("splitToggle").checked = splitSuppliers;
+  q("orderItems").innerHTML = orderItems.map(it =>
+    '<div class="order-item">'
+    + '<div class="oi-top">'
+    + '<div class="oi-code"><input id="oic-' + it.id + '" value="' + esc(it.code) + '" placeholder="Code" autocomplete="off" oninput="onOrderCode(\'' + it.id + '\',this);showCodeSuggest(\'' + it.id + '\')" onfocus="showCodeSuggest(\'' + it.id + '\')" onblur="setTimeout(()=>hideCodeSuggest(\'' + it.id + '\'),150)" onkeydown="codeSuggestKey(event,\'' + it.id + '\')"></div>'
+    + '<div class="oi-qty"><input id="oiq-' + it.id + '" type="number" min="1" value="' + esc(it.qty) + '" placeholder="Qty" oninput="onOrderQty(\'' + it.id + '\',this)"></div>'
+    + '<div class="oi-info" id="oiinfo-' + it.id + '"></div>'
+    + (orderItems.length > 1 ? '<button class="oi-remove" onclick="removeOrderItem(\'' + it.id + '\')" aria-label="Remove style">×</button>' : '')
+    + '</div>'
+    + '<div class="oi-suggest" id="oiac-' + it.id + '" hidden></div>'
+    + itemControlsHTML(it)
+    + (M.split && splitSuppliers ? '<div class="oi-supplier"><span>Supplier</span><input list="supplierList" value="' + esc(supplierOf(it)) + '" onfocus="this.select()" oninput="onSupplier(\'' + it.id + '\',this.value)"></div>' : '')
+    + '<div id="oiresult-' + it.id + '"></div></div>').join("");
+  orderItems.forEach(updateItemInfo);
+  updateOrderResults();
+}
+function updateItemInfo(it) {
+  const p = prod(it), info = q("oiinfo-" + it.id); if (!info) return;
+  if (p) info.innerHTML = '<span class="pname">' + esc(p.name) + '</span>' + (p.vendor || p.memo ? '<span class="vend-line" title="Internal only">' + (p.vendor ? '<span class="vend-tag">' + esc(p.vendor) + '</span>' : '') + (p.memo ? ' ' + esc(p.memo) : '') + '</span>' : '');
+  else if ((it.code || "").length) {
+    const src = findElsewhere(it.code);
+    info.innerHTML = src
+      ? '<span class="notfound">"' + esc(it.code) + '" isn\'t in ' + METHODS[method].label + ' yet — <a onclick="pullProduct(\'' + esc(src.p.code) + '\',\'' + it.id + '\')">add from ' + METHODS[src.k].label + ' (' + fmt(blankCosts(src.k, src.p).std) + ')</a></span>'
+      : '<span class="notfound">"' + esc(it.code) + '" — <a onclick="showCatalog=true;editProduct=\'__new__\';renderCatalog()">add</a></span>';
+  }
+  else info.innerHTML = "";
+  const tierEl = q("oitiers-" + it.id);
+  if (tierEl) {
+    if (!p) { tierEl.innerHTML = ""; return; }
+    const qn = parseInt(it.qty) || 0, tr = v2Tier(qn);
+    tierEl.innerHTML = '<div class="v2-tiers">' + V2_TIERS.map(t => '<span class="' + (qn > 0 && t === tr ? 'on' : '') + '">' + t + 'pc ' + fmt(p["t" + t] || 0) + '</span>').join("") + '</div>';
+  }
+}
+function updateOrderResults() {
+  const M = METHODS[method], tq = totalQty();
+  q("orderQtyPill").innerHTML = "Total: <b>" + tq + " pcs</b>";
+  q("minWarn").hidden = !(M.min && tq > 0 && tq < M.min);
+  q("minWarn").textContent = "Minimum " + M.min + " pcs";
+  let grand = 0, cost = 0;
+  orderItems.forEach(it => {
+    const el = q("oiresult-" + it.id); if (!el) return;
+    const p = prod(it);
+    const lines = p && tq > 0 ? sizeLines(it) : [];
+    if (!lines.length) { el.innerHTML = ""; return; }
+    el.innerHTML = lines.map(({ size, q: n, r }) => {
+      const margin = (r.perPiece - r.unitCost) / r.perPiece * 100, mc = margin >= 50 ? "good" : margin >= 30 ? "warn" : "bad";
+      grand += r.perPiece * n; cost += r.unitCost * n;
+      return '<div class="oi-result"><span class="detail">' + (hasSizes(it) ? '<b>' + SIZE_LABEL[size] + ' × ' + n + '</b> · ' : '') + esc(r.detail) + '</span><div class="right"><span class="price">' + fmt(r.perPiece) + '</span><span class="margin ' + mc + '"> ' + margin.toFixed(0) + '% margin</span></div></div>';
+    }).join("");
+  });
+  if (method === "v2") { const o = v2Order(); const sv = q("v2ShipVal"); if (sv) sv.textContent = fmt(o.ship); orderItems.forEach(updateItemInfo); }
+  const sum = q("orderSummary");
+  if (grand <= 0) sum.hidden = true;
+  else {
+    const st = M.setup(), setup = st ? st.total : 0, setupCost = st ? st.cost : 0;
+    let extra = "";
+    if (method !== "v2") {
+      const split = splitSuppliers && M.split, groups = {};
+      validItems().forEach(it => { const k = split ? supplierOf(it) : "Supplier"; groups[k] = (groups[k] || 0) + blankSubtotal(it); });
+      extra = Object.entries(groups).map(([k, v]) => '<div class="sum-sub">' + esc(k) + ' blanks: ' + fmt(v) + ' · ' + (shipWaived(v) ? '<b style="color:#2E7D32">free supplier shipping</b>' + (shipMode === "off" ? ' (set to Free)' : '') : shipMode === "on" ? 'supplier shipping charged (set to Charge)' : fmt(freeShipMin - v) + ' more for free shipping') + '</div>').join("");
+    }
+    if (method === "v2") { const o = v2Order(); extra = '<div class="sum-sub">Your cost: ' + fmt(o.vendorSub + o.fees) + ' · Fees: ' + fmt(o.fees) + ' (' + fmt(o.fpu) + '/unit)</div>'; cost = o.vendorSub + o.fees; }
+    sum.hidden = false;
+    sum.innerHTML = '<div class="card"><div class="sum-row"><span class="muted">Order total (' + tq + ' pcs)' + (setup ? ' + setup' : '') + '</span><span class="sum-total">' + fmt(grand + setup) + '</span></div>' + extra
+      + '<div class="sum-row profit"><span class="muted">Total profit</span><span>' + fmt(grand + setup - cost - setupCost) + '</span></div></div>';
+  }
+  renderMockRows();
+  renderQuote();
+}
+
+// ════════════════════════════════════════════
+// WHATSAPP QUOTE — Options (one message per style + closing) / Final order (one message)
+// ════════════════════════════════════════════
+let quoteBlocks = [];
+function styleTitle(it, p) { const c = (it.color || "").trim(); return T().code + " " + p.code + (c ? " · " + c.replace(/\b\w/g, x => x.toUpperCase()) : ""); }
+function setQuoteMode(m) { quoteMode = m; mk.sig = ""; renderQuote(); renderMockRows(true); }
+function setTiers(on) { tierPref[method] = on; renderQuote(); }
+function renderQuote() {
+  if (quotes.length) renderQuoteTabs();
+  const card = q("quoteCard"), M = METHODS[method], items = validItems();
+  if (!items.length) { card.hidden = true; return; }
+  card.hidden = false;
+  document.querySelectorAll("#qModeBtns button").forEach((b, i) => b.classList.toggle("active", (i === 0) === (quoteMode === "options")));
+  document.querySelectorAll("#qLangBtns button").forEach(b => b.classList.toggle("active", b.dataset.lang === quoteLang));
+  const L0 = T(), tq = totalQty(), multi = items.length > 1, st = M.setup(), ship = M.ship();
+  const prints = [...new Set(items.map(itemPrint))];
+  quoteBlocks = [];
+  const bar = q("qModeBar");
+  if (quoteMode === "options") {
+    const tiersOn = showTiers() || tq < 1;
+    bar.innerHTML = '<label><input type="checkbox" ' + (showTiers() ? "checked" : "") + ' onchange="setTiers(this.checked)"> Tier breaks</label><span>' + (!showTiers() && tq < 1 ? "Enter a quantity to show one exact price. Until then, the tiers are shown." : multi ? "One message per style, then the closing message once." : "Send with the mockup.") + '</span>';
+    items.forEach(it => {
+      const p = prod(it), L = ["*" + styleTitle(it, p) + "*", displayName(it, p)], d = descFor(p), qn = itemQty(it);
+      if (d.trim()) L.push(d.trim());
+      L.push(itemPrint(it), "");
+      if (tiersOn) {
+        M.tiers.forEach((t, i) => { const pr = M.tierPrice(it, t); if (pr != null) L.push((i === M.tiers.length - 1 ? L0.plus(t) : L0.pcs(t)) + ": " + fmt(pr) + L0.each); });
+        // Bigger sizes only when "+ 2XL / 3XL" is on for this style.
+        if (hasSizes(it)) { const t0 = M.tiers[0], base = M.tierPrice(it, t0), ups = ["x2","x3"].map(z => SIZE_LABEL[z] + " +" + fmt(M.tierPrice(it, t0, z) - base)); L.push(ups.join(" · ") + L0.perPc); }
+      } else if (qn > 0 && tq > 0) {
+        const ls = sizeLines(it);
+        if (hasSizes(it)) ls.forEach(l => L.push(SIZE_LABEL[l.size] + ": " + L0.pcs(l.q) + " · " + fmt(l.r.perPiece) + L0.each));
+        else if (ls[0]) L.push(L0.pcs(qn) + ": " + fmt(ls[0].r.perPiece) + L0.each);
+      }
+      if (!multi) { if (st) L.push("", ...st.lines); L.push("", ship); }
+      quoteBlocks.push({ label: p.code + (it.color ? " · " + titleCase(it.color.trim()) : ""), text: L.join("\n") });
+    });
+    if (multi) {
+      const C = [];
+      if (tiersOn) C.push(M.tierNote(), "");
+      if (st) C.push(...st.lines, "");
+      C.push(ship);
+      quoteBlocks.push({ label: "Closing message (send once)", text: C.join("\n") });
+    }
+  } else {
+    bar.innerHTML = '<span>Uses the quantity entered for each style.</span>';
+    const priced = items.filter(it => itemQty(it) > 0);
+    if (!priced.length) quoteBlocks.push({ label: "Final order", text: "", empty: "Enter the quantity for each style the client chose." });
+    else {
+      const L = []; let sum = 0;
+      priced.forEach((it, i) => {
+        const p = prod(it), ls = sizeLines(it); if (!ls.length) return;
+        if (i) L.push("");
+        L.push("*" + styleTitle(it, p) + "*", displayName(it, p));
+        if (prints.length > 1) L.push(itemPrint(it));
+        ls.forEach(l => { sum += l.r.perPiece * l.q; L.push((hasSizes(it) ? SIZE_LABEL[l.size] + ": " : "") + L0.pcs(l.q) + " x " + fmt(l.r.perPiece) + " = " + fmt(l.r.perPiece * l.q)); });
+      });
+      if (prints.length === 1) L.push("", prints[0]);
+      if (st) L.push("", ...st.lines);
+      L.push("", "*" + L0.total + " (" + L0.pcs(tq) + "): " + fmt(sum + (st ? st.total : 0)) + "*");
+      if (st) L.push("(" + fmt(sum) + " + " + fmt(st.total) + " " + (method === "emb" ? L0.digit.toLowerCase() : "screen setup") + ")");
+      L.push("", ship);
+      quoteBlocks.push({ label: "Final order", text: L.join("\n") });
+    }
+  }
+  q("quoteBody").innerHTML = quoteBlocks.map((b, i) => '<div class="qblock"><div class="qblock-head"><span>' + esc(b.label) + '</span>'
+    + (b.text ? '<button class="copy-btn" id="qcopy-' + i + '" onclick="copyBlock(' + i + ')">Copy</button>' : '') + '</div>'
+    + '<div class="quote-text' + (b.text ? '' : ' muted') + '">' + esc(b.text || b.empty) + '</div></div>').join("");
+}
+async function copyBlock(i) {
+  const btn = q("qcopy-" + i), b = quoteBlocks[i]; if (!b) return;
+  try { await navigator.clipboard.writeText(b.text); btn.textContent = "Copied ✓"; btn.classList.add("copied"); setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 2000); }
+  catch { const el = btn.closest(".qblock").querySelector(".quote-text"); const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+}
+
+// ════════════════════════════════════════════
+// QUOTE TABS — each client tab keeps its own method, styles, settings, logos and mockups
+// ════════════════════════════════════════════
+let quotes = [], activeQ = 0;
+function blankQuote(m) {
+  return { name:"", method:m || method, numColors:1, numSides:1, extraSpots:0, tierPref:{ silk:true, dtf:false, v2:true, emb:true },
+           quoteMode:"options", quoteLang:"pt", splitSuppliers:false, v2Protection:"", embSet:{ rate:4, dig:true, suppShip:30, clientShip:25 },
+           orderItems:null, frontPlace:"lc", oneSide:"front", logos:{ front:null, back:null, side:null, rside:null }, boxes:{}, shipMode:"auto", freeShipMin:200 };
+}
+function snapshotQuote() {
+  const cur = quotes[activeQ] || {};
+  return { name:cur.name || "", method, numColors, numSides, extraSpots, tierPref:{ ...tierPref }, quoteMode, quoteLang, splitSuppliers, v2Protection, embSet:{ ...embSet },
+           orderItems, frontPlace:mk.frontPlace, oneSide:mk.oneSide, logos:mk.logos, boxes:mk.boxes, shipMode, freeShipMin };
+}
+function applyQuote(s) {
+  method = s.method; numColors = s.numColors; numSides = s.numSides; extraSpots = s.extraSpots;
+  tierPref = { ...s.tierPref }; quoteMode = s.quoteMode; quoteLang = s.quoteLang; splitSuppliers = s.splitSuppliers;
+  v2Protection = s.v2Protection; embSet = { ...s.embSet };
+  orderItems = s.orderItems || [newItem()]; s.orderItems = orderItems;
+  mk.frontPlace = s.frontPlace; mk.oneSide = s.oneSide; mk.logos = s.logos; mk.boxes = s.boxes;
+  shipMode = s.shipMode || "auto"; freeShipMin = s.freeShipMin != null ? s.freeShipMin : 200;
+  mk.edit = null; mk.sig = ""; mk.pasteTarget = null; showCatalog = false; editProduct = null;
+  q("qName").value = s.name || "";
+  renderAll();
+}
+function switchQuote(i) { if (i === activeQ) return; quotes[activeQ] = snapshotQuote(); activeQ = i; applyQuote(quotes[i]); window.scrollTo({ top:0, behavior:"smooth" }); }
+function addQuote() { quotes[activeQ] = snapshotQuote(); quotes.push(blankQuote(method)); activeQ = quotes.length - 1; applyQuote(quotes[activeQ]); q("qName").focus(); }
+function duplicateQuote() {
+  const cur = snapshotQuote(); quotes[activeQ] = cur;
+  const copy = { ...cur, name: cur.name ? cur.name + " (2)" : "", tierPref:{ ...cur.tierPref }, embSet:{ ...cur.embSet },
+    orderItems: cur.orderItems.map(it => ({ ...it, id: Date.now() + Math.random() })), logos:{ ...cur.logos }, boxes:{} };
+  quotes.splice(activeQ + 1, 0, copy); activeQ++; applyQuote(copy);
+}
+function closeQuote(btn) {
+  if (quotes.length < 2) return;
+  if (!btn.classList.contains("confirm")) { btn.classList.add("confirm"); btn.textContent = "Tap again to close"; setTimeout(() => { btn.classList.remove("confirm"); btn.textContent = "Close quote"; }, 3000); return; }
+  btn.classList.remove("confirm"); btn.textContent = "Close quote";
+  quotes.splice(activeQ, 1); activeQ = Math.max(0, activeQ - 1); applyQuote(quotes[activeQ]);
+}
+function onQuoteName(v) { if (!quotes[activeQ]) quotes[activeQ] = snapshotQuote(); quotes[activeQ].name = v; renderQuoteTabs(); }
+const METHOD_SHORT = { silk:"Silk", dtf:"DTF V1", v2:"V2", emb:"Emb" };
+function renderQuoteTabs() {
+  q("qTabs").innerHTML = quotes.map((s, i) => {
+    const m = i === activeQ ? method : s.method, its = (i === activeQ ? orderItems : (s.orderItems || [])).filter(it => cats[m][(it.code||"").toUpperCase()]);
+    const codes = its.map(it => it.code.toUpperCase()).join(", "), title = s.name || codes || ("Quote " + (i + 1));
+    return '<button class="qtab' + (i === activeQ ? ' active' : '') + '" onclick="switchQuote(' + i + ')"><span>' + esc(title) + '</span><small>' + METHOD_SHORT[m] + (s.name && codes ? ' · ' + esc(codes) : '') + '</small></button>';
+  }).join("");
+  q("qClose").hidden = quotes.length < 2;
+}
+
+function renderAll() {
+  renderMethodTabs(); renderSettings(); renderCatalog(); renderOrderItems(); renderMockup();
+  q("footerNote").innerHTML = FOOTERS[method];
+}
+const FOOTERS = {
+  silk:"Blank retail = cost ÷ divisor (0.50 under $3, 0.55 for $3+) + $30 supplier shipping ÷ qty<br>Print add-on = vendor rate × spots × 2 + $25 client shipping ÷ qty · rounded up to $0.10",
+  dtf:"Unit price = cost ÷ divisor (0.50 under $3, 0.55 for $3+) + $30 ÷ qty + placement + extra spots + $20 ÷ qty · rounded to $0.10",
+  v2:"Unit price = vendor tier price × 2 (÷ 0.55 when $20+) + (vendor shipping + $10 blind ship + protection) ÷ total qty · rounded to $0.10",
+  emb:"Unit price = blank × 2 + embroidery rate × 2 per spot + (supplier shipping + client shipping) ÷ total pcs · rounded up to $0.10. Shipping is pass-through: no markup, and it's counted in your cost too.",
+};
+
+// ──── MOCKUP ────
+// Placement presets, as fractions of the garment photo (cx/cy = center, maxW/maxH = print area).
+const PRESETS = {
+  lc: { label:"Left chest",   side:"front", cx:.63, cy:.34, maxW:.15, maxH:.12 },
+  cc: { label:"Center chest", side:"front", cx:.50, cy:.33, maxW:.24, maxH:.12 },
+  ff: { label:"Full front",   side:"front", cx:.50, cy:.47, maxW:.36, maxH:.38 },
+  fb: { label:"Full back",    side:"back",  cx:.50, cy:.42, maxW:.38, maxH:.40 },
+  cf: { label:"Cap center front", side:"front", cx:.50, cy:.40, maxW:.30, maxH:.20 },
+  lf: { label:"Cap left front",   side:"front", cx:.63, cy:.42, maxW:.17, maxH:.14 },
+  rf: { label:"Cap right front",  side:"front", cx:.37, cy:.42, maxW:.17, maxH:.14 },
+  sl: { label:"Left sleeve",      side:"side",  cx:.50, cy:.33, maxW:.14, maxH:.10 },
+  sr: { label:"Right sleeve",     side:"rside", cx:.50, cy:.33, maxW:.14, maxH:.10 },
+  sd: { label:"Cap side",         side:"side",  cx:.50, cy:.46, maxW:.24, maxH:.14 },
+  cb: { label:"Cap back",         side:"back",  cx:.50, cy:.40, maxW:.22, maxH:.10 },
+};
+const SIDE_PT = { front:"Frente", back:"Costas", side:"Lateral", rside:"Manga-direita" };
+const SIDE_EN = { front:"Front", back:"Back", side:"Side", rside:"Right sleeve" };
+const EXTRA_SIDES = ["side", "rside", "back"];
+let mk = {
+  frontPlace:"lc", oneSide:"front", shade:.7, brand:null, brandSrc:null, brandAsset:null,
+  logos:{ front:null, back:null, side:null, rside:null },   // side/rside/back null = same logo as front
+  logoPick:"front", boxes:{}, edit:null, pasteTarget:null, garmentPick:null, temp:{}, sig:""
+};
+let mkDb = null, mkAssets = null, mkDownloads = null, photoLib = {}, libOpen = false, localLib = false;
+const imgCache = {};
+
+function slugPart(s, upper) { s = String(s||"").trim().replace(/[^A-Za-z0-9]+/g,"-").replace(/^-+|-+$/g,""); return upper ? s.toUpperCase() : s.toLowerCase(); }
+function photoKey(code, color, side) { return slugPart(code,true) + "__" + slugPart(color) + "__" + side; }
+function mkMsg(t, err) { const el=document.getElementById("mkMsg"); if(!el) return; el.textContent=t||""; el.className="mk-msg"+(err?" err":""); }
+function loadImage(src) { return new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+function titleCase(s) { return String(s).replace(/\b\w/g, c=>c.toUpperCase()); }
+// Views per style come from the active method (silk: Print Options; others: each style's placement).
+function sidesOf(it) { return viewsOf(it).map(v => v[0]); }
+function placeOf(it, side) { const v = viewsOf(it).find(v => v[0] === side); return v ? v[1] : (side === "back" ? "fb" : "lc"); }
+function boxKey(it, side) { return it.id + "|" + side + "|" + placeOf(it, side); }
+function usedExtraSides() { return EXTRA_SIDES.filter(s => mockItems().some(it => sidesOf(it).includes(s) && !photoOnly(it, s))); }
+// Logo for a spot: a spot's own logo (back, sleeves…) wins; otherwise the style's own logo; otherwise the main logo.
+function logoFor(side, it) { if (side !== "front" && mk.logos[side]) return mk.logos[side]; return (it && it.logo) || mk.logos.front; }
+function logoSlot(which) { if (String(which).startsWith("item:")) { const it = itemById(which.slice(5)); return it ? it.logo : null; } return mk.logos[which]; }
+function mockItems() { return orderItems.filter(it => cat()[(it.code||"").toUpperCase()]); }
+
+// ── capabilities (library storage + file saving) ──
+(async () => {
+  try {
+    if (window.claude && window.claude.use) {
+      [mkDb, mkAssets, mkDownloads] = await Promise.all([claude.use("db"), claude.use("assets"), claude.use("downloads")]);
+    }
+  } catch (e) {}
+  if (mkDb) {
+    mkDb.collection("photos").onSnapshot(snap => {
+      photoLib = {}; snap.docs.forEach(d => { photoLib[d.id] = d.data(); });
+      renderLib(); if (!(document.activeElement && /^mkc-/.test(document.activeElement.id || ""))) { mk.sig = ""; renderMockRows(true); } else refreshViews();
+    }, () => {});
+    mkDb.doc("settings/brand").onSnapshot(d => { const b = d.exists ? d.data() : null; mk.brandAsset = b && b.assetId; setBrandSrc(b && b.assetId ? "/_blob/" + b.assetId : null); }, () => {});
+  } else await loadLocalLib();
+  renderLib(); refreshViews();
+  METHOD_KEYS.forEach(initCatalogDb);
+})();
+
+// ── local photo library (when the calculator is opened as a file in the browser) ──
+function idb() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open("tbd-mockup", 1);
+    r.onupgradeneeded = () => r.result.createObjectStore("photos");
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function idbDo(mode, fn) {
+  const d = await idb();
+  return new Promise((res, rej) => { const tx = d.transaction("photos", mode); const out = fn(tx.objectStore("photos")); tx.oncomplete = () => res(out && out.result); tx.onerror = () => rej(tx.error); });
+}
+async function loadLocalLib() {
+  try {
+    const keys = await idbDo("readonly", st => st.getAllKeys());
+    const vals = await idbDo("readonly", st => st.getAll());
+    photoLib = {};
+    (keys||[]).forEach((k,i) => {
+      const v = vals[i];
+      if (String(k).startsWith("__")) { if (k === "__brand__" && v && v.blob) setBrandSrc(URL.createObjectURL(v.blob)); return; }
+      photoLib[k] = { ...v, src: URL.createObjectURL(v.blob) };
+    });
+    localLib = true;
+  } catch (e) { localLib = false; }
+}
+async function localPut(key, rec) { await idbDo("readwrite", st => st.put(rec, key)); }
+async function localDel(key) { await idbDo("readwrite", st => st.delete(key)); }
+function photoSrc(p) { return p.src || ("/_blob/" + p.assetId); }
+function photoRef(p) { return p ? (p.assetId || p.src) : null; }
+function libAvailable() { return !!mkDb || localLib; }
+function getPhotoImg(rec) {
+  const base = photoRef(rec); if (!base) return Promise.resolve(null);
+  const ref = rec._mirror ? base + "#mirror" : base;
+  if (!imgCache[ref]) imgCache[ref] = loadImage(photoSrc(rec)).then(img => {
+    if (!rec._mirror) return img;
+    const c = document.createElement("canvas"); c.width = img.naturalWidth; c.height = img.naturalHeight;
+    const x = c.getContext("2d"); x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(img, 0, 0);
+    return loadImage(c.toDataURL("image/jpeg", 0.95));
+  }).catch(() => { delete imgCache[ref]; return null; });
+  return imgCache[ref];
+}
+function photoFor(it, side) {
+  if (!it.color || !slugPart(it.color)) return { key:null, rec:null };
+  const key = photoKey(it.code, it.color, side), own = photoLib[key] || mk.temp[key] || null;
+  if (!own && side === "rside") {
+    const lk = photoKey(it.code, it.color, "side"), left = photoLib[lk] || mk.temp[lk];
+    if (left) return { key, rec: { ...left, side:"rside", place:{}, _mirror:true } };
+  }
+  return { key, rec: own };
+}
+
+// ── library panel ──
+function toggleLib() { libOpen = !libOpen; renderLib(); }
+function renderLib() {
+  const n = Object.keys(photoLib).length;
+  document.getElementById("libLabel").textContent = "Photo library (" + n + ")";
+  const panel = document.getElementById("libPanel");
+  panel.hidden = !libOpen;
+  if (!libOpen) return;
+  let h = '<div class="catalog-panel">';
+  h += '<div style="display:flex;gap:14px;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap"><button class="mk-link" onclick="exportLibrary()">Save backup file</button><button class="mk-link" onclick="document.getElementById(\'mkBackupFile\').click()">Restore backup</button></div>';
+  if (!mkDb && localLib) h += '<div style="font-size:12px;color:#888;margin-bottom:8px">Photos are saved in this browser on this computer.</div>';
+  if (!libAvailable()) h += '<div style="font-size:12px;color:#b45309;margin-bottom:8px">The photo library isn\'t available in this view, so photos you add will only last until you close the page.</div>';
+  if (!n) h += '<div style="font-size:12px;color:#888">No saved photos yet. Add a style in the Order Builder, type its color below, then upload the photo. It\'s saved here for next time.</div>';
+  const groups = {};
+  Object.entries(photoLib).forEach(([id,p]) => { (groups[p.code] = groups[p.code] || []).push([id,p]); });
+  Object.keys(groups).sort().forEach(code => {
+    const name = cat()[code] ? " — " + esc(cat()[code].name) : "";
+    h += '<div class="lib-group"><h4>' + esc(code) + name + '</h4><div class="lib-items">';
+    groups[code].sort((a,b)=>(a[1].color+a[1].side).localeCompare(b[1].color+b[1].side)).forEach(([id,p]) => {
+      h += '<div class="lib-item"><img src="' + esc(photoSrc(p)) + '" alt="" loading="lazy">'
+        + (libEdit === id
+          ? '<div class="lib-rename"><input id="libRename" value="' + esc(p.color) + '" onkeydown="if(event.key===\'Enter\')renamePhoto(\'' + id + '\');if(event.key===\'Escape\'){libEdit=null;renderLib()}"><div class="row2"><button class="mk-link" onclick="renamePhoto(\'' + id + '\')">Save</button><button class="del" onclick="libEdit=null;renderLib()">Cancel</button></div></div>'
+          : '<div class="lib-color">' + esc(p.color) + ' · ' + SIDE_EN[p.side] + '</div><div class="row2"><button class="mk-link small" onclick="libEdit=\'' + id + '\';renderLib();setTimeout(()=>{const i=document.getElementById(\'libRename\');if(i){i.focus();i.select();}},0)">Edit color</button>'
+            + '<button class="del" onclick="deleteLibPhoto(\'' + id + '\', this)">Delete</button></div>')
+        + '</div>';
+    });
+    h += '</div></div>';
+  });
+  h += '</div>';
+  panel.innerHTML = h;
+}
+// Rename a photo's color (the photo keeps its saved logo positions).
+let libEdit = null;
+async function renamePhoto(id) {
+  const p = photoLib[id], inp = document.getElementById("libRename"); if (!p || !inp) return;
+  const color = titleCase(inp.value.trim());
+  if (!slugPart(color)) { mkMsg("Type a color name.", true); return; }
+  const newKey = photoKey(p.code, color, p.side);
+  if (newKey === id) {
+    if (color !== p.color) { try { if (mkDb) await mkDb.doc("photos/" + id).update({ color }); else if (localLib) { const { src, ...st } = p; st.color = color; await localPut(id, st); photoLib[id] = { ...st, src }; } } catch (e) {} }
+    libEdit = null; renderLib(); return;
+  }
+  if (photoLib[newKey]) { mkMsg("There's already a " + p.code + " · " + color + " · " + SIDE_EN[p.side] + " photo. Delete one of them first.", true); return; }
+  try {
+    const { src, ...stored } = p; stored.color = color; stored.updatedAt = Date.now();
+    if (mkDb) { await mkDb.doc("photos/" + newKey).set(stored); await mkDb.doc("photos/" + id).delete(); }
+    else if (localLib) { await localPut(newKey, stored); await localDel(id); delete photoLib[id]; photoLib[newKey] = { ...stored, src }; }
+    // Styles in the open quote that used the old name follow the new one.
+    orderItems.forEach(it => { if ((it.code||"").toUpperCase() === p.code && slugPart(it.color) === slugPart(p.color)) it.color = color; });
+    libEdit = null; mk.sig = ""; renderLib(); renderMockRows(true); renderQuote();
+    mkMsg("Color renamed to " + color + ".");
+  } catch (e) { mkMsg("Couldn't rename that photo. Try again.", true); }
+}
+async function deleteLibPhoto(id, btn) {
+  if (!btn.classList.contains("confirm")) {
+    btn.classList.add("confirm"); btn.textContent = "Confirm";
+    setTimeout(() => { btn.classList.remove("confirm"); btn.textContent = "Delete"; }, 3000);
+    return;
+  }
+  const p = photoLib[id]; if (!p) return;
+  try {
+    if (mkDb) {
+      await mkDb.doc("photos/" + id).delete();
+      if (mkAssets) { try { await mkAssets.delete(p.assetId); } catch (e) {} }
+    } else if (localLib) { await localDel(id); delete photoLib[id]; renderLib(); refreshViews(); }
+    mkMsg("Photo removed from the library.");
+  } catch (e) { mkMsg("Couldn't delete that photo. Try again in a moment.", true); }
+}
+
+// ── placement (follows the quote's Placement setting) ──
+function renderPlacement() {
+  const el = document.getElementById("mkPlacement");
+  if (method !== "silk") { el.innerHTML = '<span class="mk-sub">Each style uses the placement chosen for it above.</span>'; return; }
+  const btn = (fn, val, cur, label) => '<button class="btn' + (val===cur?' active':'') + '" onclick="' + fn + '(\'' + val + '\')">' + label + '</button>';
+  let h = '<span class="mk-sub">Print: <b style="color:#1A1A1A">' + (numSides===2 ? 'Front + Back' : 'One side') + '</b> (from Print Options above)</span>';
+  if (numSides === 1) h += '<div class="btn-group" style="margin-bottom:8px">' + btn("setOneSide","front",mk.oneSide,"Front") + btn("setOneSide","back",mk.oneSide,"Back") + '</div>';
+  if (numSides === 2 || mk.oneSide === "front") {
+    h += '<span class="mk-sub">Front print</span><div class="btn-group">'
+      + btn("setFrontPlace","lc",mk.frontPlace,"Left chest") + btn("setFrontPlace","cc",mk.frontPlace,"Center chest") + btn("setFrontPlace","ff",mk.frontPlace,"Full front") + '</div>';
+  }
+  if (numSides === 2 || mk.oneSide === "back") h += '<span class="mk-sub" style="margin-top:8px">Back print: Full back</span>';
+  if (extraSpots > 0) h += '<span class="mk-sub" style="color:#b45309">To show the sleeve print, tick "Left sleeve" and/or "Right sleeve" on the style below and add the sleeve photo.</span>';
+  el.innerHTML = h;
+}
+function setOneSide(s) { mk.oneSide = s; mk.edit = null; mk.sig = ""; renderMockup(); renderQuote(); }
+function setFrontPlace(p) { mk.frontPlace = p; mk.sig = ""; renderQuote(); renderPlacement(); renderMockRows(true); }
+
+// ── logos ──
+function renderLogos() {
+  const el = document.getElementById("mkLogos"), extras = usedExtraSides();
+  const zone = (which, title, lg, extra) => '<div class="mk-logo' + (mk.pasteTarget && mk.pasteTarget.kind==="logo" && mk.pasteTarget.side===which ? ' target':'') + '" tabindex="0" onfocus="mk.pasteTarget={kind:\'logo\',side:\'' + which + '\'};renderLogos()" ondragover="event.preventDefault()" ondrop="dropLogo(event,\'' + which + '\')">'
+    + (lg ? '<img src="' + lg.url + '" alt="">' : '<div class="mk-logo-empty">Logo</div>')
+    + '<div class="grow"><b style="color:#1A1A1A">' + title + '</b><br>' + (lg ? 'Paste or drop another to swap it.' : 'Paste, drop, or choose the file. PNG with a transparent background works best.')
+    + (lg ? '<label class="mk-inline"><input type="checkbox" ' + (lg.removeWhite?'checked':'') + ' onchange="setRemoveWhite(\'' + which + '\',this.checked)"> Remove white background</label>' : '') + (extra||'') + '</div>'
+    + '<button class="mk-link" onclick="mk.logoPick=\'' + which + '\';document.getElementById(\'mkLogoFile\').click()">' + (lg ? 'Change' : 'Choose') + '</button></div>';
+  let h = '';
+  if (extras.length) {
+    h += zone("front", "Front logo", mk.logos.front);
+    extras.forEach(s => { const nm = s === "side" ? (mockItems().some(it => capItem(it)) ? "Side" : "Left sleeve") : SIDE_EN[s];
+      if (mk.logos[s]) h += zone(s, nm + " logo", mk.logos[s], '<br><button class="mk-link" onclick="clearSideLogo(\'' + s + '\')">Use the front logo on the ' + nm.toLowerCase() + '</button>');
+      else h += '<div class="mk-status"><span>' + nm + ' uses the front logo.</span><button class="mk-link" onclick="mk.logoPick=\'' + s + '\';document.getElementById(\'mkLogoFile\').click()">Use a different ' + nm.toLowerCase() + ' logo</button></div>';
+    });
+  } else h += zone("front", "Client logo", mk.logos.front);
+  el.innerHTML = h;
+}
+function dropLogo(e, which) { e.preventDefault(); const f = [...(e.dataTransfer.files||[])].find(f => f.type.startsWith("image/")); if (f) handleLogoFile(f, which); }
+function clearSideLogo(s) { mk.logos[s] = null; clearBoxes(s); renderLogos(); refreshViews(); renderEditor(); }
+function clearBackLogo() { clearSideLogo("back"); }
+function clearFollowers() { EXTRA_SIDES.forEach(s => { if (!mk.logos[s]) clearBoxes(s); }); }
+function clearBoxes(side) { Object.keys(mk.boxes).forEach(k => { if (k.split("|")[1] === side) delete mk.boxes[k]; }); }
+async function handleLogoFile(file, which) {
+  which = which || "front";
+  try {
+    const url = URL.createObjectURL(file), raw = await loadImage(url);
+    const lg = { raw, url, removeWhite: /jpe?g/i.test(file.type), canvas:null };
+    buildLogo(lg);
+    if (String(which).startsWith("item:")) {
+      const it = itemById(which.slice(5)); if (!it) return;
+      it.logo = lg; clearBoxesFor(it.id); mk.sig = ""; renderMockRows(true); renderEditor(); mkMsg(""); return;
+    }
+    mk.logos[which] = lg;
+    clearBoxes(which); if (which === "front") clearFollowers();
+    renderLogos(); refreshViews(); renderEditor(); mkMsg("");
+  } catch (e) { mkMsg("Couldn't read that logo file. Use a PNG or JPG.", true); }
+}
+function setRemoveWhite(which, on) {
+  const lg = logoSlot(which); if (!lg) return;
+  if (String(which).startsWith("item:")) { lg.removeWhite = on; buildLogo(lg); clearBoxesFor(which.slice(5)); refreshViews(); renderEditor(); return; }
+  lg.removeWhite = on; buildLogo(lg);
+  clearBoxes(which); if (which === "front") clearFollowers();
+  refreshViews(); renderEditor();
+}
+function buildLogo(lg) {
+  const r = lg.raw, s = Math.min(1, 3000 / Math.max(r.naturalWidth, r.naturalHeight));
+  const w = Math.max(1, Math.round(r.naturalWidth*s)), h = Math.max(1, Math.round(r.naturalHeight*s));
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const cx = c.getContext("2d"); cx.drawImage(r,0,0,w,h);
+  const d = cx.getImageData(0,0,w,h), p = d.data;
+  if (lg.removeWhite) {
+    for (let i=0;i<p.length;i+=4) {
+      const m = Math.min(p[i],p[i+1],p[i+2]);
+      if (m >= 240) p[i+3] = 0; else if (m > 212) p[i+3] = Math.round(p[i+3] * (240-m) / 28);
+    }
+  }
+  // Trim empty margins so the art itself fits the print area.
+  let x0=w, y0=h, x1=-1, y1=-1;
+  for (let y=0;y<h;y++) for (let x=0;x<w;x++) if (p[(y*w+x)*4+3] > 8) { if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+  cx.putImageData(d,0,0);
+  if (x1 >= x0 && (x0>0 || y0>0 || x1<w-1 || y1<h-1)) {
+    const t = document.createElement("canvas"); t.width = x1-x0+1; t.height = y1-y0+1;
+    t.getContext("2d").drawImage(c, -x0, -y0); lg.canvas = t;
+  } else lg.canvas = c;
+}
+
+// ── logo position per style + side ──
+function getBox(it, side, img, rec) {
+  if (photoOnly(it, side)) return null;
+  const k = boxKey(it, side), lg = logoFor(side, it);
+  if (mk.boxes[k]) return mk.boxes[k];
+  if (!img || !lg) return null;
+  const place = placeOf(it, side);
+  const pr = (rec && rec.place && rec.place[place]) || PRESETS[place];
+  const IW = img.naturalWidth, IH = img.naturalHeight, a = lg.canvas.height / lg.canvas.width;
+  const wpx = Math.min(pr.maxW*IW, pr.maxH*IH / a);
+  return (mk.boxes[k] = { cx: pr.cx, cy: pr.cy, w: wpx / IW });
+}
+
+// ── style rows (one per style in the Order Builder) ──
+function renderMockup() { renderPlacement(); renderLogos(); renderMockRows(true); renderEditor(); }
+function renderMockRows(force) {
+  const items = mockItems();
+  const sig = JSON.stringify([method, items.map(i => [i.id, i.code.toUpperCase(), i.qty, viewsOf(i), itemPrint(i)]), mk.oneSide, quoteLang]);
+  if (!force && sig === mk.sig) return;
+  mk.sig = sig;
+  renderPlacement(); renderLogos();
+  const el = document.getElementById("mkRows");
+  if (mk.edit && !items.some(i => String(i.id) === String(mk.edit.id))) mk.edit = null;
+  if (!items.length) {
+    el.innerHTML = '<div class="mk-drop" style="cursor:default;margin-top:12px">Add a style in the <b>Order Builder</b> above. Each style gets its own mockup here.</div>';
+    renderEditor(); return;
+  }
+  
+  el.innerHTML = items.map(it => {
+    const p = cat()[it.code.toUpperCase()], qty = itemQty(it);
+    const colors = {}; Object.values(photoLib).forEach(ph => { if (ph.code === p.code) colors[ph.color.toLowerCase()] = ph.color; });
+    return '<div class="mk-style" id="mks-' + it.id + '">'
+      + '<div class="mk-style-head"><div><b>' + esc(p.code) + '</b> <span>' + esc(displayName(it, p)) + '</span></div><span class="mono">' + (qty ? qty + ' pcs' : '') + '</span></div>'
+      + (method !== "silk" ? '<div class="mk-print">' + esc(itemPrint(it)) + '</div>' : '')
+      + colorChipsHTML(it, p)
+      + '<div class="field"><label for="mkc-' + it.id + '">' + (Object.keys(colors).length ? 'Or type a new color' : 'Garment color') + '</label><input id="mkc-' + it.id + '" list="mkcl-' + it.id + '" value="' + esc(it.color||"") + '" placeholder="White" oninput="onRowColor(\'' + it.id + '\',this.value)"></div>'
+      + '<datalist id="mkcl-' + it.id + '">' + Object.values(colors).map(c => '<option value="' + esc(c) + '">').join("") + '</datalist>'
+      + (capItem(it) ? '' : sleeveChecksHTML(it))
+      + itemLogoHTML(it)
+      + '<div class="mk-views">' + sidesOf(it).map(s => '<div class="mk-view" id="mkv-' + it.id + '-' + s + '"></div>').join("") + '</div>'
+      + '<div class="mk-actions"><button class="mk-primary" id="mksave-' + it.id + '" onclick="saveMockup(\'' + it.id + '\')">Save PNG</button><button class="mk-secondary" id="mkcopy-' + it.id + '" onclick="copyMockup(\'' + it.id + '\')">Copy image</button></div>'
+      + '</div>';
+  }).join("") + (quoteMode === "final"
+      ? '<div class="mk-final"><div class="mk-final-title">Final order image</div><div class="mk-final-sub">All styles with a quantity, in one picture.</div><div class="mk-actions"><button class="mk-primary" onclick="saveOrderImage()">Save order image</button><button class="mk-secondary" onclick="copyOrderImage()">Copy order image</button></div></div>'
+      : (items.length > 1 ? '<button class="mk-all" onclick="saveAllMockups()">Save all mockups (' + items.length + ', one file each)</button>' : ''));
+  refreshViews();
+  renderEditor();
+}
+// Saved colors for this style, as buttons with a small photo, so nobody has to remember the names.
+function colorChipsHTML(it, p) {
+  const byColor = {};
+  Object.values(photoLib).forEach(ph => {
+    if (ph.code !== p.code) return;
+    const k = slugPart(ph.color);
+    if (!byColor[k] || ph.side === "front") byColor[k] = ph;
+  });
+  const list = Object.values(byColor).sort((a, b) => a.color.localeCompare(b.color));
+  if (!list.length) return '<div class="cchips-empty">No photos saved for ' + esc(p.code) + ' yet. Type the color below, then upload the photo.</div>';
+  const cur = slugPart(it.color || "");
+  return '<label class="lbl">Colors with photos</label><div class="cchips">' + list.map(ph =>
+    '<button type="button" class="cchip' + (slugPart(ph.color) === cur ? ' on' : '') + '" onclick="pickColor(\'' + it.id + '\',\'' + esc(ph.color).replace(/'/g, "\\'") + '\')"><img src="' + esc(photoSrc(ph)) + '" alt="">' + esc(ph.color) + '</button>').join("") + '</div>';
+}
+function pickColor(id, color) {
+  const it = itemById(id); if (!it) return;
+  it.color = color; clearBoxesFor(it.id);
+  if (mk.edit && String(mk.edit.id) === String(id)) mk.edit = null;
+  mk.sig = ""; renderMockRows(true); renderQuote();
+}
+let colorTimer = null;
+function onRowColor(id, v) {
+  const it = itemById(id); if (!it) return;
+  it.color = v; clearBoxesFor(it.id); renderQuote();
+  if (mk.edit && String(mk.edit.id) === String(id)) mk.edit = null;
+  clearTimeout(colorTimer); colorTimer = setTimeout(() => { refreshRow(it); renderEditor(); }, 250);
+}
+function clearBoxesFor(id) { Object.keys(mk.boxes).forEach(k => { if (k.startsWith(id + "|")) delete mk.boxes[k]; }); }
+function refreshViews() { if (!document.getElementById("mkRows")) return; mockItems().forEach(refreshRow); }
+function refreshRow(it) {
+  let ready = true;
+  sidesOf(it).forEach(side => { if (!renderView(it, side) && !optView(it, side)) ready = false; });
+  const s = document.getElementById("mksave-" + it.id), c = document.getElementById("mkcopy-" + it.id);
+  if (s) s.disabled = !ready || !mk.logos.front; if (c) c.disabled = !ready || !mk.logos.front;
+}
+// Returns true when this side has a photo.
+function renderView(it, side) {
+  const el = document.getElementById("mkv-" + it.id + "-" + side); if (!el) return false;
+  const label = (side === "side" && !capItem(it)) ? "Left sleeve" : SIDE_EN[side], only = photoOnly(it, side), opt = optView(it, side), mir = side === "rside" && (photoFor(it, side).rec || {})._mirror, capTxt = label + (mir ? " (flipped left)" : "") + (only ? " · photo only" : mk.logos.front ? " · tap to adjust" : "");
+  const dropAttrs = ' tabindex="0" onfocus="mk.pasteTarget={kind:\'garment\',id:\'' + it.id + '\',side:\'' + side + '\'}" ondragover="event.preventDefault()" ondrop="dropGarment(event,\'' + it.id + '\',\'' + side + '\')"';
+  if (!it.color || !slugPart(it.color)) {
+    el.innerHTML = '<div class="mk-slot">' + label + '<br><span>Type the garment color first</span></div>';
+    return false;
+  }
+  const { key: pKey, rec } = photoFor(it, side);
+  if (!rec) {
+    el.innerHTML = '<div class="mk-slot mk-slot-up"' + dropAttrs + ' onclick="pickGarment(\'' + it.id + '\',\'' + side + '\')"><span class="mk-upbtn">Upload ' + label.toLowerCase() + ' photo</span><span>' + esc(titleCase(it.color)) + ' · ' + label + (only ? ' (optional, photo only)' : opt ? ' (optional)' : '') + '. Or paste / drop it here.</span></div>';
+    return false;
+  }
+  const editing = mk.edit && String(mk.edit.id) === String(it.id) && mk.edit.side === side;
+  if (!el.querySelector("canvas")) el.innerHTML = '<canvas class="mk-thumb" onclick="openEditor(\'' + it.id + '\',\'' + side + '\')"' + dropAttrs + '></canvas><div class="mk-view-cap"><span>' + capTxt + '</span><button class="mk-link" onclick="pickGarment(\'' + it.id + '\',\'' + side + '\')">Replace</button></div><div class="mk-view-tools"></div>';
+  el.classList.toggle("editing", !!editing);
+  const tools = el.querySelector(".mk-view-tools");
+  if (tools) tools.innerHTML = !photoLib[pKey] ? "" : (rec.origAssetId || rec.origBlob)
+    ? '<button class="mk-link small" onclick="undoBackground(\'' + pKey + '\')">Undo background removal</button>'
+    : '<button class="mk-link small" onclick="removeBackground(\'' + pKey + '\', this)">Remove background</button>';
+  const cap = el.querySelector(".mk-view-cap span"); if (cap) cap.textContent = capTxt;
+  const cv = el.querySelector("canvas");
+  getPhotoImg(rec).then(img => {
+    if (!img || !cv.isConnected) return;
+    const w = 360, h = Math.round(img.naturalHeight * w / img.naturalWidth);
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    const lg = logoFor(side, it);
+    compose(cv.getContext("2d"), w, h, img, lg && lg.canvas, getBox(it, side, img, rec), mk.shade, false, isEmb(it));
+  });
+  return true;
+}
+function pickGarment(id, side) { mk.garmentPick = { id, side }; document.getElementById("mkGarmentFile").click(); }
+function onGarmentPicked(file) { if (mk.garmentPick) handleGarmentFile(file, mk.garmentPick.id, mk.garmentPick.side); }
+function dropGarment(e, id, side) { e.preventDefault(); const f = [...(e.dataTransfer.files||[])].find(f => f.type.startsWith("image/")); if (f) handleGarmentFile(f, id, side); }
+
+// Saves one garment photo to the library (Claude-hosted store, this browser, or session only).
+// ── Remove the photo background: plain background → white, then trim the empty space around the shirt ──
+function cleanBackgroundCanvas(img) {
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const cx = c.getContext("2d"); cx.drawImage(img, 0, 0);
+  const d = cx.getImageData(0, 0, W, H), p = d.data;
+  // Background color = median of the border pixels.
+  const rs = [], gs = [], bs = [], step = Math.max(1, Math.floor((W + H) / 800));
+  const sample = (x, y) => { const i = (y * W + x) * 4; rs.push(p[i]); gs.push(p[i+1]); bs.push(p[i+2]); };
+  for (let x = 0; x < W; x += step) { sample(x, 0); sample(x, H - 1); }
+  for (let y = 0; y < H; y += step) { sample(0, y); sample(W - 1, y); }
+  const med = a => a.sort((m, n) => m - n)[a.length >> 1], br = med(rs), bg = med(gs), bb = med(bs);
+  const dist = i => Math.sqrt((p[i]-br)**2 + (p[i+1]-bg)**2 + (p[i+2]-bb)**2);
+  const tol = 34;
+  // Flood fill from the edges through pixels close to the background color.
+  const mask = new Uint8Array(W * H), stack = new Int32Array(W * H); let sp = 0;
+  const push = k => { if (!mask[k] && dist(k * 4) < tol) { mask[k] = 1; stack[sp++] = k; } };
+  for (let x = 0; x < W; x++) { push(x); push((H - 1) * W + x); }
+  for (let y = 0; y < H; y++) { push(y * W); push(y * W + W - 1); }
+  while (sp) { const k = stack[--sp], x = k % W, y = (k / W) | 0;
+    if (x > 0) push(k - 1); if (x < W - 1) push(k + 1); if (y > 0) push(k - W); if (y < H - 1) push(k + W); }
+  let bgCount = 0; for (let k = 0; k < mask.length; k++) bgCount += mask[k];
+  const share = bgCount / mask.length;
+  if (share < 0.03 || share > 0.97) return null;
+  // Background → white; soften the pixels right at the edge.
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const k = y * W + x, i = k * 4;
+    if (mask[k]) { p[i] = p[i+1] = p[i+2] = 255; continue; }
+    if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    const nb = (x > 0 && mask[k-1]) || (x < W-1 && mask[k+1]) || (y > 0 && mask[k-W]) || (y < H-1 && mask[k+W]);
+    if (nb) { const t = Math.max(0, Math.min(1, (dist(i) - tol) / (tol * 0.8))); for (let ch = 0; ch < 3; ch++) p[i+ch] = p[i+ch] * t + 255 * (1 - t); }
+  }
+  cx.putImageData(d, 0, 0);
+  // Trim to the shirt with a small margin.
+  const pad = Math.round(Math.max(x1 - x0, y1 - y0) * 0.05);
+  const cx0 = Math.max(0, x0 - pad), cy0 = Math.max(0, y0 - pad), cw = Math.min(W, x1 + pad + 1) - cx0, ch = Math.min(H, y1 + pad + 1) - cy0;
+  const out = document.createElement("canvas"); out.width = cw; out.height = ch;
+  const ox = out.getContext("2d"); ox.fillStyle = "#fff"; ox.fillRect(0, 0, cw, ch); ox.drawImage(c, cx0, cy0, cw, ch, 0, 0, cw, ch);
+  return out;
+}
+async function removeBackground(key, btn) {
+  const rec = photoLib[key]; if (!rec) return;
+  if (btn) { btn.disabled = true; btn.textContent = "Removing…"; }
+  try {
+    const img = await getPhotoImg(rec); if (!img) throw new Error("load");
+    const out = cleanBackgroundCanvas(img);
+    if (!out) { mkMsg("Couldn't find a plain background around the shirt in this photo, so it was left as it is.", true); renderMockRows(true); return; }
+    const blob = await new Promise(r => out.toBlob(r, "image/jpeg", 0.95));
+    if (mkDb && mkAssets) {
+      const up = await mkAssets.upload(blob, { type:"image/jpeg" });
+      const { src, ...st } = rec;
+      await mkDb.doc("photos/" + key).set({ ...st, assetId: up.id, origAssetId: rec.origAssetId || rec.assetId, place: {}, updatedAt: Date.now() });
+    } else if (localLib) {
+      const { src, ...st } = rec, next = { ...st, blob, origBlob: rec.origBlob || rec.blob, place: {}, updatedAt: Date.now() };
+      await localPut(key, next); photoLib[key] = { ...next, src: URL.createObjectURL(blob) };
+    }
+    Object.keys(mk.boxes).forEach(k => delete mk.boxes[k]);
+    mkMsg("Background removed. Logo positions for this photo were reset, since the photo was trimmed.");
+    renderLib(); renderMockRows(true); renderEditor();
+  } catch (e) { mkMsg("Couldn't remove the background. Try again.", true); renderMockRows(true); }
+}
+async function undoBackground(key) {
+  const rec = photoLib[key]; if (!rec) return;
+  try {
+    const { src, ...st } = rec;
+    if (mkDb && rec.origAssetId) {
+      const cleaned = rec.assetId; const { origAssetId, ...rest } = st;
+      await mkDb.doc("photos/" + key).set({ ...rest, assetId: origAssetId, place: {}, updatedAt: Date.now() });
+      if (mkAssets && cleaned) { try { await mkAssets.delete(cleaned); } catch (e) {} }
+    } else if (localLib && rec.origBlob) {
+      const { origBlob, ...rest } = st, next = { ...rest, blob: origBlob, place: {}, updatedAt: Date.now() };
+      await localPut(key, next); photoLib[key] = { ...next, src: URL.createObjectURL(origBlob) };
+    }
+    Object.keys(mk.boxes).forEach(k => delete mk.boxes[k]);
+    mkMsg("Original photo restored."); renderLib(); renderMockRows(true); renderEditor();
+  } catch (e) { mkMsg("Couldn't restore the original photo. Try again.", true); }
+}
+
+async function storePhoto(code, color, side, blob, place) {
+  const key = photoKey(code, color, side), old = photoLib[key];
+  const keepPlace = place || (old && old.place) || {};
+  if (mkDb && mkAssets) {
+    const up = await mkAssets.upload(blob, { type:"image/jpeg" });
+    await mkDb.doc("photos/" + key).set({ code, color, side, assetId: up.id, place: keepPlace, updatedAt: Date.now() });
+    if (old && old.assetId && old.assetId !== up.id) { try { await mkAssets.delete(old.assetId); } catch (e) {} }
+  } else if (localLib) {
+    const rec = { code, color, side, blob, place: keepPlace, updatedAt: Date.now() };
+    await localPut(key, rec);
+    photoLib[key] = { ...rec, src: URL.createObjectURL(blob) };
+  } else {
+    mk.temp[key] = { code, color, side, src: URL.createObjectURL(blob), place: keepPlace };
+  }
+}
+
+// ── Backup file: products + photos + TBDezign logo, to move between browsers/devices ──
+function blobToDataUrl(b) { return new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(b); }); }
+async function dataUrlToBlob(u) { return await (await fetch(u)).blob(); }
+async function srcToDataUrl(src) { return blobToDataUrl(await (await fetch(src)).blob()); }
+async function exportLibrary() {
+  mkMsg("Preparing backup…");
+  try {
+    const photos = [];
+    for (const p of Object.values(photoLib)) {
+      try { photos.push({ code:p.code, color:p.color, side:p.side, place:p.place || {}, data: await srcToDataUrl(photoSrc(p)) }); } catch (e) {}
+    }
+    let brand = null; if (mk.brandSrc) { try { brand = await srcToDataUrl(mk.brandSrc); } catch (e) {} }
+    const catalogs = {}; METHOD_KEYS.forEach(k => { catalogs[k] = Object.values(cats[k]); });
+    const json = JSON.stringify({ app:"tbdezign-apparel", version:2, savedAt:new Date().toISOString(), catalogs, photos, brand });
+    const name = "tbdezign-backup-" + new Date().toISOString().slice(0,10) + ".json";
+    if (mkDownloads) {
+      try { await mkDownloads.save({ filename:name, data: json }); } catch (e) { if (e && e.code === "declined") { mkMsg(""); return; } throw e; }
+    } else {
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([json], { type:"application/json" })); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+    const nP = METHOD_KEYS.reduce((n, k) => n + Object.keys(cats[k]).length, 0);
+    mkMsg("Backup saved: " + nP + " products, " + photos.length + (photos.length===1?" photo":" photos") + (brand ? ", your logo" : "") + ". Open the calculator on the other device and use Restore backup.");
+  } catch (e) { mkMsg("Couldn't create the backup. Try again.", true); }
+}
+// Accepts this calculator's backups and the older Silk Screen / DTF backups.
+async function importLibrary(file) {
+  mkMsg("Restoring backup…");
+  try {
+    const d = JSON.parse(await file.text());
+    const lists = {};
+    if (d && d.app === "tbdezign-apparel") Object.assign(lists, d.catalogs || {});
+    else if (d && d.app === "tbdezign-silk-screen") lists.silk = d.catalog || [];
+    else if (d && d.app === "tbdezign-dtf") { lists.dtf = Object.values(d.dtfCatalog || {}); lists.v2 = Object.values(d.v2Catalog || {}); }
+    else { mkMsg("That file isn't a backup from a TBDezign calculator.", true); return; }
+    let nP = 0, nF = 0;
+    for (const k of METHOD_KEYS) nP += await addProducts(k, lists[k] || []);
+    renderCatalog(); renderOrderItems();
+    for (const ph of (d.photos || [])) {
+      if (!ph || !ph.code || !ph.color || !ph.side || !ph.data) continue;
+      mkMsg("Restoring photos… " + (nF + 1) + " of " + d.photos.length);
+      try { await storePhoto(ph.code, ph.color, ph.side, await dataUrlToBlob(ph.data), ph.place || {}); nF++; } catch (e) {}
+    }
+    if (d.brand) { try { const b = await dataUrlToBlob(d.brand); await handleBrandFile(new File([b], "logo.png", { type: b.type || "image/png" })); } catch (e) {} }
+    renderLib(); refreshViews();
+    mkMsg("Backup restored: " + nP + (nP===1?" product, ":" products, ") + nF + (nF===1?" photo":" photos") + (d.brand ? ", your logo" : "") + ".");
+  } catch (e) { mkMsg("Couldn't read that backup file.", true); }
+}
+
+async function handleGarmentFile(file, id, side) {
+  const it = itemById(id); if (!it) return;
+  if (!it.color || !slugPart(it.color)) { mkMsg("Type the garment color first, so the photo is saved under the right name.", true); return; }
+  const code = it.code.toUpperCase(), color = titleCase(it.color.trim()), key = photoKey(code, color, side);
+  mkMsg("Adding photo…");
+  try {
+    const src = await loadImage(URL.createObjectURL(file));
+    // Downscale to 1800px and flatten onto white (JPEG keeps the library light).
+    const s = Math.min(1, 3000 / Math.max(src.naturalWidth, src.naturalHeight));
+    const c = document.createElement("canvas"); c.width = Math.round(src.naturalWidth*s); c.height = Math.round(src.naturalHeight*s);
+    const cx = c.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0,0,c.width,c.height); cx.drawImage(src,0,0,c.width,c.height);
+    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.95));
+    await storePhoto(code, color, side, blob, null);
+    mkMsg((mkDb || localLib) ? "Photo saved to the library as " + code + " · " + color + " · " + SIDE_EN[side] + "." : "Photo added for this session only. The library isn't available in this view.");
+    mk.pasteTarget = null;
+    orderItems.forEach(o => { if (o.code.toUpperCase() === code && slugPart(o.color) === slugPart(color)) delete mk.boxes[boxKey(o, side)]; });
+    renderLib(); mk.sig = ""; renderMockRows(true);
+  } catch (e) {
+    const c2 = e && e.code;
+    mkMsg(c2 === "too_large" ? "That photo is too large. Try a smaller file." : c2 === "quota_or_state" ? "The photo library is full. Delete some photos you no longer need." : "Couldn't add that photo. Try again.", true);
+  }
+}
+
+// ── editor (large view for adjusting one style + side) ──
+function openEditor(id, side) {
+  const oi = itemById(id); if (oi && photoOnly(oi, side)) return;
+  if (!mk.logos.front) { mkMsg("Add the client logo first.", true); return; }
+  mk.edit = { id, side }; refreshViews(); renderEditor();
+  document.getElementById("mkEditor").scrollIntoView({ behavior:"smooth", block:"nearest" });
+}
+function closeEditor() { mk.edit = null; refreshViews(); renderEditor(); }
+function editCtx() {
+  if (!mk.edit) return null;
+  const it = itemById(mk.edit.id); if (!it) return null;
+  const { key, rec } = photoFor(it, mk.edit.side); if (!rec) return null;
+  return { it, side: mk.edit.side, key, rec };
+}
+async function renderEditor() {
+  const ed = document.getElementById("mkEditor"), ctx = editCtx();
+  if (!ctx || !logoFor(ctx.side, ctx.it) || !sidesOf(ctx.it).includes(ctx.side)) { ed.hidden = true; return; }
+  const img = await getPhotoImg(ctx.rec); if (!img) { ed.hidden = true; return; }
+  ed.hidden = false;
+  document.getElementById("mkEditTitle").textContent = "Adjusting " + ctx.it.code.toUpperCase() + " · " + titleCase(ctx.it.color) + " · " + SIDE_EN[ctx.side];
+  const cv = document.getElementById("mkCanvas"), cw = Math.min(img.naturalWidth, 900);
+  cv.width = cw; cv.height = Math.round(img.naturalHeight * cw / img.naturalWidth);
+  const box = getBox(ctx.it, ctx.side, img, ctx.rec);
+  document.getElementById("mkSize").value = box.w*100; document.getElementById("mkSizeVal").textContent = (box.w*100).toFixed(0) + "%";
+  document.getElementById("mkSavePos").hidden = !(photoLib[ctx.key] && libAvailable());
+  drawEditor();
+}
+let rafPending = false;
+function drawEditor() {
+  if (rafPending) return; rafPending = true;
+  requestAnimationFrame(async () => {
+    rafPending = false;
+    const ctx = editCtx(); if (!ctx) return;
+    const img = await getPhotoImg(ctx.rec); if (!img) return;
+    const cv = document.getElementById("mkCanvas"), lg = logoFor(ctx.side, ctx.it);
+    compose(cv.getContext("2d"), cv.width, cv.height, img, lg && lg.canvas, getBox(ctx.it, ctx.side, img, ctx.rec), mk.shade, true, isEmb(ctx.it));
+  });
+}
+function onMkSize(v) {
+  const ctx = editCtx(); if (!ctx) return;
+  const b = mk.boxes[boxKey(ctx.it, ctx.side)]; if (!b) return;
+  b.w = v/100; document.getElementById("mkSizeVal").textContent = (+v).toFixed(0)+"%";
+  drawEditor(); renderView(ctx.it, ctx.side);
+}
+async function savePosition() {
+  const ctx = editCtx(); if (!ctx) return;
+  const img = await getPhotoImg(ctx.rec), box = mk.boxes[boxKey(ctx.it, ctx.side)], lg = logoFor(ctx.side, ctx.it);
+  if (!img || !box || !lg) return;
+  if (!photoLib[ctx.key] || !libAvailable()) { mkMsg("Positions can only be saved for photos in the library.", true); return; }
+  const IW = img.naturalWidth, IH = img.naturalHeight, place = placeOf(ctx.it, ctx.side);
+  const hFrac = box.w*IW*(lg.canvas.height/lg.canvas.width) / IH;
+  const pos = { cx:+box.cx.toFixed(4), cy:+box.cy.toFixed(4), maxW:+box.w.toFixed(4), maxH:+Math.max(hFrac, box.w*IW/IH).toFixed(4) };
+  try {
+    if (!mkDb) {
+      const { src, ...stored } = ctx.rec; stored.place = { ...(ctx.rec.place||{}), [place]: pos };
+      await localPut(ctx.key, stored); photoLib[ctx.key] = { ...stored, src };
+    } else await mkDb.doc("photos/" + ctx.key).update({ place: { [place]: pos } });
+    mkMsg(PRESETS[place].label + " position saved for this photo.");
+  } catch (e) { mkMsg("Couldn't save the position. Try again.", true); }
+}
+(function bindEditorCanvas() {
+  const cv = document.getElementById("mkCanvas"); let drag = null;
+  const pt = e => { const r = cv.getBoundingClientRect(); return { x:(e.clientX-r.left)/r.width, y:(e.clientY-r.top)/r.height }; };
+  const cur = () => { const ctx = editCtx(); return ctx ? { ctx, box: mk.boxes[boxKey(ctx.it, ctx.side)], lg: logoFor(ctx.side, ctx.it) } : null; };
+  cv.addEventListener("pointerdown", e => {
+    const c = cur(); if (!c || !c.box || !c.lg) return;
+    const p = pt(e), W = cv.width, H = cv.height, b = c.box;
+    const hw = b.w/2, hh = (b.w*W*c.lg.canvas.height/c.lg.canvas.width)/H/2;
+    if (!(Math.abs(p.x-b.cx) <= hw && Math.abs(p.y-b.cy) <= hh)) { b.cx = p.x; b.cy = p.y; }
+    drag = { b, dx: b.cx - p.x, dy: b.cy - p.y };
+    cv.setPointerCapture(e.pointerId); drawEditor();
+  });
+  cv.addEventListener("pointermove", e => { if (!drag) return; const p = pt(e); drag.b.cx = Math.min(1,Math.max(0,p.x+drag.dx)); drag.b.cy = Math.min(1,Math.max(0,p.y+drag.dy)); drawEditor(); });
+  const end = () => { if (drag) { drag = null; const c = cur(); if (c) renderView(c.ctx.it, c.ctx.side); } };
+  cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
+})();
+
+// Paste: goes to the last focused logo or photo slot; otherwise the logo.
+document.addEventListener("paste", e => {
+  const items = e.clipboardData ? [...e.clipboardData.items] : [];
+  const it = items.find(i => i.type && i.type.startsWith("image/")); if (!it) return;
+  const f = it.getAsFile(); if (!f) return;
+  e.preventDefault();
+  const t = mk.pasteTarget;
+  if (t && t.kind === "brand") handleBrandFile(f);
+  else if (t && t.kind === "garment") handleGarmentFile(f, t.id, t.side);
+  else handleLogoFile(f, t && t.kind === "logo" ? t.side : "front");
+});
+
+// ── rendering ──
+function compose(ctx, W, H, img, logo, box, shade, outline, emb) {
+  ctx.drawImage(img, 0, 0, W, H);
+  if (!logo || !box) return;
+  const lw = Math.max(1, Math.round(box.w * W)), lh = Math.max(1, Math.round(lw * logo.height / logo.width));
+  const x = Math.round(box.cx*W - lw/2), y = Math.round(box.cy*H - lh/2);
+  const x0 = Math.max(0,x), y0 = Math.max(0,y), x1 = Math.min(W,x+lw), y1 = Math.min(H,y+lh);
+  if (x1 > x0 && y1 > y0) {
+    const tw = x1-x0, th = y1-y0;
+    const t = document.createElement("canvas"); t.width = tw; t.height = th;
+    const tc = t.getContext("2d"); tc.drawImage(logo, x-x0, y-y0, lw, lh);
+    const L = tc.getImageData(0,0,tw,th).data, Gd = ctx.getImageData(x0,y0,tw,th), G = Gd.data;
+    // Fabric shading: light/shadow of the garment under the print, relative to its average.
+    let sum = 0, n = 0;
+    for (let i=0;i<G.length;i+=4) if (L[i+3] > 10) { sum += .299*G[i]+.587*G[i+1]+.114*G[i+2]; n++; }
+    const mean = (n ? sum/n : 128) + 20;
+    if (emb) { embroider(L, G, tw, th, lw, shade, mean); ctx.putImageData(Gd, x0, y0); }
+    else for (let i=0;i<G.length;i+=4) {
+      const a = L[i+3]/255 * 0.96; if (a <= 0) continue;
+      const lum = .299*G[i]+.587*G[i+1]+.114*G[i+2];
+      let s = (lum+20)/mean; s = s < .45 ? .45 : s > 1.35 ? 1.35 : s;
+      const f = 1 + shade*(s-1);
+      for (let c=0;c<3;c++) { let v = L[i+c]*f; v = v > 255 ? 255 : v; G[i+c] = v*a + G[i+c]*(1-a); }
+    }
+    if (!emb) ctx.putImageData(Gd, x0, y0);
+  }
+  if (outline) {
+    ctx.save(); ctx.setLineDash([6,4]); ctx.lineWidth = 1.5; ctx.strokeStyle = "rgba(37,99,235,.85)";
+    ctx.strokeRect(x-3.5, y-3.5, lw+7, lh+7); ctx.restore();
+  }
+}
+
+// Embroidery look: satin thread ridges, raised edges (light top-left, shade bottom-right) and a soft shadow on the fabric.
+function embroider(L, G, tw, th, lw, shade, mean) {
+  const A = new Float32Array(tw * th);
+  for (let i = 0; i < A.length; i++) A[i] = L[i*4+3] / 255;
+  const a = (x, y) => (x < 0 || y < 0 || x >= tw || y >= th) ? 0 : A[y*tw + x];
+  const period = Math.max(2.6, lw / 110);            // thread spacing
+  const r = Math.max(1, Math.round(period * 0.8));    // bevel width
+  const d = Math.max(1, Math.round(lw * 0.006));      // shadow offset
+  // Soft shadow under the stitches.
+  for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
+    const sh = (a(x-d, y-d) + a(x-d-1, y-d) + a(x-d, y-d-1)) / 3;
+    if (sh <= 0) continue;
+    const k = 1 - 0.32 * sh * (1 - a(x, y)), i = (y*tw + x) * 4;
+    G[i] *= k; G[i+1] *= k; G[i+2] *= k;
+  }
+  for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
+    const al = A[y*tw + x]; if (al <= 0) continue;
+    const i = (y*tw + x) * 4;
+    // Each color area gets its own stitch direction, like separate thread fills.
+    const ck = ((L[i] >> 6) * 7 + (L[i+1] >> 6) * 3 + (L[i+2] >> 6)) & 1;
+    const u = (x + (ck ? -y : y)) / period;
+    const ridge = Math.pow(0.5 + 0.5 * Math.cos(2 * Math.PI * u), 0.8);
+    const noise = ((Math.sin(x * 12.9898 + y * 78.233) * 43758.5453) % 1) * 0.06;
+    const thread = 0.74 + 0.36 * ridge + noise;
+    const edge = a(x - r, y - r) - a(x + r, y + r);                   // + on lower-right edges, − on upper-left
+    // Thread gap where two colors meet.
+    const j = (Math.min(th - 1, y + 1) * tw + Math.min(tw - 1, x + 1)) * 4;
+    const cdiff = (Math.abs(L[i] - L[j]) + Math.abs(L[i+1] - L[j+1]) + Math.abs(L[i+2] - L[j+2])) / 765;
+    const bevel = (1 - 0.42 * edge) * (1 - 0.45 * Math.min(1, cdiff * 2.5));
+    const lum = .299*G[i] + .587*G[i+1] + .114*G[i+2];
+    let s = (lum + 20) / mean; s = s < .6 ? .6 : s > 1.25 ? 1.25 : s;
+    const f = thread * bevel * (1 + shade * 0.5 * (s - 1));
+    for (let c = 0; c < 3; c++) { let v = L[i+c] * f + (ridge > 0.85 ? 10 : 0); v = v > 255 ? 255 : v < 0 ? 0 : v; G[i+c] = v * al + G[i+c] * (1 - al); }
+  }
+}
+// Embroidery look is turned off (same print look for every method). Return the commented check to turn it back on.
+function isEmb(it) { return false; /* method === "emb" || (method === "v2" && it && it.decoration === "emb") */ }
+
+// ── TBDezign logo for the footer (uploaded once, saved) ──
+function setBrandSrc(src) {
+  mk.brandSrc = src; mk.brand = null;
+  if (src) loadImage(src).then(i => { if (mk.brandSrc === src) { mk.brand = i; renderBrand(); } }).catch(() => renderBrand());
+  renderBrand();
+}
+function renderBrand() {
+  const el = document.getElementById("mkBrandZone"); if (!el) return;
+  el.innerHTML = (mk.brandSrc ? '<img src="' + esc(mk.brandSrc) + '" alt="TBDezign logo" style="object-fit:contain;background:#fff">' : '<div class="mk-logo-empty">Logo</div>')
+    + '<div class="grow"><b style="color:#1A1A1A">Your TBDezign logo</b><br>' + (mk.brandSrc ? 'Shown in the footer of every mockup.' : 'Upload it once and it goes in the footer of every mockup. A PNG with a transparent background works best.') + '</div>'
+    + '<button class="mk-link" onclick="document.getElementById(\'mkBrandFile\').click()">' + (mk.brandSrc ? 'Change' : 'Upload') + '</button>';
+}
+function dropBrand(e) { e.preventDefault(); const f = [...(e.dataTransfer.files||[])].find(f => f.type.startsWith("image/")); if (f) handleBrandFile(f); }
+async function handleBrandFile(file) {
+  try {
+    const src = await loadImage(URL.createObjectURL(file));
+    const s = Math.min(1, 2000 / Math.max(src.naturalWidth, src.naturalHeight));
+    const c = document.createElement("canvas"); c.width = Math.round(src.naturalWidth*s); c.height = Math.round(src.naturalHeight*s);
+    c.getContext("2d").drawImage(src, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, "image/png"));
+    if (mkDb && mkAssets) {
+      const old = mk.brandAsset;
+      const up = await mkAssets.upload(blob, { type:"image/png" });
+      await mkDb.doc("settings/brand").set({ assetId: up.id, updatedAt: Date.now() });
+      if (old && old !== up.id) { try { await mkAssets.delete(old); } catch (e) {} }
+    } else if (localLib) {
+      await localPut("__brand__", { blob }); setBrandSrc(URL.createObjectURL(blob));
+    } else setBrandSrc(URL.createObjectURL(blob));
+    mk.pasteTarget = null; mkMsg("TBDezign logo saved. It will appear on every mockup.");
+  } catch (e) { mkMsg("Couldn't save the logo. Try a PNG or JPG file.", true); }
+}
+
+// ── export: 1:1 for one side, 16:9 for front + back ──
+async function exportBlob(id) {
+  const it = itemById(id); if (!it) return null;
+  const p = cat()[it.code.toUpperCase()], sides = sidesOf(it);
+  const views = [];
+  for (const side of sides) {
+    const { rec } = photoFor(it, side); const img = rec && await getPhotoImg(rec);
+    if (!img) { if (optView(it, side)) continue; throw new Error("missing-" + side); }
+    views.push({ side, img, rec });
+  }
+  const multi = views.length > 1;
+  const W = multi ? 3840 : 3000, H = multi ? 2160 : 3000;   // high-res: 4K for front + back, 3000px square for one side
+  const F = Math.round(H * (multi ? 0.15 : 0.12));          // footer height
+  const gap = Math.round(W * (multi ? 0.025 : 0.04));       // outer margin / gutter
+  const labelH = multi ? Math.round(H * 0.06) : 0;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const cx = c.getContext("2d");
+  cx.fillStyle = "#fff"; cx.fillRect(0, 0, W, H);
+  const sys = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+  const cellW = (W - gap * (views.length + 1)) / views.length, cellH = H - F - gap - labelH;
+  views.forEach((v, i) => {
+    const sc = Math.min(cellW / v.img.naturalWidth, cellH / v.img.naturalHeight);
+    const w = Math.round(v.img.naturalWidth * sc), h = Math.round(v.img.naturalHeight * sc);
+    const t = document.createElement("canvas"); t.width = w; t.height = h;
+    const lg = logoFor(v.side, it);
+    compose(t.getContext("2d"), w, h, v.img, lg && lg.canvas, getBox(it, v.side, v.img, v.rec), mk.shade, false, isEmb(it));
+    const x0 = gap + i * (cellW + gap);
+    cx.drawImage(t, Math.round(x0 + (cellW - w) / 2), Math.round(gap + (cellH - h) / 2));
+    if (multi) {
+      cx.fillStyle = "#1A1A1A"; cx.font = "600 " + Math.round(H*0.026) + "px " + sys; cx.textAlign = "center"; cx.textBaseline = "middle";
+      cx.fillText(sideLabel(v.side, capItem(it)).toUpperCase(), x0 + cellW/2, Math.round(gap + (cellH + h) / 2) + labelH/2);
+    }
+  });
+  // Footer: TBDezign logo left, style details right, disclaimer below.
+  const top = H - F, pad = gap;
+  cx.fillStyle = "#E8E8E8"; cx.fillRect(pad, top, W - pad*2, 2);
+  // Two rows sharing baselines: [logo | code · color] on top, [disclaimer | print line] at the bottom.
+  const fs = Math.round(F * 0.16), rowTop = top + F * 0.50, rowBot = top + F * 0.80;
+  cx.textBaseline = "alphabetic";
+  if (mk.brand) {
+    // Small logo, sitting on the top row's baseline.
+    const bh = F * 0.15, bw = Math.min(W * 0.22, mk.brand.naturalWidth * bh / mk.brand.naturalHeight), bh2 = bw * mk.brand.naturalHeight / mk.brand.naturalWidth;
+    cx.drawImage(mk.brand, pad, rowTop - bh2, bw, bh2);
+  } else {
+    cx.textAlign = "left"; cx.fillStyle = "#1A1A1A"; cx.font = "700 " + fs*0.9 + "px " + sys; cx.fillText("TBDezign Print", pad, rowTop);
+  }
+  cx.textAlign = "right"; cx.fillStyle = "#1A1A1A"; cx.font = "600 " + fs + "px " + sys;
+  cx.fillText(T().code + " " + p.code + " · " + titleCase(it.color.trim()), W - pad, rowTop);
+  cx.fillStyle = "#666"; cx.font = "400 " + fs*0.8 + "px " + sys;
+  cx.fillText(itemPrint(it), W - pad, rowBot);
+  cx.textAlign = "left"; cx.fillStyle = "#999"; cx.font = "400 " + fs*0.66 + "px " + sys;
+  cx.fillText(T().disclaimer, pad, rowBot);
+  return new Promise(res => c.toBlob(res, "image/png"));
+}
+function mockupName(id) {
+  const it = itemById(id);
+  return "mockup-" + slugPart(it.code) + "-" + slugPart(it.color) + "-" + sidesOf(it).map(sd => SIDE_PT[sd]).join("-").toLowerCase() + ".png";
+}
+function exportError(e) {
+  const m = String(e && e.message || "");
+  if (m.startsWith("missing-")) return "Add the " + SIDE_EN[m.slice(8)].toLowerCase() + " photo for this style first.";
+  return null;
+}
+async function saveMockup(id) {
+  if (!mk.logos.front) { mkMsg("Add the client logo first.", true); return; }
+  let blob;
+  try { blob = await exportBlob(id); } catch (e) { mkMsg(exportError(e) || "Couldn't build the image.", true); return; }
+  if (!mkDownloads) {
+    // Opened as a file in the browser: a normal download works.
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = mockupName(id);
+    document.body.appendChild(a); a.click(); a.remove(); mkMsg("Mockup downloaded."); return;
+  }
+  try { await mkDownloads.save({ filename: mockupName(id), data: blob }); mkMsg("Mockup saved."); }
+  catch (e) {
+    if (e && e.code === "declined") { mkMsg(""); return; }
+    mkMsg(e && e.code === "rate_limited" ? "A save is already waiting for confirmation." : "Couldn't save the file. Try Copy image instead.", true);
+  }
+}
+function missingSide(id) { const it = itemById(id); return it ? sidesOf(it).find(sd => !optView(it, sd) && !photoFor(it, sd).rec) : null; }
+// ── Final order: every style with a quantity in one image ──
+function orderImageItems() { return mockItems().filter(it => itemQty(it) > 0); }
+async function exportOrderBlob() {
+  const list = orderImageItems();
+  if (!list.length) throw new Error("noqty");
+  const views = [];
+  for (const it of list) {
+    if (!it.color || !slugPart(it.color)) throw new Error("nocolor-" + it.code);
+    for (const side of sidesOf(it)) {
+      const { rec } = photoFor(it, side); const img = rec && await getPhotoImg(rec);
+      if (!img) { if (optView(it, side)) continue; throw new Error("missing-" + side + "-" + it.code); }
+      views.push({ it, side, img, rec });
+    }
+  }
+  const n = views.length, rows = n > 4 ? 2 : 1, cols = Math.ceil(n / rows);
+  const W = 3840, F = 324, gap = 96, labelH = 190;
+  // One row: always 16:9 (3840×2160). Two rows (5+ views): taller image.
+  const cellW = (W - gap * (cols + 1)) / cols, cellH = rows === 1 ? 2160 - F - gap * 1.5 - labelH : Math.min(cellW * 1.15, 1400);
+  const H = rows === 1 ? 2160 : Math.round(gap + rows * (cellH + labelH) + (rows - 1) * gap * 0.5 + F);
+  const c = document.createElement("canvas"); c.width = W; c.height = H; const cx = c.getContext("2d");
+  cx.fillStyle = "#fff"; cx.fillRect(0, 0, W, H);
+  const sys = "-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif", multiSide = list.some(it => sidesOf(it).length > 1);
+  views.forEach((v, i) => {
+    const r = Math.floor(i / cols), col = i % cols;
+    const x0 = gap + col * (cellW + gap), y0 = gap + r * (cellH + labelH + gap * 0.5);
+    const sc = Math.min(cellW / v.img.naturalWidth, cellH / v.img.naturalHeight);
+    const w = Math.round(v.img.naturalWidth * sc), h = Math.round(v.img.naturalHeight * sc);
+    const t = document.createElement("canvas"); t.width = w; t.height = h; const lg = logoFor(v.side, v.it);
+    compose(t.getContext("2d"), w, h, v.img, lg && lg.canvas, getBox(v.it, v.side, v.img, v.rec), mk.shade, false, isEmb(v.it));
+    cx.drawImage(t, Math.round(x0 + (cellW - w) / 2), Math.round(y0 + (cellH - h) / 2));
+    const q = itemQty(v.it);
+    cx.textAlign = "center"; cx.textBaseline = "alphabetic";
+    cx.fillStyle = "#1A1A1A"; cx.font = "600 " + Math.round(Math.min(56, cellW * 0.07)) + "px " + sys;
+    cx.fillText(T().code + " " + v.it.code.toUpperCase() + " · " + titleCase(v.it.color.trim()) + (multiSide ? " · " + sideLabel(v.side, capItem(v.it)) : ""), x0 + cellW / 2, y0 + cellH + labelH * 0.42);
+    cx.fillStyle = "#666"; cx.font = "400 " + Math.round(Math.min(46, cellW * 0.058)) + "px " + sys;
+    cx.fillText(T().pcs(q), x0 + cellW / 2, y0 + cellH + labelH * 0.78);
+  });
+  const top = H - F, pad = gap;
+  cx.fillStyle = "#E8E8E8"; cx.fillRect(pad, top, W - pad * 2, 2);
+  const fs = Math.round(F * 0.16), rowTop = top + F * 0.50, rowBot = top + F * 0.80;
+  if (mk.brand) {
+    const bh = F * 0.15, bw = Math.min(W * 0.22, mk.brand.naturalWidth * bh / mk.brand.naturalHeight), bh2 = bw * mk.brand.naturalHeight / mk.brand.naturalWidth;
+    cx.drawImage(mk.brand, pad, rowTop - bh2, bw, bh2);
+  } else { cx.textAlign = "left"; cx.fillStyle = "#1A1A1A"; cx.font = "700 " + fs * 0.9 + "px " + sys; cx.fillText("TBDezign Print", pad, rowTop); }
+  const total = list.reduce((a, it) => a + itemQty(it), 0);
+  cx.textAlign = "right"; cx.fillStyle = "#1A1A1A"; cx.font = "600 " + fs + "px " + sys;
+  cx.fillText(T().order + " · " + T().pcs(total), W - pad, rowTop);
+  const prints = [...new Set(list.map(itemPrint))];
+  cx.fillStyle = "#666"; cx.font = "400 " + fs * 0.8 + "px " + sys; cx.fillText(prints.length === 1 ? prints[0] : methodLabel(), W - pad, rowBot);
+  cx.textAlign = "left"; cx.fillStyle = "#999"; cx.font = "400 " + fs * 0.66 + "px " + sys;
+  cx.fillText(T().disclaimer, pad, rowBot);
+  return new Promise(res => c.toBlob(res, "image/png"));
+}
+function orderImageError(e) {
+  const m = String(e && e.message || "");
+  if (m === "noqty") return "Enter the quantity for each style the client chose.";
+  if (m.startsWith("nocolor-")) return "Type the garment color for " + m.slice(8) + " first.";
+  if (m.startsWith("missing-")) { const [, side, code] = m.split("-"); return "Add the " + SIDE_EN[side].toLowerCase() + " photo for " + code + " first."; }
+  return null;
+}
+async function saveOrderImage() {
+  if (!mk.logos.front) { mkMsg("Add the client logo first.", true); return; }
+  let blob; try { blob = await exportOrderBlob(); } catch (e) { mkMsg(orderImageError(e) || "Couldn't build the image.", true); return; }
+  const name = "pedido-" + (slugPart((quotes[activeQ] && quotes[activeQ].name) || "") || "mockup") + ".png";
+  try {
+    if (mkDownloads) await mkDownloads.save({ filename: name, data: blob });
+    else { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+    mkMsg("Order image saved.");
+  } catch (e) { if (e && e.code === "declined") { mkMsg(""); return; } mkMsg("Couldn't save the file. Try Copy order image instead.", true); }
+}
+async function copyOrderImage() {
+  if (!mk.logos.front) { mkMsg("Add the client logo first.", true); return; }
+  const list = orderImageItems();
+  const bad = !list.length ? "noqty" : (list.find(it => !it.color || !slugPart(it.color)) ? "nocolor-" + list.find(it => !it.color || !slugPart(it.color)).code : null);
+  if (bad) { mkMsg(orderImageError({ message: bad }), true); return; }
+  const miss = list.map(it => [it, missingSide(it.id)]).find(x => x[1]);
+  if (miss) { mkMsg("Add the " + SIDE_EN[miss[1]].toLowerCase() + " photo for " + miss[0].code + " first.", true); return; }
+  try { await navigator.clipboard.write([new ClipboardItem({ "image/png": exportOrderBlob() })]); mkMsg("Order image copied. Paste it into WhatsApp."); }
+  catch (e) { mkMsg("Copying images isn't allowed here. Use Save order image instead.", true); }
+}
+
+// Saves every style's mockup one after another (skips styles still missing a color or photo).
+async function saveAllMockups() {
+  if (!mk.logos.front) { mkMsg("Add the client logo first.", true); return; }
+  const list = mockItems(), ready = list.filter(it => it.color && slugPart(it.color) && !missingSide(it.id));
+  if (!ready.length) { mkMsg("Each style needs its garment color and photo before it can be saved.", true); return; }
+  let saved = 0;
+  for (const it of ready) {
+    try {
+      const blob = await exportBlob(it.id);
+      if (mkDownloads) await mkDownloads.save({ filename: mockupName(it.id), data: blob });
+      else { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = mockupName(it.id); document.body.appendChild(a); a.click(); a.remove(); await new Promise(r => setTimeout(r, 400)); }
+      saved++;
+    } catch (e) { if (e && e.code === "declined") continue; }
+  }
+  const skipped = list.length - ready.length;
+  mkMsg(saved + (saved === 1 ? " mockup saved." : " mockups saved.") + (skipped ? " " + skipped + " style" + (skipped > 1 ? "s" : "") + " still need a color or photo." : ""), !!skipped && !saved);
+}
+async function copyMockup(id) {
+  if (!mk.logos.front) { mkMsg("Add the client logo first.", true); return; }
+  const miss = missingSide(id); if (miss) { mkMsg("Add the " + SIDE_EN[miss].toLowerCase() + " photo for this style first.", true); return; }
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": exportBlob(id) })]);
+    mkMsg("Image copied. Paste it into WhatsApp.");
+  } catch (e) { mkMsg(exportError(e) || "Copying images isn't allowed here. Use Save PNG instead.", true); }
+}
+
+function initMockup() { renderMockup(); renderBrand(); }
+
+// ──── QUOTE TABS ────
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+loadCatalogs();
+quotes = [snapshotQuote()];
+renderAll();
+renderBrand();
+renderQuoteTabs();
+</script>
+</body>
+</html>
+
