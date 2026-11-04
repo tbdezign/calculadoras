@@ -1505,8 +1505,73 @@ async function loadLocalLib() {
     localLib = true;
   } catch (e) { localLib = false; }
 }
-async function localPut(key, rec) { await idbDo("readwrite", st => st.put(rec, key)); }
-async function localDel(key) { await idbDo("readwrite", st => st.delete(key)); }
+// Photos are saved in the shared database (Supabase Storage) when logged in; this browser keeps a copy so they open fast.
+// Each saved record gets updatedAt; cloudAt = the version that is in the database (missing = not uploaded yet).
+async function localPut(key, rec) {
+  rec = { ...rec, updatedAt: Date.now() }; delete rec.cloudAt; delete rec.src;
+  if (TBDCloud.loggedIn && await cloudPutPhoto(key, rec)) rec.cloudAt = rec.updatedAt;
+  await idbDo("readwrite", st => st.put(rec, key));
+}
+async function localDel(key) {
+  await idbDo("readwrite", st => st.delete(key));
+  if (TBDCloud.loggedIn) await TBDCloud.write(async sb => {
+    const r = await sb.storage.from("photos").remove([key + ".img", key + "__orig.img"]); if (r.error) return r;
+    return await sb.from("garment_photos").delete().eq("key", key);
+  });
+}
+function photoMeta(rec) { const { blob, origBlob, src, cloudAt, ...m } = rec; m.hasOrig = !!origBlob; return m; }
+async function cloudPutPhoto(key, rec) {
+  return TBDCloud.write(async sb => {
+    const up = (path, b) => sb.storage.from("photos").upload(path, b, { upsert: true, contentType: b.type || "image/jpeg" });
+    let r = await up(key + ".img", rec.blob); if (r.error) return r;
+    if (rec.origBlob) { r = await up(key + "__orig.img", rec.origBlob); if (r.error) return r; }
+    return await sb.from("garment_photos").upsert({ key, meta: photoMeta(rec) });
+  });
+}
+// Brings this browser in line with the database: downloads new/changed photos, uploads photos only this browser has
+// (e.g. restored from a backup before logging in), and drops photos deleted on another device.
+let photoSyncing = false;
+async function cloudSyncPhotos() {
+  if (photoSyncing || mkDb) return; photoSyncing = true;
+  try {
+    const sb = TBDCloud.sb;
+    const { data: rows, error } = await sb.from("garment_photos").select("key,meta").limit(10000);
+    if (error) throw error;
+    const keys = await idbDo("readonly", st => st.getAllKeys()), vals = await idbDo("readonly", st => st.getAll());
+    const local = {}; (keys || []).forEach((k, i) => local[k] = vals[i]);
+    const remote = {}; (rows || []).forEach(r => remote[r.key] = r.meta || {});
+    const jobs = [];
+    for (const [key, meta] of Object.entries(remote)) {
+      const l = local[key];
+      if (l && l.cloudAt !== l.updatedAt) continue;                 // changed here, not uploaded yet: upload below
+      if (l && l.updatedAt === meta.updatedAt) continue;            // already the same version
+      jobs.push(async () => {
+        const d = await sb.storage.from("photos").download(key + ".img"); if (d.error) throw d.error;
+        const rec = { ...meta, blob: d.data, cloudAt: meta.updatedAt };
+        delete rec.hasOrig;
+        if (meta.hasOrig) { const o = await sb.storage.from("photos").download(key + "__orig.img"); if (!o.error) rec.origBlob = o.data; }
+        await idbDo("readwrite", st => st.put(rec, key));
+      });
+    }
+    for (const [key, l] of Object.entries(local)) {
+      if (!l || !l.blob) continue;
+      const inRemote = key in remote, dirty = l.cloudAt !== l.updatedAt || !l.updatedAt;
+      if (!inRemote && l.cloudAt && !dirty) { jobs.push(() => idbDo("readwrite", st => st.delete(key))); continue; } // deleted elsewhere
+      if (dirty || !inRemote) jobs.push(async () => {
+        const rec = { ...l, updatedAt: l.updatedAt || Date.now() };
+        if (await cloudPutPhoto(key, rec)) { rec.cloudAt = rec.updatedAt; await idbDo("readwrite", st => st.put(rec, key)); }
+      });
+    }
+    let done = 0;
+    if (jobs.length) mkMsg("Syncing photos… 0 of " + jobs.length);
+    const run = async () => { while (jobs.length) { const j = jobs.shift(); try { await j(); } catch (e) {} done++; mkMsg("Syncing photos… " + done + " of " + (done + jobs.length)); } };
+    const total = jobs.length;
+    await Promise.all([run(), run(), run(), run()]);
+    await loadLocalLib(); renderLib(); mk.sig = ""; renderMockRows(true);
+    if (total) mkMsg("Photos synced.");
+  } finally { photoSyncing = false; }
+}
+TBDCloud.onLoad(cloudSyncPhotos);
 function photoSrc(p) { return p.src || ("/_blob/" + p.assetId); }
 function photoRef(p) { return p ? (p.assetId || p.src) : null; }
 function libAvailable() { return !!mkDb || localLib; }
@@ -1541,7 +1606,7 @@ function renderLib() {
   if (!libOpen) return;
   let h = '<div class="catalog-panel">';
   h += '<div style="display:flex;gap:14px;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap"><button class="mk-link" onclick="exportLibrary()">Save backup file</button><button class="mk-link" onclick="document.getElementById(\'mkBackupFile\').click()">Restore backup</button></div>';
-  if (!mkDb && localLib) h += '<div style="font-size:12px;color:#888;margin-bottom:8px">Photos are saved in this browser on this computer.</div>';
+  if (!mkDb && localLib) h += '<div style="font-size:12px;color:#888;margin-bottom:8px">' + (TBDCloud.loggedIn ? 'Photos are saved online and show up on every device where you log in.' : 'Log in at the top to save photos online. Until then they stay only in this browser.') + '</div>';
   if (!libAvailable()) h += '<div style="font-size:12px;color:#b45309;margin-bottom:8px">The photo library isn\'t available in this view, so photos you add will only last until you close the page.</div>';
   if (!n) h += '<div style="font-size:12px;color:#888">No saved photos yet. Add a style in the Order Builder, type its color below, then upload the photo. It\'s saved here for next time.</div>';
   const groups = {};

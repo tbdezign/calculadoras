@@ -1118,13 +1118,16 @@ function persistCatalog() {
   const dels = Object.keys(prev).filter(id => !(id in now));
   const catsJson = JSON.stringify(categories), catsChanged = catsJson !== cloudCats;
   if (!ups.length && !dels.length && !catsChanged) return Promise.resolve(true);
-  return TBDCloud.write(async sb => {
+  const usedNow = new Set(catalog.flatMap(c => (c.data.images || []).map(im => im.id)));
+  const goneImgs = dels.flatMap(id => { try { return (JSON.parse(prev[id]).data.images || []).map(im => im.id); } catch (e) { return []; } }).filter(id => !usedNow.has(id));
+  return uploadCatalogImages(ups.map(u => u.data)).then(() => TBDCloud.write(async sb => {
+    if (goneImgs.length) await sb.storage.from('photos').remove(goneImgs.map(cloudImgPath));
     if (ups.length) { const r = await sb.from('print_products').upsert(ups); if (r.error) return r; }
     if (dels.length) { const r = await sb.from('print_products').delete().in('id', dels); if (r.error) return r; }
     if (catsChanged) { const r = await sb.from('settings').upsert({ key: 'print_categories', value: categories }); if (r.error) return r; }
     cloudSnap = now; cloudCats = catsJson;
     return {};
-  });
+  }));
 }
 // Only edit the catalog when logged in, so every device sees the same products.
 function needLogin() {
@@ -1147,6 +1150,7 @@ TBDCloud.onLoad(async () => {
   cloudCats = JSON.stringify(categories);
   store(CATALOG_KEY, catalog); store(CATS_KEY, categories);
   render(); renderCatalog();
+  uploadCatalogImages(catalog).catch(() => {}); // first time on a computer that has the mockups: put them online
 });
 
 function isBlank(q) {
@@ -1387,7 +1391,35 @@ async function idbReq(mode, fn) {
   });
 }
 const idbPut = (id, blob) => idbReq('readwrite', s => s.put(blob, id));
-const idbGet = id => idbReq('readonly', s => s.get(id)).catch(() => null);
+const idbGetLocal = id => idbReq('readonly', s => s.get(id)).catch(() => null);
+// Mockups saved in the catalog also live online (Supabase Storage), so they show up on every device.
+const cloudImgPath = id => 'print/' + id + '.img';
+async function idbGet(id) {
+  const b = await idbGetLocal(id);
+  if (b || !TBDCloud.loggedIn) return b;
+  try {
+    const d = await TBDCloud.sb.storage.from('photos').download(cloudImgPath(id));
+    if (d.error || !d.data) return null;
+    try { await idbPut(id, d.data); } catch (e) {}
+    return d.data;
+  } catch (e) { return null; }
+}
+// Uploads the catalog's images that aren't online yet (only ones this browser has).
+async function uploadCatalogImages(items) {
+  if (!TBDCloud.loggedIn) return true;
+  const ids = [...new Set(items.flatMap(c => (c.data.images || []).map(im => im.id)))];
+  if (!ids.length) return true;
+  const sb = TBDCloud.sb;
+  const listed = await sb.storage.from('photos').list('print', { limit: 10000 });
+  const online = new Set((listed.data || []).map(f => f.name));
+  for (const id of ids) {
+    if (online.has(id + '.img')) continue;
+    const b = await idbGetLocal(id); if (!b) continue;
+    const ok = await TBDCloud.write(sb => sb.storage.from('photos').upload(cloudImgPath(id), b, { upsert: true, contentType: b.type || 'image/png' }));
+    if (!ok) return false;
+  }
+  return true;
+}
 const idbDel = id => idbReq('readwrite', s => s.delete(id));
 const idbKeys = () => idbReq('readonly', s => s.getAllKeys());
 
