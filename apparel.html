@@ -301,6 +301,9 @@
   h1 { font-family: Montserrat, Poppins, sans-serif; font-weight: 700; color: #051024; letter-spacing: -0.2px; }
   button, input, select, textarea { font-family: inherit; }
   .card-label, .tab { font-family: Montserrat, Poppins, sans-serif; }
+
+  /* iPhone zooms in when a field's text is under 16px: keep fields at 16px on phones/tablets */
+  @media (max-width: 1024px), (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }
 </style>
 </head>
 <body>
@@ -1933,7 +1936,8 @@ async function importLibrary(file) {
     else if (d && d.app === "tbdezign-dtf") { lists.dtf = Object.values(d.dtfCatalog || {}); lists.v2 = Object.values(d.v2Catalog || {}); }
     else { mkMsg("That file isn't a backup from a TBDezign calculator.", true); return; }
     let nP = 0, nF = 0;
-    for (const k of METHOD_KEYS) nP += await addProducts(k, lists[k] || []);
+    // Only products that aren't in the catalog yet: the database copy (with vendors, memos, new prices) always wins.
+    for (const k of METHOD_KEYS) nP += await addProducts(k, (lists[k] || []).filter(p => p && p.code && !cats[k][String(p.code).toUpperCase()]));
     renderCatalog(); renderOrderItems();
     for (const ph of (d.photos || [])) {
       if (!ph || !ph.code || !ph.color || !ph.side || !ph.data) continue;

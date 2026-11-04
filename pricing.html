@@ -297,6 +297,9 @@
   h1 { font-family: Montserrat, Poppins, sans-serif; font-weight: 700; color: #051024; letter-spacing: -0.2px; }
   button, input, select, textarea { font-family: inherit; }
   .q-num, .section-title { font-family: Montserrat, Poppins, sans-serif; }
+
+  /* iPhone zooms in when a field's text is under 16px: keep fields at 16px on phones/tablets */
+  @media (max-width: 1024px), (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }
 </style>
 </head>
 <body>
@@ -1348,12 +1351,15 @@ function importCatalog(input) {
         if (!item || !item.id || !item.data) return;
         addCategory(item.data.cat, item.data.sub, true);
         const i = catalog.findIndex(c => c.id === item.id);
-        if (i >= 0) { catalog[i] = item; updated++; } else { catalog.push(item); added++; }
+        // Products already in the catalog are kept as they are (the database copy wins); only new ones are added.
+        // Same name + size + category counts as the same product even with a different id (re-created by hand).
+        const sig = d => [d.title, d.size, d.cat, d.sub].map(v => String(v || '').trim().toLowerCase()).join('|');
+        if (i >= 0 || catalog.some(c => sig(c.data) === sig(item.data))) updated++; else { catalog.push(item); added++; }
       });
       const saved = await persistCatalog();
       render();
       renderCatalog();
-      alert('Import done: ' + added + ' added, ' + updated + ' updated.' + (saved ? '' : ' Atenção: não salvou no banco online.'));
+      alert('Import done: ' + added + ' added, ' + updated + ' already in the catalog (kept as they are). Mockup images restored.' + (saved ? '' : ' Atenção: não salvou no banco online.'));
     } catch (e) {
       alert('That file doesn\'t look like a catalog backup.');
     }
