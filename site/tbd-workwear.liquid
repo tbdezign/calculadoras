@@ -84,8 +84,9 @@
   .ww-more .ww-link { font-size: 13px; text-decoration: underline; }
   .ww-add { margin-top: auto; padding: 8px; border-radius: 8px; border: 1.5px solid #051024; background: #fff; color: #051024; font-weight: 600; font-size: 13px; }
   .ww-add:hover { background: #051024; color: #fff; }
-  .ww-line { border: 1px solid #e3e3e3; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; gap: 18px; align-items: flex-start; }
-  .ww-lpic { flex: 0 0 170px; aspect-ratio: 1; border: 1px solid #eee; border-radius: 10px; background: #fff; padding: 6px; display: flex; align-items: center; justify-content: center; cursor: zoom-in; overflow: hidden; }
+  .ww-line { border: 1px solid #e3e3e3; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; gap: 18px; align-items: stretch; }
+  /* the photo box is as tall as the line */
+  .ww-lpic { flex: 0 0 250px; min-height: 220px; border: 1px solid #eee; border-radius: 10px; background: #fff; padding: 4px; display: flex; align-items: center; justify-content: center; cursor: zoom-in; overflow: hidden; }
   .ww-lpic img { width: 100%; height: 100%; object-fit: contain; }
   .ww-lpic svg { width: 78%; height: 78%; }
   .ww-lbody { flex: 1; min-width: 0; }
@@ -187,7 +188,7 @@
     .ww-cta { padding: 8px; }
     .ww-aside { position: static; }
     .ww-line { flex-direction: column; gap: 10px; }
-    .ww-lpic { flex: none; width: 100%; max-width: 190px; align-self: center; }
+    .ww-lpic { flex: none; width: 100%; max-width: 200px; min-height: 0; aspect-ratio: 1; align-self: center; }
     .ww-tbl table { font-size: 13px; }
     .ww-tbl th, .ww-tbl td { padding: 8px 9px; }
     .ww-tbl tbody th { white-space: normal; min-width: 96px; }
