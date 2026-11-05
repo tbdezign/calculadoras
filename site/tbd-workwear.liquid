@@ -38,8 +38,9 @@
   .ww-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
   .ww-card { background: #fff; border: 1px solid #e2e2e2; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: box-shadow .2s, transform .2s; }
   .ww-card:hover { box-shadow: 0 4px 20px rgba(5,16,36,.08); transform: translateY(-2px); }
-  .ww-img { background: #f4f6f8; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
-  .ww-img img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .ww-img { background: #fff; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+  .ww-img img { width: 92%; height: 92%; object-fit: contain; display: block; }
+  .ww-card .ww-img { border-bottom: 1px solid #f0f0f0; }
   .ww-img svg { width: 62%; height: 62%; }
   .ww-cbody { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
   .ww-badges { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -78,7 +79,7 @@
   .ww-line { border: 1px solid #e3e3e3; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
   .ww-lhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
   .ww-lhead > div { display: flex; align-items: center; gap: 10px; min-width: 0; }
-  .ww-thumb { width: 48px; height: 48px; flex: none; border-radius: 8px; background: #f4f6f8; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .ww-thumb { width: 48px; height: 48px; flex: none; border-radius: 8px; background: #fff; border: 1px solid #eee; overflow: hidden; display: flex; align-items: center; justify-content: center; }
   .ww-thumb img { width: 100%; height: 100%; object-fit: contain; }
   .ww-thumb svg { width: 80%; height: 80%; }
   .ww-sw { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
@@ -121,7 +122,7 @@
   .ww-spot .ww-pill { padding: 7px 12px; font-size: 13px; }
   .ww-prevs { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
   .ww-prev { border: 1px solid #e3e3e3; border-radius: 12px; padding: 12px; text-align: center; }
-  .ww-pimg { position: relative; aspect-ratio: 1; background: #f4f6f8; border-radius: 8px; overflow: hidden; }
+  .ww-pimg { position: relative; aspect-ratio: 1; background: #fff; border-radius: 8px; overflow: hidden; }
   .ww-pimg > img, .ww-pimg > svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
   .ww-logo { position: absolute; display: flex; align-items: center; justify-content: center; }
   .ww-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
