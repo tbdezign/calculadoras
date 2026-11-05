@@ -486,8 +486,8 @@
         if (O.logoType === 'solid') h += '<div class="ww-pills" style="margin-top:14px"><span style="font-size:14px">How many colors?</span>' + [1, 2, 3].map(function (n) { return '<button class="ww-pill' + (O.inks === n ? ' on' : '') + '" data-inks="' + n + '">' + n + '</button>'; }).join('') + '<span style="font-size:12px;color:#6b7280">White counts as a color when it\'s part of the logo.</span></div>';
         if (O.logoType === 'solid' || O.logoType === 'full') {
           var what = O.logoType === 'solid' ? O.inks + ' solid color' + (O.inks === 1 ? '' : 's') : 'full color / effects';
-          h += '<div class="ww-msg amber" style="margin-top:16px"><b>Please check this carefully: it changes your price.</b> We review every logo before printing. If your file doesn\'t match what you picked here, we\'ll contact you to adjust the price before anything is printed.'
-            + '<label class="ww-confirm"><input type="checkbox" id="ww-conf"' + (O.confirmed ? ' checked' : '') + '> I confirm my logo is <b>' + what + '</b>.</label></div>';
+          h += '<div class="ww-msg amber" style="margin-top:16px"><b>Double-check this one.</b> The number of colors sets your price. If your file doesn\u2019t match what you picked, we\u2019ll have to pause your order to re-quote it, and that pushes your print date back.'
+            + '<label class="ww-confirm"><input type="checkbox" id="ww-conf"' + (O.confirmed ? ' checked' : '') + '> Yes, my logo is ' + what + '.</label></div>';
         }
       }
     } else if (O.step === 4) {
