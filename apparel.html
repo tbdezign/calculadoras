@@ -1440,7 +1440,9 @@ function addColorOf(id) {
   // copy the logo position too
   Object.keys(mk.boxes).forEach(k => { if (k.startsWith(src.id + "|")) mk.boxes[nu.id + k.slice(String(src.id).length)] = { ...mk.boxes[k] }; });
   mk.sig = ""; renderOrderItems(); renderMockRows(true); renderQuote();
-  const el = q("mkc-" + nu.id); if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.focus(); }
+  // stay where the click happened: the new row's color box in the Order Builder, or in the mockup when added from there
+  const fromMockup = document.activeElement && document.activeElement.closest && document.activeElement.closest("#mkRows");
+  const el = q((fromMockup ? "mkc-" : "oicol-") + nu.id); if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
 }
 function styleTitle(it, p) { const c = (it.color || "").trim(); return T().code + " " + p.code + (c ? " · " + c.replace(/\b\w/g, x => x.toUpperCase()) : ""); }
 function setQuoteMode(m) { quoteMode = m; mk.sig = ""; renderQuote(); renderMockRows(true); }
