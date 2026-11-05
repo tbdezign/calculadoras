@@ -157,7 +157,7 @@
           spotsForSetup = 1 + extra;
           r = emb({ blank: blankCost("emb", p, size), tq: total, extra, suppShip: waived ? 0 : C.emb.suppShip }, C);
         }
-        out.lines.push({ code: p.code, name: p.name, color: it.color || "", size, q, unit: r.perPiece, amount: Math.round(r.perPiece * q * 100) / 100 });
+        out.lines.push({ code: p.code, name: p.name, color: it.color || "", size, q, unit: Math.round(r.perPiece * 100) / 100, amount: Math.round(r.perPiece * q * 100) / 100 });
         out.subtotal += r.perPiece * q; out.cost += r.unitCost * q;
       });
     });
