@@ -1117,7 +1117,10 @@ const METHODS = {
   },
 };
 function viewsOf(it) {
-  const v = METHODS[method].views(it).slice();
+  const base = METHODS[method].views(it).slice(), hide = it.hideViews || {};
+  // Front/back pictures can be left out of the mockup (the price doesn't change); at least one stays.
+  let v = capItem(it) ? base : base.filter(x => !hide[x[0]]);
+  if (!v.length) v = base.slice(0, 1);
   if (!capItem(it)) {
     const sl = []; if (it.showSleeve) sl.push("side"); if (it.showRSleeve) sl.push("rside");
     const n = sleeveSpots(it);
@@ -1140,7 +1143,17 @@ function dropItemLogo(e, id) { e.preventDefault(); const f = [...(e.dataTransfer
 function sleeveChecksHTML(it) {
   const vs = viewsOf(it), st = sd => { const v = vs.find(x => x[0] === sd); return v ? (v[1] === "none" ? " · photo only" : " · with print") : ""; };
   const cb = (f, sd, label) => '<label class="mk-inline"><input type="checkbox" ' + (it[f] ? 'checked' : '') + ' onchange="toggleSleeve(\'' + it.id + '\',\'' + f + '\')"> ' + label + st(sd) + '</label>';
-  return '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">' + cb("showSleeve", "side", "Left sleeve") + cb("showRSleeve", "rside", "Right sleeve") + '</div>';
+  // front / back pictures that come with the placement: uncheck to leave them out of the mockup
+  const base = METHODS[method].views(it).map(x => x[0]), hide = it.hideViews || {};
+  const bv = base.length > 1 ? base.map(sd => '<label class="mk-inline"><input type="checkbox" ' + (hide[sd] ? '' : 'checked') + ' onchange="toggleView(\'' + it.id + '\',\'' + sd + '\')"> ' + SIDE_EN[sd] + '</label>').join("") : '';
+  return '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;align-items:center"><span class="muted small">Show in mockup:</span>' + bv + cb("showSleeve", "side", "Left sleeve") + cb("showRSleeve", "rside", "Right sleeve") + '</div>';
+}
+function toggleView(id, side) {
+  const it = itemById(id); if (!it) return;
+  const base = METHODS[method].views(it).map(x => x[0]), hide = { ...(it.hideViews || {}) };
+  hide[side] = !hide[side];
+  if (base.every(sd => hide[sd])) { hide[side] = false; mkMsg("Keep at least one picture in the mockup.", true); }
+  it.hideViews = hide; if (mk.edit && String(mk.edit.id) === String(id)) mk.edit = null; mk.sig = ""; renderMockRows(true); renderQuote();
 }
 function toggleSleeve(id, f) { const it = itemById(id); if (!it) return; f = f || "showSleeve"; it[f] = !it[f]; if (mk.edit && String(mk.edit.id) === String(id)) mk.edit = null; mk.sig = ""; renderMockRows(true); }
 function itemPrint(it) { return METHODS[method].print(it); }
@@ -1427,7 +1440,7 @@ function updateOrderResults() {
 // ════════════════════════════════════════════
 let quoteBlocks = [];
 // Same style in several colors: one block in the quote, one picture with every color.
-function groupKey(it) { return (it.code || "").toUpperCase() + "|" + itemPrint(it) + "|" + JSON.stringify(viewsOf(it)); }
+function groupKey(it) { return (it.code || "").toUpperCase() + "|" + itemPrint(it) + "|" + JSON.stringify(METHODS[method].views(it)); }
 function styleGroups(list) { const m = new Map(); list.forEach(it => { const k = groupKey(it); if (!m.has(k)) m.set(k, []); m.get(k).push(it); }); return [...m.values()]; }
 function groupOfItem(it) { return styleGroups(mockItems()).find(g => g.includes(it)) || [it]; }
 function colorName(it) { return titleCase((it.color || "").trim()) || "—"; }
