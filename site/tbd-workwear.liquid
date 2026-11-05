@@ -60,6 +60,7 @@
   .ww-steps { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
   .ww-step { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid #d6dbe1; background: #fff; color: #051024; font-size: 13px; font-weight: 500; }
   .ww-step i { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; font-style: normal; background: #eef1f4; color: #4b5563; }
+  .ww-steps .ww-sep { align-self: center; color: #9ca3af; font-size: 14px; }
   .ww-step.cur { background: #051024; color: #fff; border-color: #051024; }
   .ww-step.cur i { background: #41a9cc; color: #fff; }
   .ww-step.done i { background: #91bc4d; color: #fff; }
@@ -152,6 +153,10 @@
     .ww-cbody { padding: 10px 12px 12px; }
     .ww-cname { font-size: 13px; }
     .ww-aside { position: static; }
+    .ww-steps { gap: 4px; }
+    .ww-step { padding: 6px; }
+    .ww-step:not(.cur) .ww-lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+    .ww-step.cur { padding-right: 14px; }
     .ww-count { margin-left: 0; width: 100%; }
   }
 </style>
@@ -358,16 +363,16 @@
   function renderOrder() { hero.innerHTML = heroHtml(true); app.innerHTML = '<nav class="ww-steps" id="ww-steps" aria-label="Order steps"></nav><div class="ww-cols"><section class="ww-panel" id="ww-panel"></section><aside class="ww-aside" id="ww-aside"></aside></div>'; renderPanel(); requote(); renderAside(); }
   function renderSteps() {
     var ms = maxStep();
-    document.getElementById('ww-steps').innerHTML = [['Shirts', 1], ['Look', 2], ['Logo', 3], ['Method', 4], ['Preview', 5]].map(function (x) {
+    document.getElementById('ww-steps').innerHTML = [['Pick your shirts', 1], ['Decoration', 2], ['Logo', 3], ['Logo placement', 4], ['Preview', 5]].map(function (x) {
       var n = x[1], skip = false;
-      return '<button class="ww-step' + (O.step === n ? ' cur' : n < O.step ? ' done' : '') + '" data-go="' + n + '"' + (n > ms || skip ? ' disabled' : '') + '><i>' + n + '</i>' + x[0] + (skip ? ' (not needed)' : '') + '</button>';
+      return (n > 1 ? '<span class="ww-sep" aria-hidden="true">›</span>' : '') + '<button class="ww-step' + (O.step === n ? ' cur' : n < O.step ? ' done' : '') + '" data-go="' + n + '"' + (n > ms || skip ? ' disabled' : '') + '><i>' + n + '</i><span class="ww-lbl">' + x[0] + '</span></button>';
     }).join('');
   }
   function renderPanel() {
     renderSteps();
     var p = document.getElementById('ww-panel'), h = '', m = method(), t = total();
     if (O.step === 1) {
-      h += '<h2 class="ww-h2">1. Choose your shirts</h2><p class="ww-p">Mix styles and colors. The minimum counts for the whole order, not per style.</p>';
+      h += '<h2 class="ww-h2">1. Pick your shirts</h2><p class="ww-p">Mix styles and colors. The minimum counts for the whole order, not per style.</p>';
       if (!O.lines.length) h += '<div class="ww-dash" style="margin-bottom:16px">Add a shirt below to start your order.</div>';
       O.lines.forEach(function (l) {
         var st = byCode[l.code];
@@ -388,7 +393,7 @@
       }).join('') + '</div>';
       if (pick.length > 4) h += '<div style="text-align:center;margin:-8px 0 8px"><button class="ww-pill" data-more>' + (O.showAll ? 'Show fewer' : 'See all ' + pick.length + ' styles') + '</button> <a class="ww-link" href="#" style="font-size:13px">or browse the catalog</a></div>';
     } else if (O.step === 2) {
-      h += '<h2 class="ww-h2">2. Printed or embroidered?</h2><p class="ww-p">Pick the look you want. We take care of the technical part.</p><div class="ww-choice">'
+      h += '<h2 class="ww-h2">2. Decoration: printed or embroidered?</h2><p class="ww-p">Pick the look you want. We take care of the technical part.</p><div class="ww-choice">'
         + '<button class="ww-ch' + (O.deco === 'print' ? ' on' : '') + '" data-deco="print"><b>Printed</b><span>Smooth, flat print. Great for big logos, full color and the best price per shirt.</span></button>'
         + '<button class="ww-ch' + (O.deco === 'emb' ? ' on' : '') + '" data-deco="emb"><b>Embroidered</b><span>Stitched thread for a premium look. Best for small logos on the chest. Min ' + DATA.minimums.emb + ' pieces.</span></button></div>';
     } else if (O.step === 3) {
@@ -413,7 +418,7 @@
         : O.logoType === 'unsure' ? 'DTF works with any logo, so your order is safe either way.'
         : 'For orders under ' + DATA.minimums.silk + ' pieces, DTF is the best option for your logo.';
       var d = DATA.days[m];
-      h += '<h2 class="ww-h2" style="margin-bottom:14px">4. Your print method</h2><div class="ww-method"><small>Best for your order</small><b>' + NAMES[m] + '</b><p>' + why + '</p><em>Production: ' + d[0] + '–' + d[1] + ' business days after artwork approval</em></div>';
+      h += '<h2 class="ww-h2" style="margin-bottom:14px">4. Logo placement</h2><div class="ww-method"><small>Best for your order</small><b>' + NAMES[m] + '</b><p>' + why + '</p><em>Production: ' + d[0] + '–' + d[1] + ' business days after artwork approval</em></div>';
       if (m === 'dtf' && silkFits() && mixedShades()) h += '<div class="ww-msg green">Your order mixes light and dark shirts. Silk Screen can\'t print both in the same order, so we\'re using DTF. Make all shirts light or all dark to switch to Silk Screen and a lower price.</div>';
       // only when Silk Screen at the minimum is actually cheaper per piece (setup included)
       if (O.upsell && m === 'dtf' && !mixedShades() && O.quote && O.quote.total) { var add = DATA.minimums.silk - t, save = O.quote.total$ / O.quote.total - O.upsell.total$ / O.upsell.total;
