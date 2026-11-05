@@ -386,7 +386,7 @@
       h += '<div class="ww-mini">' + shown.map(function (s) {
         return '<div class="ww-mcard"><div class="ww-img">' + imgHtml(s) + '</div><b>' + esc(s.name) + '</b><small>' + esc([s.type, s.fit].filter(Boolean).join(' · ')) + ' · ' + s.colors.length + ' colors</small><button class="ww-add" data-add="' + esc(s.code) + '">+ Add to order</button></div>';
       }).join('') + '</div>';
-      if (pick.length > 4) h += '<div style="text-align:center;margin:-8px 0 8px"><button class="ww-pill" data-more>' + (O.showAll ? 'Show fewer' : 'See all ' + pick.length + ' styles') + '</button> <a class="ww-link" href="#" style="font-size:13px">or browse the catalog with filters</a></div>';
+      if (pick.length > 4) h += '<div style="text-align:center;margin:-8px 0 8px"><button class="ww-pill" data-more>' + (O.showAll ? 'Show fewer' : 'See all ' + pick.length + ' styles') + '</button> <a class="ww-link" href="#" style="font-size:13px">or browse the catalog</a></div>';
     } else if (O.step === 2) {
       h += '<h2 class="ww-h2">2. Printed or embroidered?</h2><p class="ww-p">Pick the look you want. We take care of the technical part.</p><div class="ww-choice">'
         + '<button class="ww-ch' + (O.deco === 'print' ? ' on' : '') + '" data-deco="print"><b>Printed</b><span>Smooth, flat print. Great for big logos, full color and the best price per shirt.</span></button>'
