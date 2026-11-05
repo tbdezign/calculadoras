@@ -1,6 +1,8 @@
 // apparel-quote: prices a workwear order with the SAME pricing.js the calculators use.
 // Public (the website calls it). Returns retail prices only — never costs, vendors or memos.
-import "./pricing.js";
+// pricing.js is loaded straight from the calculators' repo, pinned to a commit: the function and the calculators run the same file.
+// When pricing.js changes: push, then change the commit below and redeploy.
+import "https://cdn.jsdelivr.net/gh/tbdezign/calculadoras@b6a763d/pricing.js";
 const P = (globalThis as any).TBDPricing;
 
 const CORS = {
