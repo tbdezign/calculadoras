@@ -2834,7 +2834,7 @@ function quoteToJSON(sq) {
   return { ...sq, logos, logoBank: bank, orderItems: (sq.orderItems || []).map(it => ({ ...it, logo: ref(it.logo) })) };
 }
 async function quoteFromJSON(j) {
-  const cache = {}, get = async v => { if (!v) return null; if (v.ref) { if (!(v.ref in cache)) cache[v.ref] = await logoFromJSON((j.logoBank || {})[v.ref]); return cache[v.ref]; } return logoFromJSON(v); };
+  const cache = {}, get = async v => { if (!v) return null; if (v.ref) { if (!(v.ref in cache)) cache[v.ref] = await bankLogo((j.logoBank || {})[v.ref]); return cache[v.ref]; } return logoFromJSON(v); };
   const logos = {}; for (const [k, v] of Object.entries(j.logos || {})) logos[k] = await get(v);
   const items = []; for (const it of (j.orderItems || [])) items.push({ ...it, logo: await get(it.logo) });
   const { logoBank, ...rest } = j;
@@ -2847,7 +2847,40 @@ function currentQuotesJSON() {
   const out = {}; quotes.forEach(sq => { if (!quoteIsBlank(sq)) out[sq.qid] = JSON.stringify(quoteToJSON(sq)); });
   return out;
 }
+// Online, logo pictures live in storage (quick to save); the quote row only keeps where they are.
+const qlogoUploaded = new Set();
+function strHash(s) { let h = 2166136261 >>> 0; for (let i = 0; i < s.length; i += 3) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36) + s.length.toString(36); }
+async function cloudQuoteJSON(js, sb) {
+  const j = JSON.parse(js), bank = j.logoBank || {};
+  for (const [id, b] of Object.entries(bank)) {
+    if (!b || !b.data) continue;
+    const path = "qlogo/" + strHash(b.data) + ".img";
+    if (!qlogoUploaded.has(path)) {
+      const blob = await dataUrlToBlob(b.data);
+      const r = await sb.storage.from("photos").upload(path, blob, { upsert: true, contentType: blob.type || "image/png" });
+      if (r.error) throw r.error;
+      qlogoUploaded.add(path);
+    }
+    bank[id] = { path, removeWhite: !!b.removeWhite };
+  }
+  return j;
+}
+async function bankLogo(b) {
+  if (!b) return null;
+  if (b.data) return logoFromJSON(b);
+  if (b.path && TBDCloud.loggedIn) {
+    try { const r = await TBDCloud.sb.storage.from("photos").download(b.path);
+      if (r.data) { qlogoUploaded.add(b.path); return logoFromJSON({ data: await blobToDataUrl(r.data), removeWhite: b.removeWhite }); } } catch (e) {}
+  }
+  return null;
+}
+let quotesSaving = false;
 async function saveOpenQuotes() {
+  if (quotesSaving) return;   // one save at a time (the timer runs every 3 s)
+  quotesSaving = true;
+  try { await saveOpenQuotesNow(); } finally { quotesSaving = false; }
+}
+async function saveOpenQuotesNow() {
   const now = currentQuotesJSON(), t = Date.now();
   // this browser
   try {
@@ -2860,7 +2893,7 @@ async function saveOpenQuotes() {
   const ups = Object.entries(now).filter(([id, js]) => savedQuotes[id] !== js), dels = Object.keys(savedQuotes).filter(id => !(id in now));
   if (!ups.length && !dels.length) return;
   const ok = await TBDCloud.write(async sb => {
-    for (const [id, js] of ups) { const r = await sb.from("open_quotes").upsert({ id, app: "apparel", data: JSON.parse(js) }); if (r.error) return r; }
+    for (const [id, js] of ups) { const r = await sb.from("open_quotes").upsert({ id, app: "apparel", data: await cloudQuoteJSON(js, sb) }); if (r.error) return r; }
     if (dels.length) { const r = await sb.from("open_quotes").delete().in("id", dels); if (r.error) return r; }
     return {};
   });
