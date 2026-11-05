@@ -876,9 +876,9 @@ const I18N = {
         tierNote:"A faixa de preço vale pela quantidade total do pedido. Pode misturar modelos e cores do mesmo tom.",
         tierNoteMix:"A faixa de preço vale pela quantidade total do pedido. Pode misturar modelos e cores.",
         ship:(a,b,bd) => "Frete grátis · Produção: " + a + " a " + b + " dias" + (bd ? " úteis" : "") + " após aprovação da arte",
-        total:"Total", order:"Pedido", colorsL:"Cores",
+        total:"Total", order:"Pedido", colorsL:"Cores", orderSum:"Resumo do pedido",
         disclaimer:"Mockup ilustrativo. A prova final é enviada para aprovação após a confirmação do pedido." },
-  en: { perPc:" per piece", pcs:n => n + " pcs", plus:n => n + "+ pcs", each:" each", perPiece:"Price per piece", code:"Code",
+  en: { perPc:" per piece", pcs:n => n + (n === 1 ? " pc" : " pcs"), plus:n => n + "+ pcs", each:" each", perPiece:"Price per piece", code:"Code",
         silk:"Screen print", dtf:"DTF transfer · Full color", emb:"Embroidery", colors:n => n + (n === 1 ? " color" : " colors"),
         front:"Front", back:"Back", side:"Side", sleeve:"Sleeve", sleeveL:"Left sleeve", sleeveR:"Right sleeve", upperBack:"Upper back", capBack:"Back", place:{ lc:"left chest", cc:"center chest", ff:"full front", cf:"center", lf:"left side", rf:"right side" },
         extra:n => n + " extra (sleeve" + (n > 1 ? "s" : "") + ")",
@@ -889,7 +889,7 @@ const I18N = {
         tierNote:"Pricing is based on the total order quantity. You can mix styles and colors of the same tone.",
         tierNoteMix:"Pricing is based on the total order quantity. You can mix styles and colors.",
         ship:(a,b,bd) => "Free shipping · Production: " + a + "–" + b + (bd ? " business" : "") + " days after artwork approval",
-        total:"Total", order:"Order", colorsL:"Colors",
+        total:"Total", order:"Order", colorsL:"Colors", orderSum:"Order summary",
         disclaimer:"Illustrative mockup. The final proof is sent for approval after the order is confirmed." },
   es: { perPc:" por pieza", pcs:n => n + (n === 1 ? " pieza" : " piezas"), plus:n => n + "+ piezas", each:" c/u", perPiece:"Precio por pieza", code:"Cód.",
         silk:"Serigrafía", dtf:"Transfer DTF · A todo color", emb:"Bordado", colors:n => n + (n === 1 ? " color" : " colores"),
@@ -902,7 +902,7 @@ const I18N = {
         tierNote:"El precio se basa en la cantidad total del pedido. Puede combinar modelos y colores del mismo tono.",
         tierNoteMix:"El precio se basa en la cantidad total del pedido. Puede combinar modelos y colores.",
         ship:(a,b,bd) => "Envío gratis · Producción: " + a + " a " + b + " días" + (bd ? " hábiles" : "") + " después de aprobar el arte",
-        total:"Total", order:"Pedido", colorsL:"Colores",
+        total:"Total", order:"Pedido", colorsL:"Colores", orderSum:"Resumen del pedido",
         disclaimer:"Mockup ilustrativo. La prueba final se envía para aprobación después de confirmar el pedido." },
 };
 function T() { return I18N[quoteLang] || I18N.pt; }
@@ -1590,6 +1590,7 @@ function styleTitle(it, p) { const c = (it.color || "").trim(); return T().code 
 // Final-order lines of the open quote (styles, colors, sizes, decoration), without setup / total.
 function finalPart() {
   const L0 = T(), items = validItems().filter(it => itemQty(it) > 0), prints = [...new Set(items.map(itemPrint))], L = []; let sum = 0;
+  if (prints.length === 1 && items.length) L.push("*" + prints[0] + "*");
   styleGroups(items).forEach(g => {
     const it = g[0], p = prod(it), many = g.length > 1;
     if (!g.some(c => sizeLines(c).length)) return;
@@ -1600,24 +1601,24 @@ function finalPart() {
     g.forEach(c => sizeLines(c).forEach(l => { sum += l.r.perPiece * l.q;
       L.push((many ? "*" + colorName(c) + "*" + (hasSizes(c) ? " · " : ": ") : "") + (hasSizes(c) ? SIZE_LABEL[l.size] + ": " : "") + L0.pcs(l.q) + " x " + fmt(l.r.perPiece) + " = " + fmt(l.r.perPiece * l.q)); }));
   });
-  if (prints.length === 1 && L.length) L.push("", "*" + prints[0] + "*");
   const M = METHODS[method];
-  return { body: L, sum, st: items.length ? M.setup() : null, tq: totalQty(), days: (PCFG[method] || {}).days || [7, 10], method, min: M.min };
+  return { body: L, sum, st: items.length ? M.setup() : null, tq: totalQty(), days: (PCFG[method] || {}).days || [7, 10], method, min: M.min, name: methodLabel() };
 }
-// One message for the whole combined order: every decoration, one delivery, one total.
-function combinedBlock() {
+// Combined order: one message per decoration (its styles, setup and subtotal), then a short summary with the total.
+function combinedBlocks() {
   const L0 = T(), parts = comboMembers().map(i => withQuoteState(i === activeQ ? snapshotQuote() : quotes[i], finalPart)).filter(p => p.body.length);
-  if (!parts.length) return { label: "Combined order", text: "", empty: "Enter quantities in each decoration's quote." };
-  const L = []; let sum = 0, setup = 0, pcs = 0; const setupLines = [], short = [];
-  parts.forEach((p, i) => { if (i) L.push("", "———", ""); L.push(...p.body); sum += p.sum; pcs += p.tq;
-    if (p.st) { setup += p.st.total; setupLines.push(...p.st.lines.slice(0, 1)); }
-    if (p.min && p.tq < p.min) short.push(p.method); });
-  if (setupLines.length) L.push("", ...setupLines);
-  L.push("", "*" + L0.total + " (" + L0.pcs(pcs) + "): " + fmt(sum + setup) + "*");
-  if (setup) L.push("(" + fmt(sum) + " + " + fmt(setup) + " setup)");
+  if (!parts.length) return [{ label: "Combined order", text: "", empty: "Enter quantities in each decoration's quote." }];
+  const blocks = [], sumL = []; let total = 0, pcs = 0;
+  parts.forEach((p, i) => {
+    const sub = p.sum + (p.st ? p.st.total : 0), L = [...p.body];
+    if (p.st) L.push("", ...p.st.lines);
+    L.push("", "*Subtotal (" + L0.pcs(p.tq) + "): " + fmt(sub) + "*");
+    blocks.push({ label: (i + 1) + "/" + parts.length + " · " + p.name + (p.min && p.tq < p.min ? " · below minimum (" + p.min + ")" : ""), text: L.join("\n") });
+    sumL.push(p.name + " (" + L0.pcs(p.tq) + "): " + fmt(sub)); total += sub; pcs += p.tq;
+  });
   const d = parts.reduce((a, p) => [Math.max(a[0], p.days[0]), Math.max(a[1], p.days[1])], [0, 0]);
-  L.push("", L0.ship(d[0], d[1], true));
-  return { label: "Combined order (" + parts.length + " decorations, one delivery)" + (short.length ? " · below minimum: " + short.join(", ") : ""), text: L.join("\n") };
+  blocks.push({ label: "Summary (send last)", text: ["*" + L0.orderSum + "*", "", ...sumL, "", "*" + L0.total + " (" + L0.pcs(pcs) + "): " + fmt(total) + "*", "", L0.ship(d[0], d[1], true)].join("\n") });
+  return blocks;
 }
 function setQuoteMode(m) { quoteMode = m; mk.sig = ""; renderQuote(); renderMockRows(true); }
 function setTiers(on) { tierPref[method] = on; renderQuote(); }
@@ -1679,7 +1680,7 @@ function renderQuote() {
       L.push("", ship);
       quoteBlocks.push({ label: "Final order", text: L.join("\n") });
     }
-    if (inCombo()) quoteBlocks.push(combinedBlock());
+    if (inCombo()) { quoteBlocks.length = 0; quoteBlocks.push(...combinedBlocks()); }
   }
   q("quoteBody").innerHTML = quoteBlocks.map((b, i) => '<div class="qblock"><div class="qblock-head"><span>' + esc(b.label) + '</span>'
     + (b.text ? '<button class="copy-btn" id="qcopy-' + i + '" onclick="copyBlock(' + i + ')">Copy</button>' : '') + '</div>'
