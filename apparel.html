@@ -643,7 +643,27 @@ function siteBoxHTML(code) {
     + '<div style="flex:1"><label class="lbl">Fit</label>' + sel("pf_site_fit", SITE_FITS, sp.fit) + '</div>'
     + '<div style="flex:1"><label class="lbl">Material</label>' + sel("pf_site_mat", SITE_MATERIALS, sp.material) + '</div></div>'
     + '<label class="lbl">Colors on the site (only high-stock ones · uncheck to hide one that is running low)</label>'
+    + copyColorsHTML(code)
     + '<div id="siteColors">' + siteColorsHTML() + '</div></div>';
+}
+// Copy colors from another style (same brand listed first); only adds colors this one doesn't have yet.
+function brandOf(code) { const p = cats.silk[code] || cats.dtf[code] || cats.emb[code]; return p ? String(p.name).trim().split(/\s+/)[0].toLowerCase() : ""; }
+function copyColorsHTML(code) {
+  const b = brandOf(code);
+  const src = Object.keys(siteProducts).filter(k => k !== code && (siteProducts[k].colors || []).length)
+    .sort((x, y) => (brandOf(y) === b) - (brandOf(x) === b) || x.localeCompare(y));
+  if (!src.length) return '';
+  const nm = k => { const p = cats.silk[k] || cats.dtf[k] || cats.emb[k]; return k + (p ? ' — ' + p.name : ''); };
+  return '<div class="form-row" style="align-items:center"><select id="pf_site_copy" style="flex:1" onchange="copySiteColors()"><option value="">+ Copy colors from another style…</option>'
+    + src.map(k => '<option value="' + esc(k) + '">' + esc(nm(k)) + (brandOf(k) === b ? '' : ' (other brand)') + '</option>').join("")
+    + '</select></div>';
+}
+function copySiteColors() {
+  const k = q("pf_site_copy").value; if (!k || !siteDraft) return;
+  const have = new Set(siteDraft.colors.map(c => c.name.trim().toLowerCase()));
+  (siteProducts[k].colors || []).forEach(c => { if (!have.has(c.name.trim().toLowerCase())) siteDraft.colors.push({ name: c.name, hex: c.hex, on: true }); });
+  q("pf_site_copy").value = "";
+  q("siteColors").innerHTML = siteColorsHTML();
 }
 function siteColorsHTML() {
   return siteDraft.colors.map((c, i) => '<div class="sc-row' + (c.on ? '' : ' off') + '">'
