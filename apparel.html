@@ -81,6 +81,9 @@
 
   /* Order builder */
   .order-item { position: relative; background: #F8F8F5; border: 1px solid #E8E8E8; border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+  .combo-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 8px 0 4px; font-size: 13px; }
+  .combo-bar select { padding: 7px 10px; border: 1px dashed #9cc9d6; border-radius: 8px; background: #F1F8F9; color: #1a7698; font-family: inherit; font-size: 13px; max-width: 100%; }
+  .combo-on { background: #E3F2F6; color: #0f4c63; border-radius: 8px; padding: 6px 10px; }
   .split-toggle { margin-left:auto; display:flex; align-items:center; gap:6px; font-size:12px; color:#555; cursor:pointer; }
   .vend-tag { display:inline-block; font-size:10px; font-weight:600; color:#6b4e00; background:#FFF4D6; border:1px solid #F5DFA3; border-radius:4px; padding:0 5px; margin-left:4px; vertical-align:1px; }
   .vend-line { display:block; font-size:11px; color:#8a6d1f; margin-top:2px; white-space:pre-wrap; }
@@ -342,6 +345,7 @@
       <button class="mk-link" onclick="duplicateQuote()">Duplicate</button>
       <button class="mk-link qclose" id="qClose" onclick="closeQuote(this)">Close quote</button>
     </div>
+    <div id="comboBar"></div>
   </div>
 
   <!-- Method tabs -->
@@ -960,9 +964,80 @@ function supplierGroups() { const g = {}; validItems().forEach(it => { const k =
 function knownSupplier(it) { const p = prod(it); return TBDPricing.supplierKey((it.supplier || "").trim() || (p && p.vendor)); }
 function autoSplit() { return new Set(validItems().map(knownSupplier).filter(Boolean)).size > 1; }
 function splitOn() { return splitSuppliers === true || (splitSuppliers !== "off" && autoSplit()); }
-function shipQtyFor(it) { const t = totalQty(); if (!splitOn() || !METHODS[method].split) return t; return supplierGroups()[TBDPricing.supplierKey(supplierOf(it))] || t; }
-function tierShipQty(t) { if (!splitOn() || !METHODS[method].split) return t; return t / (Object.keys(supplierGroups()).length || 1); }
+function shipQtyFor(it) { const t = totalQty(); if (inCombo()) return (comboStats().groups[comboKey(it)] || {}).qty || t; if (!splitOn() || !METHODS[method].split) return t; return supplierGroups()[TBDPricing.supplierKey(supplierOf(it))] || t; }
+function tierShipQty(t) { if (inCombo()) return t + comboStats().total - totalQty(); if (!splitOn() || !METHODS[method].split) return t; return t / (Object.keys(supplierGroups()).length || 1); }
 function toggleSplitSuppliers(on) { splitSuppliers = on ? true : (autoSplit() ? "off" : false); renderOrderItems(); }
+// ════════════════════════════════════════════
+// COMBINED ORDER: several quotes (one per decoration) for the same client, shipped together.
+// Blanks from the same supplier add up for free shipping and their shipping is split over all those pieces;
+// the client gets ONE delivery, split over every piece. Each decoration keeps its own minimum and its own setup.
+// ════════════════════════════════════════════
+let comboFrozen = null;
+function comboMembers() { const id = quotes[activeQ] && quotes[activeQ].combo; return id ? quotes.map((_, i) => i).filter(i => quotes[i].combo === id) : []; }
+function inCombo() { return method !== "v2" && comboMembers().length > 1; }
+const OUT_SHIP = { silk: () => PCFG.silk.shipOut, dtf: () => PCFG.dtf.shipOut };
+function comboStats() {
+  if (comboFrozen) return comboFrozen;
+  const st = { total: 0, groups: {}, maxOut: 0, blanks: 0 };
+  comboMembers().forEach(i => {
+    const sq = i === activeQ ? snapshotQuote() : quotes[i], m = sq.method; if (m === "v2") return;
+    st.maxOut = Math.max(st.maxOut, m === "emb" ? (sq.embSet || embSet).clientShip : OUT_SHIP[m]());
+    (sq.orderItems || []).forEach(it => {
+      const p = cats[m][(it.code || "").toUpperCase()]; if (!p) return;
+      const f = SIZE_COST[m], sz = f && it.sizes, n = { std: parseInt(it.qty) || 0, x2: sz ? parseInt(it.q2) || 0 : 0, x3: sz ? parseInt(it.q3) || 0 : 0 };
+      const qn = n.std + n.x2 + n.x3; if (!qn) return;
+      const bl = f ? Object.entries(n).reduce((a, [z, k]) => a + ((p[f[z]] || p[f.std]) || 0) * k, 0) : (p.cost || 0) * qn;
+      const key = TBDPricing.supplierKey((it.supplier || "").trim() || p.vendor) || "ss", g = st.groups[key] || (st.groups[key] = { qty: 0, blanks: 0 });
+      g.qty += qn; g.blanks += bl; st.total += qn; st.blanks += bl;
+    });
+  });
+  return st;
+}
+function comboKey(it) { const p = prod(it); return TBDPricing.supplierKey((it.supplier || "").trim() || (p && p.vendor)) || "ss"; }
+// client shipping per piece = one delivery split over every piece of the combined order
+function comboOut(tq) { const st = comboStats(); return st.maxOut * tq / Math.max(1, tq + st.total - totalQty()); }
+// Run something as if another quote were open (no screen updates), e.g. to price it for the combined message.
+function withQuoteState(sq, fn) {
+  const keep = { method, numColors, numSides, extraSpots, tierPref, quoteMode, splitSuppliers, v2Protection, embSet, orderItems, shipMode, freeShipMin, fp: mk.frontPlace, os: mk.oneSide };
+  const frozen = comboStats(); comboFrozen = frozen;
+  try {
+    method = sq.method; numColors = sq.numColors; numSides = sq.numSides; extraSpots = sq.extraSpots; tierPref = { ...sq.tierPref }; quoteMode = "final";
+    splitSuppliers = sq.splitSuppliers; v2Protection = sq.v2Protection; embSet = { ...sq.embSet }; orderItems = sq.orderItems || [];
+    shipMode = sq.shipMode || "auto"; freeShipMin = sq.freeShipMin != null ? sq.freeShipMin : 200; mk.frontPlace = sq.frontPlace; mk.oneSide = sq.oneSide;
+    return fn();
+  } finally {
+    ({ method, numColors, numSides, extraSpots, tierPref, quoteMode, splitSuppliers, v2Protection, embSet, orderItems, shipMode, freeShipMin } = keep);
+    mk.frontPlace = keep.fp; mk.oneSide = keep.os; comboFrozen = null;
+  }
+}
+function quoteTitle(i) {
+  const sq = i === activeQ ? snapshotQuote() : quotes[i], m = sq.method;
+  const codes = (sq.orderItems || []).filter(it => cats[m][(it.code || "").toUpperCase()]).map(it => it.code.toUpperCase());
+  return (sq.name || [...new Set(codes)].join(", ") || "Quote " + (i + 1)) + " · " + METHOD_SHORT[m];
+}
+function comboHTML() {
+  if (quotes.length < 2) return "";
+  const cur = quotes[activeQ] || {}, mem = comboMembers().filter(i => i !== activeQ), others = quotes.map((_, i) => i).filter(i => i !== activeQ && !mem.includes(i));
+  let h = '<div class="combo-bar">';
+  if (mem.length) h += '<span class="combo-on">Combined order with ' + mem.map(i => '<b>' + esc(quoteTitle(i)) + '</b>').join(", ") + '</span><button class="mk-link" onclick="uncombine()">Separate</button>';
+  if (others.length) h += '<select onchange="combineWith(this.value);this.value=\'\'"><option value="">' + (mem.length ? '+ Add another decoration…' : 'Combine with another quote (another decoration, same client)…') + '</option>'
+    + others.map(i => '<option value="' + i + '">' + esc(quoteTitle(i)) + '</option>').join("") + '</select>';
+  return h + '</div>';
+}
+function combineWith(i) {
+  i = +i; if (isNaN(i) || !quotes[i]) return;
+  quotes[activeQ] = snapshotQuote();
+  const id = quotes[activeQ].combo || quotes[i].combo || ("c" + Date.now().toString(36));
+  const old = quotes[i].combo; if (old && old !== id) quotes.forEach(sq => { if (sq.combo === old) sq.combo = id; });
+  quotes[activeQ].combo = id; quotes[i].combo = id;
+  renderAll();
+}
+function uncombine() {
+  quotes[activeQ] = snapshotQuote();
+  const id = quotes[activeQ].combo; quotes[activeQ].combo = null;
+  const rest = quotes.filter(sq => sq.combo === id); if (rest.length < 2) rest.forEach(sq => sq.combo = null);
+  renderAll();
+}
 function onSupplier(id, v) { const it = itemById(id); if (it) { it.supplier = v; updateOrderResults(); } }
 
 function validItems() { return orderItems.filter(it => cat()[(it.code||"").toUpperCase()]); }
@@ -985,13 +1060,18 @@ function blankSubtotal(it) {
 }
 // Blank subtotal of the supplier order this style ships in (its supplier group when suppliers are split).
 function groupBlankSubtotal(it) {
+  if (inCombo()) return (comboStats().groups[comboKey(it)] || {}).blanks || 0;
   const split = splitOn() && METHODS[method].split, k = TBDPricing.supplierKey(supplierOf(it));
   return validItems().filter(o => !split || TBDPricing.supplierKey(supplierOf(o)) === k).reduce((s, o) => s + blankSubtotal(o), 0);
 }
 function shipWaived(subtotal) { return shipMode === "off" || (shipMode === "auto" && subtotal >= freeShipMin); }
 function suppShipFor(it, amt) { return shipWaived(groupBlankSubtotal(it)) ? 0 : amt; }
 // Tier breaks: assume the tier's pieces of this style (split across suppliers when on).
-function tierSuppShip(cost, t, amt) { return shipWaived(cost * tierShipQty(t)) ? 0 : amt; }
+function tierSuppShip(cost, t, amt) {
+  if (inCombo()) { const st = comboStats(), localBl = validItems().reduce((a, o) => a + blankSubtotalLocal(o), 0); return shipWaived(cost * t + st.blanks - localBl) ? 0 : amt; }
+  return shipWaived(cost * tierShipQty(t)) ? 0 : amt;
+}
+function blankSubtotalLocal(it) { return blankSubtotal(it); }
 function displayName(it, p) { return (method === "v2" && it.name && it.name.trim()) ? it.name.trim() : (p ? p.name : ""); }
 
 // ════════════════════════════════════════════
@@ -1002,8 +1082,9 @@ function displayName(it, p) { return (method === "v2" && it.name && it.name.trim
 const PCFG = TBDPricing.CONFIG;
 const RATES = PCFG.silk.rates, MINS = PCFG.silk.mins;
 const SCREEN = PCFG.silk.screen, SHIP_IN = PCFG.silk.shipIn, SHIP_OUT = PCFG.silk.shipOut;
+function comboCfg(m, tq) { return inCombo() ? { ...PCFG, [m]: { ...PCFG[m], shipOut: comboOut(tq) } } : undefined; }
 function silkCalc(blankCost, tq, shipQty, shipIn) {
-  return TBDPricing.silk({ blankCost, tq, shipQty, shipIn, colors: numColors, spots: numSides + extraSpots });
+  return TBDPricing.silk({ blankCost, tq, shipQty, shipIn, colors: numColors, spots: numSides + extraSpots }, comboCfg("silk", tq));
 }
 function silkViews() {
   if (numSides === 2) return [["front", mk.frontPlace], ["back", "fb"]];
@@ -1020,7 +1101,7 @@ const DTF_PL = [
 const DTF_EXTRA = PCFG.dtf.extra;
 function dtfPl(it) { return DTF_PL.find(p => p.id === it.placementId) || DTF_PL[0]; }
 function dtfCalc(cost, pl, tq, shipQty, es, esz, shipIn) {
-  return TBDPricing.dtf({ cost, pl, tq, shipQty, shipIn, extras: Array(es || 0).fill(esz || "small") });
+  return TBDPricing.dtf({ cost, pl, tq, shipQty, shipIn, extras: Array(es || 0).fill(esz || "small") }, comboCfg("dtf", tq));
 }
 // ── DTF / Embroidery Vendor 2 ──
 const BLIND_SHIP = PCFG.v2.blindShip, V2_SHIPPING = PCFG.v2.shipping, V2_SHIP_THRESHOLD = PCFG.v2.shipThreshold, V2_TIERS = PCFG.v2.tiers;
@@ -1080,8 +1161,11 @@ function sleevePrinted(it) { return sleeveSpots(it) > 0; }
 function embSpots(it) { if (!it) return 0; if (isCap(it)) return (it.capSide ? 1 : 0) + (it.capBack ? 1 : 0); return Math.min(2, it.extraSpots || 0); }
 // Digitizing: one per embroidery location (main spot + extra spots), using the style with the most spots.
 function embDigCount() { return 1 + validItems().reduce((m, it) => Math.max(m, embSpots(it)), 0); }
-function embCalc(blank, tq, extra, suppShip) {
-  return TBDPricing.emb({ blank, tq, extra, rate: embSet.rate, suppShip: suppShip == null ? embSet.suppShip : suppShip, clientShip: embSet.clientShip });
+function embCalc(blank, tq, extra, suppShip, shipQty) {
+  suppShip = suppShip == null ? embSet.suppShip : suppShip;
+  // combined order: supplier shipping split over that supplier's pieces, one client delivery split over every piece
+  if (inCombo()) return TBDPricing.emb({ blank, tq, extra, rate: embSet.rate, suppShip: suppShip * tq / Math.max(1, shipQty || tq), clientShip: comboOut(tq) });
+  return TBDPricing.emb({ blank, tq, extra, rate: embSet.rate, suppShip, clientShip: embSet.clientShip });
 }
 
 const METHODS = {
@@ -1122,9 +1206,9 @@ const METHODS = {
     label:"Embroidery", min:PCFG.emb.minPieces, tiers:PCFG.emb.tiers, split:false,
     views: it => embViews(it),
     print: it => T().emb + " · " + placeText(embPrintViews(it), isCap(it) ? 0 : embSpots(it), isCap(it) ? null : it),
-    price(it, size) { const c = sizeCost(it, size), es = embSpots(it), sp = suppShipFor(it, embSet.suppShip), r = embCalc(c, totalQty(), es, sp);
+    price(it, size) { const c = sizeCost(it, size), es = embSpots(it), sp = suppShipFor(it, embSet.suppShip), r = embCalc(c, totalQty(), es, sp, shipQtyFor(it));
       return { ...r, detail: fmt(c) + "×2 + " + fmt(embSet.rate) + "×2" + (es > 0 ? "×" + (1 + es) + " spots" : "") + " + $" + (sp + embSet.clientShip) + " ship/" + totalQty() + (sp ? "" : " (supplier ship free)") }; },
-    tierPrice(it, t, size) { return embCalc(sizeCost(it, size), t, embSpots(it), tierSuppShip(sizeCost(it, "std"), t, embSet.suppShip)).perPiece; },
+    tierPrice(it, t, size) { return embCalc(sizeCost(it, size), t, embSpots(it), tierSuppShip(sizeCost(it, "std"), t, embSet.suppShip), tierShipQty(t)).perPiece; },
     setup() { if (!embSet.dig) return null; const L = T(), n = embDigCount();
       return { total: n * DIG_RETAIL, cost: n * DIG_COST, lines: [L.digit + ": " + (n > 1 ? n + " × " + fmt(DIG_RETAIL) + " = " : "") + fmt(n * DIG_RETAIL), L.digitNote] }; },
     ship: () => T().ship(PCFG.emb.days[0], PCFG.emb.days[1], true), tierNote: () => T().tierNoteMix,
@@ -1474,6 +1558,38 @@ function addColorOf(id) {
   const el = q((fromMockup ? "mkc-" : "oicol-") + nu.id); if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
 }
 function styleTitle(it, p) { const c = (it.color || "").trim(); return T().code + " " + p.code + (c ? " · " + c.replace(/\b\w/g, x => x.toUpperCase()) : ""); }
+// Final-order lines of the open quote (styles, colors, sizes, decoration), without setup / total.
+function finalPart() {
+  const L0 = T(), items = validItems().filter(it => itemQty(it) > 0), prints = [...new Set(items.map(itemPrint))], L = []; let sum = 0;
+  styleGroups(items).forEach(g => {
+    const it = g[0], p = prod(it), many = g.length > 1;
+    if (!g.some(c => sizeLines(c).length)) return;
+    if (L.length) L.push("");
+    L.push("*" + (many ? L0.code + " " + p.code : styleTitle(it, p)) + "*", displayName(it, p));
+    const d = descFor(p); if (d.trim()) L.push(d.trim());
+    if (prints.length > 1) L.push(itemPrint(it));
+    g.forEach(c => sizeLines(c).forEach(l => { sum += l.r.perPiece * l.q;
+      L.push((many ? colorName(c) + (hasSizes(c) ? " · " : ": ") : "") + (hasSizes(c) ? SIZE_LABEL[l.size] + ": " : "") + L0.pcs(l.q) + " x " + fmt(l.r.perPiece) + " = " + fmt(l.r.perPiece * l.q)); }));
+  });
+  if (prints.length === 1 && L.length) L.push("", prints[0]);
+  const M = METHODS[method];
+  return { body: L, sum, st: items.length ? M.setup() : null, tq: totalQty(), days: (PCFG[method] || {}).days || [7, 10], method, min: M.min };
+}
+// One message for the whole combined order: every decoration, one delivery, one total.
+function combinedBlock() {
+  const L0 = T(), parts = comboMembers().map(i => withQuoteState(i === activeQ ? snapshotQuote() : quotes[i], finalPart)).filter(p => p.body.length);
+  if (!parts.length) return { label: "Combined order", text: "", empty: "Enter quantities in each decoration's quote." };
+  const L = []; let sum = 0, setup = 0, pcs = 0; const setupLines = [], short = [];
+  parts.forEach((p, i) => { if (i) L.push("", "———", ""); L.push(...p.body); sum += p.sum; pcs += p.tq;
+    if (p.st) { setup += p.st.total; setupLines.push(...p.st.lines.slice(0, 1)); }
+    if (p.min && p.tq < p.min) short.push(p.method); });
+  if (setupLines.length) L.push("", ...setupLines);
+  L.push("", "*" + L0.total + " (" + L0.pcs(pcs) + "): " + fmt(sum + setup) + "*");
+  if (setup) L.push("(" + fmt(sum) + " + " + fmt(setup) + " setup)");
+  const d = parts.reduce((a, p) => [Math.max(a[0], p.days[0]), Math.max(a[1], p.days[1])], [0, 0]);
+  L.push("", L0.ship(d[0], d[1], true));
+  return { label: "Combined order (" + parts.length + " decorations, one delivery)" + (short.length ? " · below minimum: " + short.join(", ") : ""), text: L.join("\n") };
+}
 function setQuoteMode(m) { quoteMode = m; mk.sig = ""; renderQuote(); renderMockRows(true); }
 function setTiers(on) { tierPref[method] = on; renderQuote(); }
 function renderQuote() {
@@ -1527,24 +1643,14 @@ function renderQuote() {
     const priced = items.filter(it => itemQty(it) > 0);
     if (!priced.length) quoteBlocks.push({ label: "Final order", text: "", empty: "Enter the quantity for each style the client chose." });
     else {
-      const L = []; let sum = 0;
-      styleGroups(priced).forEach((g, i) => {
-        const it = g[0], p = prod(it), many = g.length > 1;
-        if (!g.some(c => sizeLines(c).length)) return;
-        if (L.length) L.push("");
-        L.push("*" + (many ? L0.code + " " + p.code : styleTitle(it, p)) + "*", displayName(it, p));
-        const d = descFor(p); if (d.trim()) L.push(d.trim());
-        if (prints.length > 1) L.push(itemPrint(it));
-        g.forEach(c => sizeLines(c).forEach(l => { sum += l.r.perPiece * l.q;
-          L.push((many ? colorName(c) + (hasSizes(c) ? " · " : ": ") : "") + (hasSizes(c) ? SIZE_LABEL[l.size] + ": " : "") + L0.pcs(l.q) + " x " + fmt(l.r.perPiece) + " = " + fmt(l.r.perPiece * l.q)); }));
-      });
-      if (prints.length === 1) L.push("", prints[0]);
+      const fp = finalPart(), L = fp.body, sum = fp.sum;
       if (st) L.push("", ...st.lines);
       L.push("", "*" + L0.total + " (" + L0.pcs(tq) + "): " + fmt(sum + (st ? st.total : 0)) + "*");
       if (st) L.push("(" + fmt(sum) + " + " + fmt(st.total) + " " + (method === "emb" ? L0.digit.toLowerCase() : "screen setup") + ")");
       L.push("", ship);
       quoteBlocks.push({ label: "Final order", text: L.join("\n") });
     }
+    if (inCombo()) quoteBlocks.push(combinedBlock());
   }
   q("quoteBody").innerHTML = quoteBlocks.map((b, i) => '<div class="qblock"><div class="qblock-head"><span>' + esc(b.label) + '</span>'
     + (b.text ? '<button class="copy-btn" id="qcopy-' + i + '" onclick="copyBlock(' + i + ')">Copy</button>' : '') + '</div>'
@@ -1568,7 +1674,7 @@ function blankQuote(m) {
 }
 function snapshotQuote() {
   const cur = quotes[activeQ] || {};
-  return { qid:cur.qid || newQid(), name:cur.name || "", method, numColors, numSides, extraSpots, tierPref:{ ...tierPref }, quoteMode, quoteLang, splitSuppliers, v2Protection, embSet:{ ...embSet },
+  return { qid:cur.qid || newQid(), name:cur.name || "", combo:cur.combo || null, method, numColors, numSides, extraSpots, tierPref:{ ...tierPref }, quoteMode, quoteLang, splitSuppliers, v2Protection, embSet:{ ...embSet },
            orderItems, frontPlace:mk.frontPlace, oneSide:mk.oneSide, logos:mk.logos, boxes:mk.boxes, shipMode, freeShipMin };
 }
 function applyQuote(s) {
@@ -1586,7 +1692,7 @@ function switchQuote(i) { if (i === activeQ) return; quotes[activeQ] = snapshotQ
 function addQuote() { quotes[activeQ] = snapshotQuote(); quotes.push(blankQuote(method)); activeQ = quotes.length - 1; applyQuote(quotes[activeQ]); q("qName").focus(); }
 function duplicateQuote() {
   const cur = snapshotQuote(); quotes[activeQ] = cur;
-  const copy = { ...cur, qid:newQid(), name: cur.name ? cur.name + " (2)" : "", tierPref:{ ...cur.tierPref }, embSet:{ ...cur.embSet },
+  const copy = { ...cur, qid:newQid(), combo:null, name: cur.name ? cur.name + " (2)" : "", tierPref:{ ...cur.tierPref }, embSet:{ ...cur.embSet },
     orderItems: cur.orderItems.map(it => ({ ...it, id: Date.now() + Math.random() })), logos:{ ...cur.logos }, boxes:{} };
   quotes.splice(activeQ + 1, 0, copy); activeQ++; applyQuote(copy);
 }
@@ -1605,6 +1711,7 @@ function renderQuoteTabs() {
     return '<button class="qtab' + (i === activeQ ? ' active' : '') + '" onclick="switchQuote(' + i + ')"><span>' + esc(title) + '</span><small>' + METHOD_SHORT[m] + (s.name && codes ? ' · ' + esc(codes) : '') + '</small></button>';
   }).join("");
   q("qClose").hidden = quotes.length < 2;
+  const cb = q("comboBar"); if (cb) cb.innerHTML = comboHTML();
 }
 
 function renderAll() {
