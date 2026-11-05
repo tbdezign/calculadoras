@@ -1592,11 +1592,11 @@ function finalPart() {
     if (L.length) L.push("");
     L.push("*" + (many ? L0.code + " " + p.code : styleTitle(it, p)) + "*", displayName(it, p));
     const d = descFor(p); if (d.trim()) L.push(d.trim());
-    if (prints.length > 1) L.push(itemPrint(it));
+    if (prints.length > 1) L.push("", "*" + itemPrint(it) + "*", "");
     g.forEach(c => sizeLines(c).forEach(l => { sum += l.r.perPiece * l.q;
-      L.push((many ? colorName(c) + (hasSizes(c) ? " · " : ": ") : "") + (hasSizes(c) ? SIZE_LABEL[l.size] + ": " : "") + L0.pcs(l.q) + " x " + fmt(l.r.perPiece) + " = " + fmt(l.r.perPiece * l.q)); }));
+      L.push((many ? "*" + colorName(c) + "*" + (hasSizes(c) ? " · " : ": ") : "") + (hasSizes(c) ? SIZE_LABEL[l.size] + ": " : "") + L0.pcs(l.q) + " x " + fmt(l.r.perPiece) + " = " + fmt(l.r.perPiece * l.q)); }));
   });
-  if (prints.length === 1 && L.length) L.push("", prints[0]);
+  if (prints.length === 1 && L.length) L.push("", "*" + prints[0] + "*");
   const M = METHODS[method];
   return { body: L, sum, st: items.length ? M.setup() : null, tq: totalQty(), days: (PCFG[method] || {}).days || [7, 10], method, min: M.min };
 }
@@ -1636,13 +1636,13 @@ function renderQuote() {
       const it = g[0], p = prod(it), many = g.length > 1;
       const L = ["*" + (many ? L0.code + " " + p.code : styleTitle(it, p)) + "*", displayName(it, p)], d = descFor(p), qn = itemQty(it);
       if (d.trim()) L.push(d.trim());
-      if (many) L.push(L0.colorsL + ": " + g.map(colorName).join(", "));
-      L.push(itemPrint(it), "");
+      if (many) L.push("*" + L0.colorsL + ": " + g.map(colorName).join(", ") + "*");
+      L.push("", "*" + itemPrint(it) + "*", "");
       if (many && !tiersOn) {
         g.forEach(c => {
           const ls = itemQty(c) > 0 && tq > 0 ? sizeLines(c) : [];
-          if (hasSizes(c)) ls.forEach(l => L.push(colorName(c) + " · " + SIZE_LABEL[l.size] + ": " + L0.pcs(l.q) + " · " + fmt(l.r.perPiece) + L0.each));
-          else if (ls[0]) L.push(colorName(c) + ": " + L0.pcs(itemQty(c)) + " · " + fmt(ls[0].r.perPiece) + L0.each);
+          if (hasSizes(c)) ls.forEach(l => L.push("*" + colorName(c) + "*" + " · " + SIZE_LABEL[l.size] + ": " + L0.pcs(l.q) + " · " + fmt(l.r.perPiece) + L0.each));
+          else if (ls[0]) L.push("*" + colorName(c) + "*: " + L0.pcs(itemQty(c)) + " · " + fmt(ls[0].r.perPiece) + L0.each);
         });
       } else if (tiersOn) {
         M.tiers.forEach((t, i) => { const pr = M.tierPrice(it, t); if (pr != null) L.push((i === M.tiers.length - 1 ? L0.plus(t) : L0.pcs(t)) + ": " + fmt(pr) + L0.each); });
