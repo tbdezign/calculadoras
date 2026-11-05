@@ -1584,6 +1584,8 @@ function addColorOf(id) {
   const fromMockup = document.activeElement && document.activeElement.closest && document.activeElement.closest("#mkRows");
   const el = q((fromMockup ? "mkc-" : "oicol-") + nu.id); if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
 }
+// Quote heading: the shirt name in bold; the style code (and the color, when there's only one) plain below.
+function styleHead(it, p, many) { const c = (it.color || "").trim(); return ["*" + displayName(it, p) + "*", p.code + (!many && c ? " · " + titleCase(c) : "")]; }
 function styleTitle(it, p) { const c = (it.color || "").trim(); return T().code + " " + p.code + (c ? " · " + c.replace(/\b\w/g, x => x.toUpperCase()) : ""); }
 // Final-order lines of the open quote (styles, colors, sizes, decoration), without setup / total.
 function finalPart() {
@@ -1592,7 +1594,7 @@ function finalPart() {
     const it = g[0], p = prod(it), many = g.length > 1;
     if (!g.some(c => sizeLines(c).length)) return;
     if (L.length) L.push("");
-    L.push("*" + (many ? L0.code + " " + p.code : styleTitle(it, p)) + "*", displayName(it, p));
+    L.push(...styleHead(it, p, many));
     const d = descFor(p); if (d.trim()) L.push(d.trim());
     if (prints.length > 1) L.push("", "*" + itemPrint(it) + "*", "");
     g.forEach(c => sizeLines(c).forEach(l => { sum += l.r.perPiece * l.q;
@@ -1636,7 +1638,7 @@ function renderQuote() {
     const groups = styleGroups(items);
     groups.forEach(g => {
       const it = g[0], p = prod(it), many = g.length > 1;
-      const L = ["*" + (many ? L0.code + " " + p.code : styleTitle(it, p)) + "*", displayName(it, p)], d = descFor(p), qn = itemQty(it);
+      const L = styleHead(it, p, many), d = descFor(p), qn = itemQty(it);
       if (d.trim()) L.push(d.trim());
       if (many) L.push("*" + L0.colorsL + ": " + g.map(colorName).join(", ") + "*");
       L.push("", "*" + itemPrint(it) + "*", "");
