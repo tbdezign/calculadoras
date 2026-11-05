@@ -5,7 +5,7 @@
   .ww button:disabled { cursor: default; opacity: .45; }
   .ww a { color: #1a7698; }
   .ww-hero-wrap { background: #fff; border-bottom: 1px solid #e2e2e2; padding: 0 5vw; }
-  .ww-hero { padding: 28px 0 34px; max-width: 1180px; margin: 0 auto; }
+  .ww-hero { padding: 28px 0 34px; max-width: 1640px; margin: 0 auto; }
   .ww-crumb { font-size: 13px; color: #6b7280; margin-bottom: 18px; }
   .ww-crumb a { color: #051024; text-decoration: none; }
   .ww-crumb a:hover { text-decoration: underline; }
@@ -16,8 +16,8 @@
   .ww-trust { display: flex; flex-wrap: wrap; gap: 10px 22px; }
   .ww-trust span { font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
   .ww-trust span::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #91bc4d; }
-  .ww-main { max-width: 1180px; margin: 0 auto; padding: 24px 5vw 56px; }
-  @media (min-width: 1300px) { .ww-main { padding-left: 0; padding-right: 0; } }
+  .ww-main { max-width: 1640px; margin: 0 auto; padding: 24px 5vw 56px; }
+  @media (min-width: 1800px) { .ww-main { padding-left: 0; padding-right: 0; } }
 
   /* filters */
   .ww-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
@@ -82,6 +82,8 @@
   .ww-morebtn { border: none; background: none; color: #051024; font-weight: 600; font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px; }
   .ww-morebtn b { font-family: 'Montserrat', sans-serif; font-size: 26px; color: #1a7698; }
   .ww-more .ww-link { font-size: 13px; text-decoration: underline; }
+  .ww-addstyle { display: block; width: 100%; margin: 4px 0 6px; padding: 14px; border: 1.5px dashed #c9d1da; border-radius: 12px; background: #fafbfc; color: #051024; font-weight: 600; font-size: 14px; }
+  .ww-addstyle:hover { border-color: #1a7698; color: #1a7698; }
   .ww-add { margin-top: auto; padding: 8px; border-radius: 8px; border: 1.5px solid #051024; background: #fff; color: #051024; font-weight: 600; font-size: 13px; }
   .ww-add:hover { background: #051024; color: #fff; }
   .ww-line { border: 1px solid #e3e3e3; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; gap: 18px; align-items: stretch; }
@@ -98,7 +100,7 @@
   .ww-sw { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
   .ww-sw button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #d6dbe1; box-shadow: inset 0 0 0 2px #fff; padding: 0; }
   .ww-sw button.on { border-color: #1a7698; }
-  .ww-sizes { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+  .ww-sizes { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
   .ww-size { border: 1px solid #e3e3e3; border-radius: 8px; padding: 6px; text-align: center; }
   .ww-size label { display: block; font-size: 12px; color: #4b5563; margin-bottom: 4px; }
   .ww-size div { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
@@ -450,7 +452,10 @@
           + '<div class="ww-sw" role="group" aria-label="Color">' + st.colors.map(function (c) { return '<button class="' + (c.name === l.color ? 'on' : '') + '" style="background:' + esc(c.hex) + '" title="' + esc(c.name) + '" aria-label="' + esc(c.name) + '" data-line="' + l.id + '" data-color="' + esc(c.name) + '"></button>'; }).join('') + '</div>'
           + sizesHtml(l) + '</div></div>';
       });
-      if (O.lines.length) h += '<div class="ww-q" style="margin-top:22px">Add another style</div>';
+      var collapsed = O.lines.length && !O.pickOpen;
+      if (collapsed) h += '<button class="ww-addstyle" data-pick>+ Add another style</button>';
+      else if (O.lines.length) h += '<div class="ww-q" style="margin-top:22px;display:flex;justify-content:space-between;align-items:center">Add another style<button class="ww-link" data-pick>Close</button></div>';
+      if (!collapsed) {
       var inOrder = O.lines.map(function (l) { return l.code; });
       var pick = STYLES.filter(function (s) { return inOrder.indexOf(s.code) < 0; }).concat(STYLES.filter(function (s) { return inOrder.indexOf(s.code) >= 0; }));
       var shown = O.showAll ? pick : pick.slice(0, 4);
@@ -459,6 +464,7 @@
       }).join('')
         + (pick.length > 4 ? '<div class="ww-mcard ww-more"><button class="ww-morebtn" data-more>' + (O.showAll ? 'Show fewer styles' : '<b>+' + (pick.length - 4) + '</b>See all ' + pick.length + ' styles') + '</button><a class="ww-link" href="#">or browse the catalog</a></div>' : '')
         + '</div>';
+      }
     } else if (O.step === 2) {
       h += '<h2 class="ww-h2">2. Decoration: printed or embroidered?</h2><p class="ww-p">Pick the look you want. We take care of the technical part.</p><div class="ww-choice">'
         + '<button class="ww-ch' + (O.deco === 'print' ? ' on' : '') + '" data-deco="print"><b>Printed</b><span>Smooth, flat print. Great for big logos, full color and the best price per shirt.</span></button>'
@@ -658,8 +664,9 @@
     if (ds.dd) { F.open = F.open === ds.dd ? null : ds.dd; renderCatalog(); return; }
     if (ds.f) { var a = F[ds.f], i = a.indexOf(ds.v); if (i >= 0) a.splice(i, 1); else a.push(ds.v); renderCatalog(); return; }
     if ('clear' in ds) { F.type = []; F.fit = []; F.mat = []; F.fam = []; F.open = null; renderCatalog(); return; }
+    if ('pick' in ds) { O.pickOpen = !O.pickOpen; O.showAll = false; renderPanel(); return; }
     if ('more' in ds) { O.showAll = !O.showAll; renderPanel(); return; }
-    if (ds.add) { O.showAll = false; addLine(ds.add); renderPanel(); requote(); var ls = app.querySelectorAll('.ww-line'); if (ls.length) ls[ls.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if (ds.add) { O.showAll = false; O.pickOpen = false; addLine(ds.add); renderPanel(); requote(); var ls = app.querySelectorAll('.ww-line'); if (ls.length) ls[ls.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
     if (ds.dup) { var src = lineById(ds.dup), st2 = byCode[src.code], usedC = O.lines.filter(function (x) { return x.code === src.code; }).map(function (x) { return x.color; });
       var next = st2.colors.filter(function (c) { return usedC.indexOf(c.name) < 0; })[0] || st2.colors[0];
       var nl = { id: O.nextId++, code: src.code, color: next ? next.name : '', sizes: {} }; O.lines.splice(O.lines.indexOf(src) + 1, 0, nl);
