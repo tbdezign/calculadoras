@@ -478,6 +478,7 @@
     h += '<div class="ww-nav"><button class="ww-btn ghost" data-back' + (O.step === 1 ? ' disabled' : '') + '>Back</button>'
       + (O.step < 5 ? '<button class="ww-btn" data-next' + (stepOk(O.step) ? '' : ' disabled') + '>Continue</button>' : '<button class="ww-btn pay" data-pay' + (O.quote ? '' : ' disabled') + '>Continue to secure checkout</button>') + '</div>';
     p.innerHTML = h;
+    if (O.step === 5) fitLogos(p);
   }
 
   // logo on the real photo, at the spot saved in the calculator (or a standard spot)
@@ -487,9 +488,40 @@
     var dark = !/white|natural|silver|grey|gray|light|ceil|sand|oatmeal|yellow|pink/i.test(color);
     var logo = O.logo && O.logo.url ? '<img src="' + O.logo.url + '" alt="">' : '<span style="background:' + (dark ? '#fff' : '#051024') + ';color:' + (dark ? '#051024' : '#fff') + '">LOGO</span>';
     var box = 'left:' + (pl.cx - pl.maxW / 2) * 100 + '%;top:' + (pl.cy - pl.maxH / 2) * 100 + '%;width:' + pl.maxW * 100 + '%;height:' + pl.maxH * 100 + '%';
-    var base = ph ? '<img src="' + esc(ph.url) + '" alt="">' : (side === 'front' ? shapeSvg(st.type, hex) : '');
+    var base = ph ? '<img src="' + esc(ph.url) + '" alt="" crossorigin="anonymous">' : (side === 'front' ? shapeSvg(st.type, hex) : '');
     if (!base) return '';
-    return '<div class="ww-prev"><div class="ww-pimg">' + base + '<div class="ww-logo" style="' + box + '">' + logo + '</div></div><b>' + esc(st.name) + '</b><small>' + esc(color) + ' · ' + label + '</small></div>';
+    var fit = ph && REAL[spot] ? ' data-fit="' + spot + '" data-cx="' + pl.cx + '" data-cy="' + pl.cy + '" data-w="' + pl.maxW + '" data-h="' + pl.maxH + '"' : '';
+    return '<div class="ww-prev"><div class="ww-pimg"' + fit + '>' + base + '<div class="ww-logo" style="' + box + '">' + logo + '</div></div><b>' + esc(st.name) + '</b><small>' + esc(color) + ' · ' + label + '</small></div>';
+  }
+  // Keep the logo at a real print size: measure how wide the shirt body is in the photo (≈ 20 in) and cap the logo
+  // at left chest ≈ 4 in, full front ≈ 11 in, full back ≈ 12 in. Photos differ in how much of the frame the shirt fills.
+  var REAL = { lc: [0.2, 0.2], ff: [0.55, 0.65], fb: [0.6, 0.7] }, bodyCache = {};
+  function bodyWidth(img) {
+    if (bodyCache[img.src] != null) return bodyCache[img.src];
+    var W = 300, H = Math.max(1, Math.round(W * img.naturalHeight / img.naturalWidth)), c = document.createElement('canvas'); c.width = W; c.height = H;
+    var x = c.getContext('2d'); x.drawImage(img, 0, 0, W, H);
+    var d = x.getImageData(0, 0, W, H).data, ink = function (px, py) { var i = (py * W + px) * 4; return d[i + 3] > 40 && (d[i] < 242 || d[i + 1] < 242 || d[i + 2] < 242); };
+    var top = -1, bot = -1;
+    for (var y = 0; y < H; y++) for (var xx = 0; xx < W; xx++) if (ink(xx, y)) { if (top < 0) top = y; bot = y; break; }
+    if (top < 0 || bot - top < H * 0.2) return (bodyCache[img.src] = 0);
+    // width of the body well below the sleeves (a band of rows, so a thin outline on a white shirt still counts)
+    var mid = Math.round(top + (bot - top) * 0.62), l = W, r = -1;
+    for (var yy = Math.max(0, mid - 4); yy <= Math.min(H - 1, mid + 4); yy++) for (var xi = 0; xi < W; xi++) if (ink(xi, yy)) { if (xi < l) l = xi; if (xi > r) r = xi; }
+    return (bodyCache[img.src] = r < 0 ? 0 : (r - l) / W);
+  }
+  function fitLogos(rootEl) {
+    [].forEach.call(rootEl.querySelectorAll('.ww-pimg[data-fit]'), function (box) {
+      var img = box.querySelector('img'), logo = box.querySelector('.ww-logo'); if (!img || !logo) return;
+      var go = function () {
+        var bw; try { bw = bodyWidth(img); } catch (e) { return; }
+        if (!bw || bw < 0.2) return;
+        var k = REAL[box.dataset.fit], ar = img.naturalWidth / img.naturalHeight;
+        var w = Math.min(+box.dataset.w, k[0] * bw), h = Math.min(+box.dataset.h, k[1] * bw * ar);
+        logo.style.left = (+box.dataset.cx - w / 2) * 100 + '%'; logo.style.top = (+box.dataset.cy - h / 2) * 100 + '%';
+        logo.style.width = w * 100 + '%'; logo.style.height = h * 100 + '%';
+      };
+      if (img.complete && img.naturalWidth) go(); else img.addEventListener('load', go);
+    });
   }
   function previews() {
     var out = '';
