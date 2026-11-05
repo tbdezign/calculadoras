@@ -634,7 +634,9 @@ TBDCloud.onLoad(async () => {
   if (error) throw error;
   (data || []).forEach(r => { if (fromDb[r.method]) fromDb[r.method][r.code] = r.data; });
   METHOD_KEYS.forEach(k => { cats[k] = fromDb[k]; saveCatLS(k); });
-  renderCatalog(); renderOrderItems();
+  // Don't redraw a product form someone is typing in (a background reload would wipe what they typed).
+  if (!editProduct) renderCatalog(); else q("catalogLabel").textContent = Object.keys(cat()).length + " products";
+  renderOrderItems();
 });
 // ── Site catalog info (one per style code, shared by every method; no costs here, the site reads it) ──
 const SITE_LS = "tbd-site-products";
