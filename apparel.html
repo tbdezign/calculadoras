@@ -543,7 +543,7 @@ const CAT_FIELDS = {
   v2:  [ {k:"t2", l:"2 pc"}, {k:"t4", l:"4 pc"}, {k:"t8", l:"8 pc"}, {k:"t16", l:"16 pc"} ],
   emb: [ {k:"cStd", l:"XS-XL"}, {k:"c2xl", l:"2XL"}, {k:"c3xl", l:"3XL"} ],
 };
-const CAT_HINT = { silk:"Blank cost from the supplier", dtf:"Blank cost from the supplier", v2:"Vendor price per tier", emb:"Blank cost from the supplier" };
+const CAT_HINT = { silk:"Blank cost from the supplier · also updates DTF and Embroidery", dtf:"Blank cost from the supplier · also updates Silk and Embroidery (XS-XL)", v2:"Vendor price per tier", emb:"Blank cost from the supplier · also updates Silk and DTF" };
 let cats = {};
 function cat() { return cats[method]; }
 function allVendors() { const s = new Set(SUPPLIER_LIST); METHOD_KEYS.forEach(k => Object.values(cats[k] || {}).forEach(p => { if (p && p.vendor) s.add(p.vendor); })); return [...s].sort((a, b) => a.localeCompare(b)); }
@@ -700,7 +700,23 @@ async function saveProductForm() {
   const raw = { code:q("pf_code").value.trim(), name:q("pf_name").value.trim(), desc:q("pf_desc").value, desc_en:q("pf_den").value, desc_es:q("pf_des").value, vendor:q("pf_vendor").value, memo:q("pf_memo").value };
   CAT_FIELDS[method].forEach(f => { raw[f.k] = parseFloat(q("pf_" + f.k).value); });
   const p = cleanProduct(method, raw); if (!p) return;
-  if (!await saveProduct(method, p)) return; editProduct = null; renderCatalog(); renderOrderItems();
+  if (!await saveProduct(method, p)) return;
+  await syncBlankCost(method, p);
+  editProduct = null; renderCatalog(); renderOrderItems();
+}
+// One blank cost per shirt: saving it in Silk, DTF or Embroidery updates the same code in the other two
+// (Vendor 2 is separate, its price already includes the decoration). DTF has one cost, so it only moves XS-XL.
+async function syncBlankCost(from, p) {
+  if (!BLANK_SOURCES.includes(from)) return;
+  const c = blankCosts(from, p);
+  for (const k of BLANK_SOURCES) {
+    const o = k !== from && cats[k][p.code]; if (!o) continue;
+    const n = { ...o };
+    if (k === "silk") Object.assign(n, { costStd:c.std }, from !== "dtf" ? { cost2xl:c.x2, cost3xl:c.x3 } : {});
+    else if (k === "emb") Object.assign(n, { cStd:c.std }, from !== "dtf" ? { c2xl:c.x2, c3xl:c.x3 } : {});
+    else n.cost = c.std;
+    if (JSON.stringify(n) !== JSON.stringify(o)) await saveProduct(k, n);
+  }
 }
 async function deleteProductForm(code) { if (!await removeProduct(method, code)) return; editProduct = null; renderCatalog(); renderOrderItems(); }
 async function exportCatalog(btn) {
