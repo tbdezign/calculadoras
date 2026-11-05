@@ -250,7 +250,7 @@
   var DATA = null, STYLES = [], byCode = {};
   var F = { type: [], fit: [], mat: [], fam: [], open: null };
   var O = { reorder: false, reorderNo: '', step: 1, lines: [], deco: null, logo: null, logoType: null, inks: 1, placement: 'lc', sleeves: 0, otherText: '', otherSpots: ['small'], nextId: 1, quote: null, upsell: null, checkout: false };
-  var SIZES = [['XS', 'std'], ['S', 'std'], ['M', 'std'], ['L', 'std'], ['XL', 'std'], ['2XL', 'x2'], ['3XL', 'x3']];
+  var SIZES = [['2XS', 'std'], ['XS', 'std'], ['S', 'std'], ['M', 'std'], ['L', 'std'], ['XL', 'std'], ['2XL', 'x2'], ['3XL', 'x3']];
   var NAMES = { silk: 'Silk Screen', dtf: 'DTF Full-Color Print', emb: 'Embroidery' };
   var PLACES = [['lc', 'Left chest'], ['lcb', 'Left chest + Full back'], ['ff', 'Full front'], ['bk', 'Full back'], ['fb', 'Front + back'], ['other', 'Other']];
 
@@ -409,7 +409,7 @@
       + t.rows.map(function (r) { return '<tr><th>' + esc(r.label) + '</th>' + keep.map(function (i) { return '<td>' + esc(r.values[i]) + '</td>'; }).join('') + '</tr>'; }).join('')
       + '</tbody></table></div><small class="ww-tnote">Measurements in inches. Lay a shirt you like flat and compare.</small>';
   }
-  function sizesFor(code) { var t = (byCode[code] || {}).sizeTable; return t && t.cols ? SIZES.filter(function (s) { return t.cols.indexOf(s[0]) >= 0; }) : SIZES; }
+  function sizesFor(code) { var t = (byCode[code] || {}).sizeTable; return t && t.cols ? SIZES.filter(function (s) { return t.cols.indexOf(s[0]) >= 0; }) : SIZES.filter(function (s) { return s[0] !== '2XS'; }); }
   function sizesHtml(l) {
     return '<div class="ww-sizes">' + sizesFor(l.code).map(function (s) {
       var q = +l.sizes[s[0]] || 0;
