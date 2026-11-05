@@ -92,13 +92,16 @@
   .ww-lpic img { width: 100%; height: 100%; object-fit: contain; }
   .ww-lpic svg { width: 78%; height: 78%; }
   .ww-lpic:focus-visible { outline: 2px solid #2a9fd6; outline-offset: 2px; }
-  .ww-lbody { flex: 1; min-width: 0; }
-  .ww-lhead { display: flex; justify-content: space-between; align-items: center; gap: 6px 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .ww-lbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+  .ww-lsec { display: flex; flex-direction: column; gap: 8px; }
+  .ww-lsec.bottom { margin-top: auto; }
+  .ww-lab { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #6b7280; }
+  .ww-lhead { display: flex; justify-content: space-between; align-items: center; gap: 6px 12px; flex-wrap: wrap; }
   .ww-lhead > div { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .ww-thumb { width: 48px; height: 48px; flex: none; border-radius: 8px; background: #fff; border: 1px solid #eee; overflow: hidden; display: flex; align-items: center; justify-content: center; }
   .ww-thumb img { width: 100%; height: 100%; object-fit: contain; }
   .ww-thumb svg { width: 80%; height: 80%; }
-  .ww-sw { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .ww-sw { display: flex; flex-wrap: wrap; gap: 8px; }
   .ww-sw button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #d6dbe1; box-shadow: inset 0 0 0 2px #fff; padding: 0; }
   .ww-sw button.on { border-color: #1a7698; }
   .ww-sizes { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
@@ -450,8 +453,8 @@
         var st = byCode[l.code];
         h += '<div class="ww-line"><button class="ww-lpic" data-zoompic="' + l.id + '" aria-label="See ' + esc(st.name) + ' in ' + esc(l.color) + ' bigger">' + imgHtml(st, l.color) + '</button><div class="ww-lbody"><div class="ww-lhead"><div><div><b style="font-size:15px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small></div></div>'
           + '<span style="white-space:nowrap">' + (st.sizeChart || st.sizeTable ? '<button class="ww-link" data-chart="' + esc(st.code) + '">Size chart</button>' : '') + '<button class="ww-link" data-dup="' + l.id + '">+ Another color</button><button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></span></div>'
-          + '<div class="ww-sw" role="group" aria-label="Color">' + st.colors.map(function (c) { return '<button class="' + (c.name === l.color ? 'on' : '') + '" style="background:' + esc(c.hex) + '" title="' + esc(c.name) + '" aria-label="' + esc(c.name) + '" data-line="' + l.id + '" data-color="' + esc(c.name) + '"></button>'; }).join('') + '</div>'
-          + sizesHtml(l) + '</div></div>';
+          + '<div class="ww-lsec"><span class="ww-lab">Color</span><div class="ww-sw" role="group" aria-label="Color">' + st.colors.map(function (c) { return '<button class="' + (c.name === l.color ? 'on' : '') + '" style="background:' + esc(c.hex) + '" title="' + esc(c.name) + '" aria-label="' + esc(c.name) + '" data-line="' + l.id + '" data-color="' + esc(c.name) + '"></button>'; }).join('') + '</div></div>'
+          + '<div class="ww-lsec bottom"><span class="ww-lab">Quantity per size</span>' + sizesHtml(l) + '</div></div></div>';
       });
       var collapsed = O.lines.length && !O.pickOpen;
       if (collapsed) h += '<button class="ww-addstyle" data-pick>+ Add another style</button>';
