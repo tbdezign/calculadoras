@@ -635,7 +635,7 @@ TBDCloud.onLoad(async () => {
 });
 function siteBoxHTML(code) {
   const sp = siteProducts[code] || {};
-  if (!siteDraft || siteDraft.code !== code) siteDraft = { code, colors: (sp.colors || []).map(c => ({ ...c })) };
+  if (!siteDraft || siteDraft.code !== code) siteDraft = { code, colors: (sp.colors || []).map(c => ({ ...c })), sizeChart: sp.sizeChart || "", newChart: null };
   const sel = (id, list, v) => '<select id="' + id + '"><option value="">—</option>' + list.map(o => '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>').join("") + '</select>';
   return '<div class="site-box"><div class="int-head">Website catalog</div>'
     + '<label class="site-show"><input type="checkbox" id="pf_site_show"' + (sp.show ? ' checked' : '') + '> Show on site</label>'
@@ -644,7 +644,23 @@ function siteBoxHTML(code) {
     + '<div style="flex:1"><label class="lbl">Material</label>' + sel("pf_site_mat", SITE_MATERIALS, sp.material) + '</div></div>'
     + '<label class="lbl">Colors on the site (only high-stock ones · uncheck to hide one that is running low)</label>'
     + copyColorsHTML(code)
-    + '<div id="siteColors">' + siteColorsHTML() + '</div></div>';
+    + '<div id="siteColors">' + siteColorsHTML() + '</div>'
+    + '<label class="lbl" style="margin-top:10px">Size chart (a photo or screenshot from the supplier\'s site)</label><div id="siteChart">' + sizeChartHTML() + '</div></div>';
+}
+function sizeChartHTML() {
+  const has = siteDraft.newChart || siteDraft.sizeChart;
+  if (has && !siteDraft.newChart && siteDraft.sizeChart && !siteDraft.chartUrl && TBDCloud.loggedIn)
+    TBDCloud.sb.storage.from("photos").createSignedUrl(siteDraft.sizeChart, 3600).then(r => { if (r.data && siteDraft) { siteDraft.chartUrl = r.data.signedUrl; const e = q("siteChart"); if (e) e.innerHTML = sizeChartHTML(); } });
+  return '<div class="form-row" style="align-items:center">'
+    + (has ? '<img src="' + esc(siteDraft.chartUrl || "") + '" alt="" style="max-height:70px;max-width:160px;border:1px solid #ddd;border-radius:6px;background:#fff">' : '')
+    + '<label class="mk-link" style="cursor:pointer">' + (has ? 'Change' : '+ Add size chart') + '<input type="file" accept="image/*" hidden onchange="pickSizeChart(this)"></label>'
+    + (has ? '<button class="mk-link" onclick="siteDraft.newChart=null;siteDraft.sizeChart=\'\';siteDraft.chartUrl=null;q(\'siteChart\').innerHTML=sizeChartHTML()">Remove</button>' : '')
+    + '</div>';
+}
+function pickSizeChart(inp) {
+  const f = inp.files && inp.files[0]; if (!f || !siteDraft) return;
+  siteDraft.newChart = f; siteDraft.chartUrl = URL.createObjectURL(f);
+  q("siteChart").innerHTML = sizeChartHTML();
 }
 // Copy colors from another style (same brand listed first); only adds colors this one doesn't have yet.
 function brandOf(code) { const p = cats.silk[code] || cats.dtf[code] || cats.emb[code]; return p ? String(p.name).trim().split(/\s+/)[0].toLowerCase() : ""; }
@@ -677,9 +693,17 @@ async function saveSiteForm(code) {
   if (!q("pf_site_show") || !siteDraft) return true;
   const o = { type: q("pf_site_type").value, fit: q("pf_site_fit").value, material: q("pf_site_mat").value,
     colors: siteDraft.colors.map(c => ({ name: c.name.trim(), hex: c.hex, on: !!c.on })).filter(c => c.name) };
+  // size chart: stored next to the garment photos; only the path goes in the row
+  const chartPath = "sizechart/" + catDocId(code) + ".img";
+  if (siteDraft.newChart) {
+    const f = siteDraft.newChart;
+    if (!await TBDCloud.write(sb => sb.storage.from("photos").upload(chartPath, f, { upsert: true, contentType: f.type || "image/png" }))) return false;
+    o.sizeChart = chartPath; o.sizeChartAt = Date.now(); siteDraft.newChart = null;
+  } else if (siteDraft.sizeChart) { o.sizeChart = siteDraft.sizeChart; if ((siteProducts[code] || {}).sizeChartAt) o.sizeChartAt = siteProducts[code].sizeChartAt; }
+  else if ((siteProducts[code] || {}).sizeChart) { await TBDCloud.write(sb => sb.storage.from("photos").remove([siteProducts[code].sizeChart])); }
   const show = q("pf_site_show").checked;
   const old = siteProducts[code];
-  if (!old && !show && !o.type && !o.fit && !o.material && !o.colors.length) return true;
+  if (!old && !show && !o.type && !o.fit && !o.material && !o.colors.length && !o.sizeChart) return true;
   const next = { show, ...o };
   if (old && JSON.stringify(old) === JSON.stringify(next)) return true;
   if (!await TBDCloud.write(sb => sb.from("site_products").upsert({ key: code, show, data: o }))) return false;

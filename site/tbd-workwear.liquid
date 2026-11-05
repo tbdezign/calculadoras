@@ -141,6 +141,9 @@
   .ww-zoom { position: fixed; inset: 0; z-index: 9999; background: rgba(5,16,36,.82); display: flex; align-items: center; justify-content: center; padding: 16px; cursor: zoom-out; }
   .ww-zoom .ww-pimg { width: min(92vw, 88vh, 900px); cursor: zoom-out; border-radius: 12px; }
   .ww-zoom .ww-logo span { font-size: 22px; }
+  .ww-chart { background: #fff; border-radius: 12px; padding: 16px; max-width: min(92vw, 900px); max-height: 88vh; overflow: auto; text-align: center; }
+  .ww-chart b { display: block; font-family: 'Montserrat', sans-serif; font-size: 15px; margin-bottom: 10px; }
+  .ww-chart img { max-width: 100%; height: auto; }
   .ww-zoom-x { position: absolute; top: 14px; right: 18px; color: #fff; font-size: 34px; line-height: 1; background: none; border: none; }
   .ww-prev b { display: block; font-size: 13px; margin-top: 8px; }
   .ww-prev small { display: block; font-size: 12px; color: #4b5563; }
@@ -304,6 +307,7 @@
         + '<div class="ww-badges">' + badges + '</div><h2 class="ww-cname">' + esc(s.name) + '</h2>'
         + '<div class="ww-dots" aria-label="Available colors">' + s.colors.slice(0, 8).map(function (c) { return '<span class="d" title="' + esc(c.name) + '" style="background:' + esc(c.hex) + '"></span>'; }).join('')
         + (s.colors.length > 8 ? '<small>+' + (s.colors.length - 8) + '</small>' : '') + '</div>'
+        + (s.sizeChart ? '<button class="ww-link" style="padding:0;font-size:13px;text-align:left" data-chart="' + esc(s.code) + '">Size chart</button>' : '')
         + (s.from ? '<div class="ww-from">From <b>' + money(s.from) + '</b> / piece</div>' : '<div class="ww-from"></div>')
         + '<a class="ww-cta" href="#order/' + encodeURIComponent(s.code) + '">Customize this style</a></div></article>';
     }).join('') + '</div>';
@@ -404,7 +408,7 @@
       O.lines.forEach(function (l) {
         var st = byCode[l.code];
         h += '<div class="ww-line"><div class="ww-lhead"><div><span class="ww-thumb">' + imgHtml(st, l.color) + '</span><div><b style="font-size:14px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small></div></div>'
-          + '<span style="white-space:nowrap"><button class="ww-link" data-dup="' + l.id + '">+ Another color</button><button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></span></div>'
+          + '<span style="white-space:nowrap">' + (st.sizeChart ? '<button class="ww-link" data-chart="' + esc(st.code) + '">Size chart</button>' : '') + '<button class="ww-link" data-dup="' + l.id + '">+ Another color</button><button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></span></div>'
           + '<div class="ww-sw" role="group" aria-label="Color">' + st.colors.map(function (c) { return '<button class="' + (c.name === l.color ? 'on' : '') + '" style="background:' + esc(c.hex) + '" title="' + esc(c.name) + '" aria-label="' + esc(c.name) + '" data-line="' + l.id + '" data-color="' + esc(c.name) + '"></button>'; }).join('') + '</div>'
           + sizesHtml(l) + '</div>';
       });
@@ -590,6 +594,7 @@
   app.addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b || !app.contains(b)) { if (F.open) { F.open = null; renderCatalog(); } return; }
     var ds = b.dataset;
+    if (ds.chart) { var cs = byCode[ds.chart]; if (cs && cs.sizeChart) openZoom('<div class="ww-chart"><b>' + esc(cs.name) + ' · size chart</b><img src="' + esc(cs.sizeChart) + '" alt="Size chart for ' + esc(cs.name) + '"></div>'); return; }
     if (ds.dd) { F.open = F.open === ds.dd ? null : ds.dd; renderCatalog(); return; }
     if (ds.f) { var a = F[ds.f], i = a.indexOf(ds.v); if (i >= 0) a.splice(i, 1); else a.push(ds.v); renderCatalog(); return; }
     if ('clear' in ds) { F.type = []; F.fit = []; F.mat = []; F.fam = []; F.open = null; renderCatalog(); return; }
@@ -620,11 +625,15 @@
   // tap a preview to see it big
   function closeZoom() { var z = document.querySelector('.ww-zoom'); if (z) z.remove(); document.removeEventListener('keydown', zoomKey); }
   function zoomKey(e) { if (e.key === 'Escape') closeZoom(); }
-  app.addEventListener('click', function (e) {
-    var pi = e.target.closest('.ww-prev .ww-pimg'); if (!pi) return;
-    var z = document.createElement('div'); z.className = 'ww ww-zoom'; z.setAttribute('role', 'dialog'); z.setAttribute('aria-label', 'Preview, enlarged');
-    z.innerHTML = '<button class="ww-zoom-x" aria-label="Close">×</button>'; z.appendChild(pi.cloneNode(true));
+  function openZoom(content) {
+    closeZoom();
+    var z = document.createElement('div'); z.className = 'ww ww-zoom'; z.setAttribute('role', 'dialog'); z.setAttribute('aria-label', 'Enlarged view');
+    z.innerHTML = '<button class="ww-zoom-x" aria-label="Close">×</button>';
+    if (typeof content === 'string') z.insertAdjacentHTML('beforeend', content); else z.appendChild(content);
     z.addEventListener('click', closeZoom); document.body.appendChild(z); document.addEventListener('keydown', zoomKey);
+  }
+  app.addEventListener('click', function (e) {
+    var pi = e.target.closest('.ww-prev .ww-pimg'); if (pi) openZoom(pi.cloneNode(true));
   });
   app.addEventListener('focusout', function (e) { if (e.target.dataset && e.target.dataset.size && O.step === 4) setTimeout(function () { var ae = document.activeElement; if (!(ae && ae.dataset && ae.dataset.size)) { O.dirty = false; renderPanel(); } }, 0); });
   app.addEventListener('change', function (e) {

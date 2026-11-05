@@ -49,10 +49,11 @@ async function catalog() {
   for (const r of prods) (by[r.code] ||= {})[r.method] = r.data;
   const pics = photos.filter((p: any) => p.meta && codes.includes(p.meta.code));
   let signed: Record<string, string> = {};
-  if (pics.length) {
+  const charts = site.map((r: any) => r.data && r.data.sizeChart).filter(Boolean);
+  if (pics.length || charts.length) {
     const r = await fetch(`${SB_URL}/storage/v1/object/sign/photos`, {
       method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ expiresIn: 60 * 60 * 24, paths: pics.map((p: any) => p.key + ".img") }),
+      body: JSON.stringify({ expiresIn: 60 * 60 * 24, paths: pics.map((p: any) => p.key + ".img").concat(charts) }),
     });
     if (r.ok) for (const x of await r.json()) if (x.signedURL) signed[x.path] = `${SB_URL}/storage/v1${x.signedURL}`;
   }
@@ -74,6 +75,7 @@ async function catalog() {
       colors: (d.colors || []).filter((c: any) => c && c.on && c.name).map((c: any) => ({ name: c.name, hex: c.hex })),
       photos: pics.filter((p: any) => p.meta.code === s.key && signed[p.key + ".img"])
         .map((p: any) => ({ color: p.meta.color, side: p.meta.side, url: signed[p.key + ".img"], place: p.meta.place || {} })),
+      sizeChart: d.sizeChart && signed[d.sizeChart] ? signed[d.sizeChart] : null,
       from,
     };
   }).filter(Boolean);
