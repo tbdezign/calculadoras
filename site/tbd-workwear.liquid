@@ -111,7 +111,11 @@
   .ww-pill.on { background: #051024; border-color: #051024; color: #fff; }
   .ww-upload { width: 100%; padding: 22px; border-radius: 12px; border: 1.5px dashed #c9d1da; background: #fafbfc; color: #051024; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 12px; }
   .ww-upload.on { border-color: #1a7698; }
-  .ww-upload img { max-height: 54px; max-width: 120px; object-fit: contain; }
+  .ww-upload img { max-height: 64px; max-width: 160px; object-fit: contain; padding: 6px; border-radius: 6px; background: #9aa3ad repeating-conic-gradient(#b8c0c8 0 25%, #9aa3ad 0 50%) 0 0 / 14px 14px; }
+  .ww-dotc { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid #c9d1da; vertical-align: -2px; margin-right: 3px; }
+  .ww-msg.amber { border: 1.5px solid #e9b949; background: #fff8e6; color: #5c4400; }
+  .ww-confirm { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; font-size: 14px; color: #051024; cursor: pointer; }
+  .ww-confirm input { width: 20px; height: 20px; margin: 1px 0 0; flex: none; accent-color: #1a7698; }
   .ww-hint { font-size: 12px; color: #1a7698; margin: -4px 0 10px; }
   .ww-method { border-radius: 14px; background: #051024; color: #fff; padding: 18px 20px; margin-bottom: 14px; }
   .ww-method small { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #9fd3e6; }
@@ -371,7 +375,7 @@
     var m = method(), t = total();
     if (n === 1) return t > 0;
     if (n === 2) return !!O.deco;
-    if (n === 3) return !!O.logo && (O.deco === 'emb' || !!O.logoType);
+    if (n === 3) return !!O.logo && (O.deco === 'emb' || O.logoType === 'unsure' || (!!O.logoType && O.confirmed));
     if (n === 4) return !!m && t >= DATA.minimums[m] && (O.placement !== 'other' || O.otherText.trim().length > 2);
     return true;
   }
@@ -432,13 +436,18 @@
       if (O.logo && O.deco === 'emb') h += '<div class="ww-fine">We turn your logo into a stitch file (digitizing) and send you a proof before stitching.</div>';
       if (O.logo && O.deco !== 'emb') {
         h += '<div class="ww-q">What does your logo look like?</div>';
-        if (O.logo.guess) h += '<div class="ww-hint">' + esc(O.logo.guess) + ' Change it if that\'s not right.</div>';
+        if (O.logo.guess) h += '<div class="ww-hint">' + esc(O.logo.guess) + (O.logoType === 'solid' ? ' ' + O.logo.colors.map(function (c) { return '<span class="ww-dotc" style="background:' + c + '"></span>'; }).join('') : '') + ' Change it below if that\'s not right.</div>';
         h += '<div class="ww-choice">' + [
           ['solid', 'Solid colors (up to 3)', 'Flat colors, no shading. Like most company logos.', 'linear-gradient(90deg,#051024 0 34%,#fff 34% 38%,#41a9cc 38% 72%,#fff 72% 76%,#91bc4d 76%)'],
           ['full', 'Full color / effects', 'Gradients, shadows, photos or many colors.', 'linear-gradient(90deg,#91bc4d,#41a9cc,#b5b5f7,#f2a65a)'],
           ['unsure', 'Not sure', 'No problem. We check your file for you.', 'repeating-linear-gradient(45deg,#eef1f4 0 8px,#e3e7ec 8px 16px)']
         ].map(function (o) { return '<button class="ww-ch' + (O.logoType === o[0] ? ' on' : '') + '" data-lt="' + o[0] + '"><div class="ww-swatch" style="background:' + o[3] + '"></div><b>' + o[1] + '</b><span>' + o[2] + '</span></button>'; }).join('') + '</div>';
-        if (O.logoType === 'solid') h += '<div class="ww-pills" style="margin-top:14px"><span style="font-size:14px">How many colors?</span>' + [1, 2, 3].map(function (n) { return '<button class="ww-pill' + (O.inks === n ? ' on' : '') + '" data-inks="' + n + '">' + n + '</button>'; }).join('') + '</div>';
+        if (O.logoType === 'solid') h += '<div class="ww-pills" style="margin-top:14px"><span style="font-size:14px">How many colors?</span>' + [1, 2, 3].map(function (n) { return '<button class="ww-pill' + (O.inks === n ? ' on' : '') + '" data-inks="' + n + '">' + n + '</button>'; }).join('') + '<span style="font-size:12px;color:#6b7280">White counts as a color when it\'s part of the logo.</span></div>';
+        if (O.logoType === 'solid' || O.logoType === 'full') {
+          var what = O.logoType === 'solid' ? O.inks + ' solid color' + (O.inks === 1 ? '' : 's') : 'full color / effects';
+          h += '<div class="ww-msg amber" style="margin-top:16px"><b>Please check this carefully: it changes your price.</b> We review every logo before printing. If your file doesn\'t match what you picked here, we\'ll contact you to adjust the price before anything is printed.'
+            + '<label class="ww-confirm"><input type="checkbox" id="ww-conf"' + (O.confirmed ? ' checked' : '') + '> I confirm my logo is <b>' + what + '</b>.</label></div>';
+        }
       }
     } else if (O.step === 4) {
       var why = m === 'silk' ? 'Your logo has ' + O.inks + (O.inks === 1 ? ' color' : ' colors') + ' and your order has ' + t + ' pieces: screen printing gives the most durable print and the best price.'
@@ -559,8 +568,32 @@
   }
 
   // ── logo: read the file; for images, guess how many colors it has ──
+  // Colors in the logo. The background is what the corners show (transparent, or a solid color such as white);
+  // white counts as an ink when it is part of the logo on a transparent or colored background.
+  function logoColors(img) {
+    var W = 160, H = Math.max(1, Math.round(W * img.height / img.width)), c = document.createElement('canvas'); c.width = W; c.height = H;
+    var x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(img, 0, 0, W, H); // no blending: edges keep real colors
+    var d = x.getImageData(0, 0, W, H).data, at = function (px, py) { var i = (py * W + px) * 4; return [d[i], d[i + 1], d[i + 2], d[i + 3]]; };
+    var corners = [at(0, 0), at(W - 1, 0), at(0, H - 1), at(W - 1, H - 1)];
+    var transparentBg = corners.filter(function (p) { return p[3] < 128; }).length >= 2;
+    var bg = transparentBg ? null : corners.reduce(function (a, p) { return [a[0] + p[0] / 4, a[1] + p[1] / 4, a[2] + p[2] / 4]; }, [0, 0, 0]);
+    var dist = function (p, q) { return Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) + Math.abs(p[2] - q[2]); };
+    var groups = [], n = 0;
+    for (var i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 200) continue;                         // transparent + soft edges
+      var p = [d[i], d[i + 1], d[i + 2]];
+      if (bg && dist(p, bg) < 60) continue;                 // background
+      n++;
+      var g = null; for (var k = 0; k < groups.length; k++) if (dist(p, groups[k].c) < 90) { g = groups[k]; break; }
+      if (g) { g.n++; } else groups.push({ c: p, n: 1 });
+    }
+    var main = groups.filter(function (g) { return g.n > n * 0.04; }).sort(function (a, b) { return b.n - a.n; });
+    var covered = main.reduce(function (t, g) { return t + g.n; }, 0) / (n || 1);
+    var hex = function (c) { return '#' + c.map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join(''); };
+    return { list: main.map(function (g) { return hex(g.c); }), covered: covered };
+  }
   function readLogo(file) {
-    O.logo = { name: file.name, url: null, guess: '' };
+    O.logo = { name: file.name, url: null, guess: '', colors: [] }; O.confirmed = false;
     if (!/^image\/(png|jpe?g|svg\+xml|webp|gif)$/.test(file.type)) { O.logoType = O.logoType || 'unsure'; renderPanel(); return; }
     var fr = new FileReader();
     fr.onload = function () {
@@ -568,19 +601,10 @@
       var img = new Image();
       img.onload = function () {
         try {
-          var c = document.createElement('canvas'), W = 120, H = Math.max(1, Math.round(120 * img.height / img.width));
-          c.width = W; c.height = H; var x = c.getContext('2d'); x.drawImage(img, 0, 0, W, H);
-          var d = x.getImageData(0, 0, W, H).data, buckets = {}, n = 0;
-          for (var i = 0; i < d.length; i += 4) {
-            if (d[i + 3] < 128) continue;
-            var r = d[i], g = d[i + 1], b = d[i + 2];
-            if (r > 240 && g > 240 && b > 240) continue; // background white
-            var k = (r >> 5) + '-' + (g >> 5) + '-' + (b >> 5); buckets[k] = (buckets[k] || 0) + 1; n++;
-          }
-          var main = Object.keys(buckets).filter(function (k) { return buckets[k] > n * 0.04; });
-          var covered = main.reduce(function (s, k) { return s + buckets[k]; }, 0) / (n || 1);
-          if (n && main.length <= 3 && covered > 0.85) { O.logoType = 'solid'; O.inks = Math.max(1, main.length); O.logo.guess = 'We checked your file: it looks like ' + O.inks + ' solid color' + (O.inks === 1 ? '' : 's') + '.'; }
-          else if (n) { O.logoType = 'full'; O.logo.guess = 'We checked your file: it looks like it has many colors or effects.'; }
+          var cols = logoColors(img);
+          O.logo.colors = cols.list;
+          if (cols.list.length && cols.list.length <= 3 && cols.covered > 0.85) { O.logoType = 'solid'; O.inks = cols.list.length; O.logo.guess = 'We found ' + O.inks + ' solid color' + (O.inks === 1 ? '' : 's') + ' in your file:'; }
+          else if (cols.list.length) { O.logoType = 'full'; O.logo.guess = 'Your file looks like it has many colors or effects.'; }
         } catch (e) {}
         renderPanel(); requote();
       };
@@ -608,8 +632,8 @@
     if (ds.color) { lineById(ds.line).color = ds.color; renderPanel(); requote(); return; }
     if (ds.inc || ds.dec) { var l = lineById(ds.line), s = ds.inc || ds.dec; l.sizes[s] = Math.max(0, (+l.sizes[s] || 0) + (ds.inc ? 1 : -1)); renderPanel(); requote(); return; }
     if (ds.deco) { O.deco = ds.deco; if (ds.deco === 'emb' && /^(ff|bk|fb|lcb)$/.test(O.placement)) O.placement = 'lc'; renderPanel(); requote(); return; }
-    if (ds.lt) { O.logoType = ds.lt; renderPanel(); requote(); return; }
-    if (ds.inks) { O.inks = +ds.inks; renderPanel(); requote(); return; }
+    if (ds.lt) { O.logoType = ds.lt; O.confirmed = false; renderPanel(); requote(); return; }
+    if (ds.inks) { O.inks = +ds.inks; O.confirmed = false; renderPanel(); requote(); return; }
     if (ds.place) { O.placement = ds.place; renderPanel(); requote(); return; }
     if (ds.sleeves != null) { O.sleeves = +ds.sleeves; renderPanel(); requote(); return; }
     if (ds.spot != null) { O.otherSpots[+ds.spot] = ds.z; renderPanel(); requote(); return; }
@@ -637,6 +661,7 @@
   });
   app.addEventListener('focusout', function (e) { if (e.target.dataset && e.target.dataset.size && O.step === 4) setTimeout(function () { var ae = document.activeElement; if (!(ae && ae.dataset && ae.dataset.size)) { O.dirty = false; renderPanel(); } }, 0); });
   app.addEventListener('change', function (e) {
+    if (e.target.id === 'ww-conf') { O.confirmed = e.target.checked; renderSteps(); var nb = app.querySelector('[data-next]'); if (nb) nb.disabled = !stepOk(O.step); }
     if (e.target.id === 'ww-file' && e.target.files[0]) readLogo(e.target.files[0]);
   });
   app.addEventListener('input', function (e) {
