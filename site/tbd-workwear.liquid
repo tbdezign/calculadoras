@@ -212,7 +212,7 @@
 
   var DATA = null, STYLES = [], byCode = {};
   var F = { type: [], fit: [], mat: [], fam: [], open: null };
-  var O = { reorder: false, reorderNo: '', reorderNew: [], step: 1, lines: [], deco: null, logo: null, logoType: null, inks: 1, placement: 'lc', sleeves: 0, otherText: '', otherSpots: ['small'], nextId: 1, quote: null, upsell: null, checkout: false };
+  var O = { reorder: false, reorderNo: '', step: 1, lines: [], deco: null, logo: null, logoType: null, inks: 1, placement: 'lc', sleeves: 0, otherText: '', otherSpots: ['small'], nextId: 1, quote: null, upsell: null, checkout: false };
   var SIZES = [['XS', 'std'], ['S', 'std'], ['M', 'std'], ['L', 'std'], ['XL', 'std'], ['2XL', 'x2'], ['3XL', 'x3']];
   var NAMES = { silk: 'Silk Screen', dtf: 'DTF Full-Color Print', emb: 'Embroidery' };
   var PLACES = [['lc', 'Left chest'], ['lcb', 'Left chest + Full back'], ['ff', 'Full front'], ['bk', 'Full back'], ['fb', 'Front + back'], ['other', 'Other']];
@@ -307,14 +307,6 @@
     var used = O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) { return isLight(hexOf(byCode[l.code], l.color)); });
     return used.indexOf(true) >= 0 && used.indexOf(false) >= 0;
   }
-  // logo places of this order, in the same count the pricing uses (sides + sleeves / other places)
-  function spotList() {
-    var base = { lc: ['Left chest'], lcb: ['Left chest', 'Full back'], ff: ['Full front'], bk: ['Full back'], fb: ['Front', 'Back'] }[O.placement]
-      || O.otherSpots.map(function (z, i) { return 'Place ' + (i + 1); });
-    if (method() === 'emb' && O.placement !== 'other') base = ['Left chest'];
-    return base.concat(O.sleeves === 1 ? ['Sleeve'] : O.sleeves === 2 ? ['Left sleeve', 'Right sleeve'] : []);
-  }
-  function reorderSpots() { if (!O.reorder) return 0; return spotList().filter(function (x) { return O.reorderNew.indexOf(x) < 0; }).length; }
   function silkFits() { return O.deco === 'print' && O.logoType === 'solid' && O.inks <= 3 && total() >= DATA.minimums.silk; }
   function method() {
     if (O.deco === 'emb') return 'emb';
@@ -322,7 +314,7 @@
     return null;
   }
   function orderBody(overrides) {
-    var o = { deco: O.deco === 'emb' ? 'emb' : 'print', logoType: O.logoType || 'unsure', colors: O.inks, mixedShades: mixedShades(), reorderSpots: reorderSpots(), reorderNo: O.reorder ? O.reorderNo : '', placement: O.placement, otherSpots: O.placement === 'other' ? O.otherSpots : [], sleeves: O.sleeves,
+    var o = { deco: O.deco === 'emb' ? 'emb' : 'print', logoType: O.logoType || 'unsure', colors: O.inks, mixedShades: mixedShades(), reorder: (method() === 'silk' || method() === 'emb') && O.reorder, reorderNo: O.reorder ? O.reorderNo : '', placement: O.placement, otherSpots: O.placement === 'other' ? O.otherSpots : [], sleeves: O.sleeves,
       items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) {
         var q = { std: 0, x2: 0, x3: 0 }; SIZES.forEach(function (s) { q[s[1]] += +l.sizes[s[0]] || 0; });
         return { code: l.code, color: l.color, qty: q };
@@ -433,9 +425,9 @@
       }).join('') + '</div>';
       if (O.placement === 'other') {
         h += '<label for="ww-other" class="ww-q" style="display:block;font-size:14px">Tell us where the logo goes</label><textarea id="ww-other" class="ww-ta" rows="3" placeholder="E.g. small logo on the back of the neck, name on the right chest…">' + esc(O.otherText) + '</textarea>'
-          + '<div class="ww-q" style="font-size:14px">How many places will the logo go?</div>'
+          + '<div class="ww-q" style="font-size:14px">How many spots will the logo go on?</div>'
           + O.otherSpots.map(function (z, i) { return '<div class="ww-spot"><b>Spot ' + (i + 1) + '</b>' + (m === 'dtf' ? '<button class="ww-pill' + (z === 'small' ? ' on' : '') + '" data-spot="' + i + '" data-z="small">Small · up to 4×4 in</button><button class="ww-pill' + (z === 'large' ? ' on' : '') + '" data-spot="' + i + '" data-z="large">Large · bigger than 4×4 in</button>' : '') + (O.otherSpots.length > 1 ? '<button class="ww-link" style="margin-left:auto;color:#4b5563" data-rmspot="' + i + '">Remove</button>' : '') + '</div>'; }).join('')
-          + '<button class="ww-pill" data-addspot' + (O.otherSpots.length >= 4 ? ' disabled' : '') + ' style="border-style:dashed">+ Add another place</button>'
+          + '<button class="ww-pill" data-addspot' + (O.otherSpots.length >= 4 ? ' disabled' : '') + ' style="border-style:dashed">+ Add another spot</button>'
           + '<div class="ww-fine">We\'ll check your request and confirm any price difference on WhatsApp before printing.</div>';
       }
       h += '<div class="ww-q">Add the logo on the sleeves?</div><div class="ww-pills">' + [[0, 'None'], [1, '1 sleeve'], [2, '2 sleeves']].map(function (x) { return '<button class="ww-pill' + (O.sleeves === x[0] ? ' on' : '') + '" data-sleeves="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>';
@@ -444,9 +436,7 @@
         h += '<div class="ww-q">Is this a reorder?</div><div class="ww-pills"><button class="ww-pill' + (!O.reorder ? ' on' : '') + '" data-reorder="0">No, new order</button><button class="ww-pill' + (O.reorder ? ' on' : '') + '" data-reorder="1">Yes, same artwork as before</button></div>';
         if (O.reorder) {
           h += '<div style="margin-top:12px;display:grid;gap:10px"><label style="font-size:14px">Previous order number <span style="color:#6b7280">(optional)</span><input id="ww-reno" class="ww-ta" style="margin-top:6px;resize:none" value="' + esc(O.reorderNo) + '" placeholder="e.g. #1234"></label>'
-            + '<div style="font-size:14px;font-weight:600">Which places were on your previous order?</div><div class="ww-pills">'
-            + spotList().map(function (x) { var on = O.reorderNew.indexOf(x) < 0; return '<button class="ww-pill' + (on ? ' on' : '') + '" data-respot="' + esc(x) + '" aria-pressed="' + on + '">' + (on ? '✓ ' : '') + esc(x) + '</button>'; }).join('')
-            + '</div><div class="ww-fine" style="margin-top:0">No ' + setupWord + ' charge for places you already had. New places are charged. If the artwork changed, we\'ll let you know before printing.</div></div>';
+            + '<div class="ww-fine" style="margin-top:0">No ' + setupWord + ' charge on a reorder with the same artwork. If the artwork changed, we\'ll let you know before printing.</div></div>';
         }
       }
     } else {
@@ -488,13 +478,13 @@
     var h = '<h3>Your order</h3>';
     if (!O.lines.length) h += '<div style="font-size:13px;color:#4b5563">No shirts yet.</div>';
     O.lines.forEach(function (l) { h += '<div class="ww-sline"><span>' + esc(byCode[l.code].name) + ' · ' + esc(l.color) + '</span><b style="white-space:nowrap">' + pcs(qtyOf(l)) + '</b></div>'; });
-    var place = (PLACES.filter(function (x) { return x[0] === O.placement; })[0] || [])[1] + (O.placement === 'other' ? ' · ' + O.otherSpots.length + (O.otherSpots.length === 1 ? ' place' : ' places') : '') + (O.sleeves ? ' + ' + O.sleeves + (O.sleeves === 1 ? ' sleeve' : ' sleeves') : '');
+    var place = (PLACES.filter(function (x) { return x[0] === O.placement; })[0] || [])[1] + (O.placement === 'other' ? ' · ' + O.otherSpots.length + (O.otherSpots.length === 1 ? ' spot' : ' spots') : '') + (O.sleeves ? ' + ' + O.sleeves + (O.sleeves === 1 ? ' sleeve' : ' sleeves') : '');
     h += '<div class="ww-row" style="margin-top:10px"><span>Total pieces</span><b>' + t + '</b></div>'
       + '<div class="ww-row"><span>Method</span><b>' + (m ? NAMES[m] : '—') + '</b></div>'
       + (O.step >= 4 ? '<div class="ww-row"><span>Logo</span><b>' + esc(place) + '</b></div>' : '')
       + '<div class="ww-row"><span>Per piece</span><b>' + (q && q.total ? money(q.subtotal / q.total) + ' avg' : '—') + '</b></div>'
       + (m ? '<div class="ww-row"><span>Production</span><b>' + DATA.days[m][0] + '–' + DATA.days[m][1] + ' business days</b></div>' : '')
-      + (q && (q.setup || q.reorderSpots) ? '<div class="ww-row"><span>' + (m === 'emb' ? 'Digitizing (one-time)' : 'Screen setup (one-time)') + (q.reorderSpots ? ' · reorder' : '') + '</span><b>' + (q.setup ? money(q.setup) : 'No charge') + '</b></div>' : '')
+      + (q && (q.setup || q.reorder) ? '<div class="ww-row"><span>' + (m === 'emb' ? 'Digitizing (one-time)' : 'Screen setup (one-time)') + (q.reorder ? ' · reorder' : '') + '</span><b>' + (q.setup ? money(q.setup) : 'No charge') + '</b></div>' : '')
       + '<div class="ww-total"><span>Total</span><b>' + (q ? money(q.total$) : '—') + '</b></div>'
       + '<div class="ww-fine">Free shipping.' + (!m ? ' Your price shows after you tell us about your logo.' : '') + '</div>';
     a.innerHTML = h;
@@ -557,7 +547,6 @@
     if (ds.rmspot != null) { O.otherSpots.splice(+ds.rmspot, 1); renderPanel(); requote(); return; }
     if ('addspot' in ds) { O.otherSpots.push('small'); renderPanel(); requote(); return; }
     if (ds.reorder != null) { O.reorder = ds.reorder === '1'; renderPanel(); requote(); return; }
-    if (ds.respot != null) { var ri = O.reorderNew.indexOf(ds.respot); if (ri >= 0) O.reorderNew.splice(ri, 1); else O.reorderNew.push(ds.respot); renderPanel(); requote(); return; }
     if (ds.go) { go(+ds.go); return; }
     if ('next' in ds) { go(O.step + 1); return; }
     if ('back' in ds) { go(O.step - 1); return; }
