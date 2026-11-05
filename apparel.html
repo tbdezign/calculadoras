@@ -355,7 +355,7 @@
       <div class="card-label" style="margin:0">Order Builder</div>
       <span class="total-pill" id="orderQtyPill"></span>
       <span id="minWarn" class="min-warn" hidden></span>
-      <label class="split-toggle" id="splitWrap"><input type="checkbox" id="splitToggle" onchange="toggleSplitSuppliers(this.checked)"> Different suppliers</label>
+      <label class="split-toggle" id="splitWrap"><input type="checkbox" id="splitToggle" onchange="toggleSplitSuppliers(this.checked)"> Different suppliers<span id="splitAuto" class="vend-tag" hidden>auto</span></label>
     </div>
     <datalist id="supplierList"><option value="S&amp;S Activewear"><option value="SanMar"></datalist>
     <div id="orderItems"></div>
@@ -813,7 +813,7 @@ async function saveProductForm() {
   siteDraft = null;
   editProduct = null; renderCatalog(); renderOrderItems();
 }
-// One blank cost per shirt: saving it in Silk, DTF or Embroidery updates the same code in the other two
+// One blank cost (and supplier) per shirt: saving it in Silk, DTF or Embroidery updates the same code in the other two
 // (Vendor 2 is separate, its price already includes the decoration). DTF has one cost, so it only moves XS-XL.
 async function syncBlankCost(from, p) {
   if (!BLANK_SOURCES.includes(from)) return;
@@ -824,6 +824,7 @@ async function syncBlankCost(from, p) {
     if (k === "silk") Object.assign(n, { costStd:c.std }, from !== "dtf" ? { cost2xl:c.x2, cost3xl:c.x3 } : {});
     else if (k === "emb") Object.assign(n, { cStd:c.std }, from !== "dtf" ? { c2xl:c.x2, c3xl:c.x3 } : {});
     else n.cost = c.std;
+    if ((p.vendor || "").trim()) n.vendor = p.vendor;   // same blank, same supplier
     if (JSON.stringify(n) !== JSON.stringify(o)) await saveProduct(k, n);
   }
 }
@@ -930,9 +931,14 @@ function placeText(views, extras) {
 const SUPPLIER_LIST = ["S&S Activewear", "SanMar"];
 function supplierOf(it) { const p = cat()[(it.code || "").toUpperCase()]; return (it.supplier || "").trim() || (p && p.vendor) || SUPPLIER_LIST[0]; }
 function supplierGroups() { const g = {}; validItems().forEach(it => { const k = supplierOf(it).toLowerCase(); g[k] = (g[k] || 0) + itemQty(it); }); return g; }
-function shipQtyFor(it) { const t = totalQty(); if (!splitSuppliers || !METHODS[method].split) return t; return supplierGroups()[supplierOf(it).toLowerCase()] || t; }
-function tierShipQty(t) { if (!splitSuppliers || !METHODS[method].split) return t; return t / (Object.keys(supplierGroups()).length || 1); }
-function toggleSplitSuppliers(on) { splitSuppliers = on; renderOrderItems(); }
+// Split is automatic when the styles in the order come from 2+ suppliers (from each product's Vendor, or the Supplier box).
+// The checkbox can still force it on, or off ("off") when the detection is wrong.
+function knownSupplier(it) { const p = prod(it); return ((it.supplier || "").trim() || (p && p.vendor || "").trim()).toLowerCase(); }
+function autoSplit() { return new Set(validItems().map(knownSupplier).filter(Boolean)).size > 1; }
+function splitOn() { return splitSuppliers === true || (splitSuppliers !== "off" && autoSplit()); }
+function shipQtyFor(it) { const t = totalQty(); if (!splitOn() || !METHODS[method].split) return t; return supplierGroups()[supplierOf(it).toLowerCase()] || t; }
+function tierShipQty(t) { if (!splitOn() || !METHODS[method].split) return t; return t / (Object.keys(supplierGroups()).length || 1); }
+function toggleSplitSuppliers(on) { splitSuppliers = on ? true : (autoSplit() ? "off" : false); renderOrderItems(); }
 function onSupplier(id, v) { const it = itemById(id); if (it) { it.supplier = v; updateOrderResults(); } }
 
 function validItems() { return orderItems.filter(it => cat()[(it.code||"").toUpperCase()]); }
@@ -955,7 +961,7 @@ function blankSubtotal(it) {
 }
 // Blank subtotal of the supplier order this style ships in (its supplier group when suppliers are split).
 function groupBlankSubtotal(it) {
-  const split = splitSuppliers && METHODS[method].split, k = supplierOf(it).toLowerCase();
+  const split = splitOn() && METHODS[method].split, k = supplierOf(it).toLowerCase();
   return validItems().filter(o => !split || supplierOf(o).toLowerCase() === k).reduce((s, o) => s + blankSubtotal(o), 0);
 }
 function shipWaived(subtotal) { return shipMode === "off" || (shipMode === "auto" && subtotal >= freeShipMin); }
@@ -1324,7 +1330,8 @@ function sizesHTML(it) {
 function renderOrderItems() {
   const M = METHODS[method];
   q("splitWrap").hidden = !M.split;
-  q("splitToggle").checked = splitSuppliers;
+  q("splitToggle").checked = splitOn();
+  q("splitAuto").hidden = !(splitOn() && splitSuppliers !== true);
   q("orderItems").innerHTML = orderItems.map(it =>
     '<div class="order-item">'
     + '<div class="oi-top">'
@@ -1335,7 +1342,7 @@ function renderOrderItems() {
     + '</div>'
     + '<div class="oi-suggest" id="oiac-' + it.id + '" hidden></div>'
     + itemControlsHTML(it)
-    + (M.split && splitSuppliers ? '<div class="oi-supplier"><span>Supplier</span><input list="supplierList" value="' + esc(supplierOf(it)) + '" onfocus="this.select()" oninput="onSupplier(\'' + it.id + '\',this.value)"></div>' : '')
+    + (M.split && splitOn() ? '<div class="oi-supplier"><span>Supplier</span><input list="supplierList" value="' + esc(supplierOf(it)) + '" onfocus="this.select()" oninput="onSupplier(\'' + it.id + '\',this.value)"></div>' : '')
     + '<div id="oiresult-' + it.id + '"></div></div>').join("");
   orderItems.forEach(updateItemInfo);
   updateOrderResults();
@@ -1381,7 +1388,7 @@ function updateOrderResults() {
     const st = M.setup(), setup = st ? st.total : 0, setupCost = st ? st.cost : 0;
     let extra = "";
     if (method !== "v2") {
-      const split = splitSuppliers && M.split, groups = {};
+      const split = splitOn() && M.split, groups = {};
       validItems().forEach(it => { const k = split ? supplierOf(it) : "Supplier"; groups[k] = (groups[k] || 0) + blankSubtotal(it); });
       extra = Object.entries(groups).map(([k, v]) => '<div class="sum-sub">' + esc(k) + ' blanks: ' + fmt(v) + ' · ' + (shipWaived(v) ? '<b style="color:#2E7D32">free supplier shipping</b>' + (shipMode === "off" ? ' (set to Free)' : '') : shipMode === "on" ? 'supplier shipping charged (set to Charge)' : fmt(freeShipMin - v) + ' more for free shipping') + '</div>').join("");
     }

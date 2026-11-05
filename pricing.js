@@ -107,6 +107,7 @@
     bk:  { sides: 1, dtf: "back" },
     fb:  { sides: 2, dtf: "front_back" },
   };
+  const DEFAULT_SUPPLIER = "s&s activewear";  // same default as the calculator when a product has no Vendor
   const CAP_WORDS = /\b(cap|caps|bon[eé]s?|hat|hats|snapback|trucker|visor|beanie)\b/i;
   const SIZE_FIELDS = { silk: { std: "costStd", x2: "cost2xl", x3: "cost3xl" }, emb: { std: "cStd", x2: "c2xl", x3: "c3xl" } };
   function blankCost(method, p, size) {
@@ -134,30 +135,37 @@
     const otherSpots = other ? (order.otherSpots && order.otherSpots.length ? order.otherSpots.slice(0, 4) : ["small"]) : [];
     const place = other ? null : (SITE_PLACE[order.placement] || SITE_PLACE.lc);
 
-    // Supplier shipping is free when all blanks together reach freeShipMin.
-    const blanks = items.reduce((s, it) => { const p = cat[String(it.code).toUpperCase()]; return s + ["std", "x2", "x3"].reduce((a, z) => a + blankCost(method, p, z) * it.qty[z], 0); }, 0);
-    const waived = blanks >= C.freeShipMin;
+    // Supplier shipping is free when the blanks from one supplier reach freeShipMin.
+    // Styles from different suppliers (product Vendor) ship separately: each supplier's shipping is split over its own pieces
+    // and waived on its own subtotal (Silk Screen + DTF; Embroidery ships as one order).
+    const itemBlanks = it => { const p = cat[String(it.code).toUpperCase()]; return ["std", "x2", "x3"].reduce((a, z) => a + blankCost(method, p, z) * it.qty[z], 0); };
+    const known = it => (String(it.supplier || "").trim() || String((cat[String(it.code).toUpperCase()] || {}).vendor || "").trim()).toLowerCase();
+    const split = method !== "emb" && new Set(items.map(known).filter(Boolean)).size > 1;
+    const groupOf = it => split ? (known(it) || DEFAULT_SUPPLIER) : "all";
+    const groups = {};
+    items.forEach(it => { const g = groups[groupOf(it)] || (groups[groupOf(it)] = { qty: 0, blanks: 0 }); g.qty += pcs(it); g.blanks += itemBlanks(it); });
+    if (split) out.suppliers = Object.keys(groups).length;
 
     let spotsForSetup = 0;
     items.forEach(it => {
-      const p = cat[String(it.code).toUpperCase()];
+      const p = cat[String(it.code).toUpperCase()], g = groups[groupOf(it)];
       ["std", "x2", "x3"].forEach(size => {
         const q = it.qty[size]; if (!q) return;
         let r;
         if (method === "silk") {
           const spots = (other ? otherSpots.length : place.sides) + sleeves;
           spotsForSetup = spots;
-          r = silk({ blankCost: blankCost("silk", p, size), tq: total, shipQty: total, shipIn: waived ? 0 : C.silk.shipIn, colors: Math.max(1, Math.min(3, +order.colors || 1)), spots }, C);
+          r = silk({ blankCost: blankCost("silk", p, size), tq: total, shipQty: g.qty, shipIn: g.blanks >= C.freeShipMin ? 0 : C.silk.shipIn, colors: Math.max(1, Math.min(3, +order.colors || 1)), spots }, C);
         } else if (method === "dtf") {
           let pl, extras;
           if (other) { pl = C.dtf.extra[otherSpots[0] || "small"]; extras = otherSpots.slice(1); }
           else { pl = C.dtf.placements[place.dtf]; extras = []; }
           for (let i = 0; i < sleeves; i++) extras.push("small");
-          r = dtf({ cost: blankCost("dtf", p), pl, tq: total, shipQty: total, extras, shipIn: waived ? 0 : C.dtf.shipIn }, C);
+          r = dtf({ cost: blankCost("dtf", p), pl, tq: total, shipQty: g.qty, extras, shipIn: g.blanks >= C.freeShipMin ? 0 : C.dtf.shipIn }, C);
         } else {
           const extra = (other ? otherSpots.length - 1 : 0) + sleeves;
           spotsForSetup = 1 + extra;
-          r = emb({ blank: blankCost("emb", p, size), tq: total, extra, suppShip: waived ? 0 : C.emb.suppShip }, C);
+          r = emb({ blank: blankCost("emb", p, size), tq: total, extra, suppShip: g.blanks >= C.freeShipMin ? 0 : C.emb.suppShip }, C);
         }
         out.lines.push({ code: p.code, name: p.name, color: it.color || "", size, q, unit: Math.round(r.perPiece * 100) / 100, amount: Math.round(r.perPiece * q * 100) / 100 });
         out.subtotal += r.perPiece * q; out.cost += r.unitCost * q;
