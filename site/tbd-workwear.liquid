@@ -84,7 +84,11 @@
   .ww-more .ww-link { font-size: 13px; text-decoration: underline; }
   .ww-add { margin-top: auto; padding: 8px; border-radius: 8px; border: 1.5px solid #051024; background: #fff; color: #051024; font-weight: 600; font-size: 13px; }
   .ww-add:hover { background: #051024; color: #fff; }
-  .ww-line { border: 1px solid #e3e3e3; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .ww-line { border: 1px solid #e3e3e3; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; gap: 18px; align-items: flex-start; }
+  .ww-lpic { flex: 0 0 170px; aspect-ratio: 1; border: 1px solid #eee; border-radius: 10px; background: #fff; padding: 6px; display: flex; align-items: center; justify-content: center; cursor: zoom-in; overflow: hidden; }
+  .ww-lpic img { width: 100%; height: 100%; object-fit: contain; }
+  .ww-lpic svg { width: 78%; height: 78%; }
+  .ww-lbody { flex: 1; min-width: 0; }
   .ww-lhead { display: flex; justify-content: space-between; align-items: center; gap: 6px 12px; margin-bottom: 10px; flex-wrap: wrap; }
   .ww-lhead > div { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .ww-thumb { width: 48px; height: 48px; flex: none; border-radius: 8px; background: #fff; border: 1px solid #eee; overflow: hidden; display: flex; align-items: center; justify-content: center; }
@@ -182,6 +186,8 @@
     .ww-from b { font-size: 15px; }
     .ww-cta { padding: 8px; }
     .ww-aside { position: static; }
+    .ww-line { flex-direction: column; gap: 10px; }
+    .ww-lpic { flex: none; width: 100%; max-width: 190px; align-self: center; }
     .ww-tbl table { font-size: 13px; }
     .ww-tbl th, .ww-tbl td { padding: 8px 9px; }
     .ww-tbl tbody th { white-space: normal; min-width: 96px; }
@@ -242,9 +248,11 @@
     var ps = (st.photos || []).filter(function (p) { return p.side === side; });
     if (!ps.length) return null;
     if (!color) return ps[0];
-    var c = slug(color), last = c.split(' ').pop();
+    // exact color, or one name inside the other (Navy ↔ Sport Dark Navy). Never a different color with a shared word
+    // (Safety Green must not show the Olive Green photo): then the drawing in the right color is shown instead.
+    var c = slug(color);
     return ps.filter(function (p) { return slug(p.color) === c; })[0]
-      || ps.filter(function (p) { var pc = slug(p.color); return pc.split(' ').pop() === last || c.indexOf(pc) >= 0 || pc.indexOf(c) >= 0; })[0] || null;
+      || ps.filter(function (p) { var pc = slug(p.color); return (' ' + c + ' ').indexOf(' ' + pc + ' ') >= 0 || (' ' + pc + ' ').indexOf(' ' + c + ' ') >= 0; })[0] || null;
   }
   function hexOf(st, color) { var c = (st.colors || []).filter(function (x) { return x.name === color; })[0]; return c ? c.hex : '#ffffff'; }
   function imgHtml(st, color) {
@@ -436,10 +444,10 @@
       if (!O.lines.length) h += '<div class="ww-dash" style="margin-bottom:16px">Add a shirt below to start your order.</div>';
       O.lines.forEach(function (l) {
         var st = byCode[l.code];
-        h += '<div class="ww-line"><div class="ww-lhead"><div><span class="ww-thumb">' + imgHtml(st, l.color) + '</span><div><b style="font-size:14px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small></div></div>'
+        h += '<div class="ww-line"><button class="ww-lpic" data-zoompic="' + l.id + '" aria-label="See ' + esc(st.name) + ' in ' + esc(l.color) + ' bigger">' + imgHtml(st, l.color) + '</button><div class="ww-lbody"><div class="ww-lhead"><div><div><b style="font-size:15px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small></div></div>'
           + '<span style="white-space:nowrap">' + (st.sizeChart || st.sizeTable ? '<button class="ww-link" data-chart="' + esc(st.code) + '">Size chart</button>' : '') + '<button class="ww-link" data-dup="' + l.id + '">+ Another color</button><button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></span></div>'
           + '<div class="ww-sw" role="group" aria-label="Color">' + st.colors.map(function (c) { return '<button class="' + (c.name === l.color ? 'on' : '') + '" style="background:' + esc(c.hex) + '" title="' + esc(c.name) + '" aria-label="' + esc(c.name) + '" data-line="' + l.id + '" data-color="' + esc(c.name) + '"></button>'; }).join('') + '</div>'
-          + sizesHtml(l) + '</div>';
+          + sizesHtml(l) + '</div></div>';
       });
       if (O.lines.length) h += '<div class="ww-q" style="margin-top:22px">Add another style</div>';
       var inOrder = O.lines.map(function (l) { return l.code; });
@@ -643,6 +651,8 @@
   app.addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b || !app.contains(b)) { if (F.open) { F.open = null; renderCatalog(); } return; }
     var ds = b.dataset;
+    if (ds.zoompic) { var zl = lineById(ds.zoompic), zs = byCode[zl.code], zp = photoFor(zs, zl.color, 'front');
+      openZoom('<div class="ww-chart" onclick="event.stopPropagation()"><b>' + esc(zs.name) + ' · ' + esc(zl.color) + '</b>' + (zp ? '<img src="' + esc(zp.url) + '" alt="">' : '<div style="width:min(70vw,420px);margin:auto">' + shapeSvg(zs.type, hexOf(zs, zl.color)) + '</div>') + '</div>'); return; }
     if (ds.chart) { var cs = byCode[ds.chart]; if (cs && (cs.sizeTable || cs.sizeChart)) openZoom('<div class="ww-chart" onclick="event.stopPropagation()"><b>' + esc(cs.name) + ' · size chart</b>' + (cs.sizeTable ? sizeTableHtml(cs) : '<img src="' + esc(cs.sizeChart) + '" alt="Size chart for ' + esc(cs.name) + '">') + '</div>'); return; }
     if (ds.dd) { F.open = F.open === ds.dd ? null : ds.dd; renderCatalog(); return; }
     if (ds.f) { var a = F[ds.f], i = a.indexOf(ds.v); if (i >= 0) a.splice(i, 1); else a.push(ds.v); renderCatalog(); return; }
