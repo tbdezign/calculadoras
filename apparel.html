@@ -645,6 +645,7 @@ function siteBoxHTML(code) {
     + '<label class="lbl">Colors on the site (only high-stock ones · uncheck to hide one that is running low)</label>'
     + copyColorsHTML(code)
     + '<div id="siteColors">' + siteColorsHTML() + '</div>'
+    + (sp.sizeTable ? '<div class="panel-note" style="margin-top:10px">✓ Size table on file (' + sp.sizeTable.cols.join(" · ") + '). The site shows it as a table; a photo below is only used if there is no table.</div>' : '')
     + '<label class="lbl" style="margin-top:10px">Size chart (a photo or screenshot from the supplier\'s site)</label><div id="siteChart">' + sizeChartHTML() + '</div></div>';
 }
 function sizeChartHTML() {
@@ -691,7 +692,9 @@ function siteColorsHTML() {
 }
 async function saveSiteForm(code) {
   if (!q("pf_site_show") || !siteDraft) return true;
-  const o = { type: q("pf_site_type").value, fit: q("pf_site_fit").value, material: q("pf_site_mat").value,
+  // keep fields this form doesn't edit (e.g. the size table)
+  const { show: _s, ...kept } = siteProducts[code] || {};
+  const o = { ...kept, type: q("pf_site_type").value, fit: q("pf_site_fit").value, material: q("pf_site_mat").value,
     colors: siteDraft.colors.map(c => ({ name: c.name.trim(), hex: c.hex, on: !!c.on })).filter(c => c.name) };
   // size chart: stored next to the garment photos; only the path goes in the row
   const chartPath = "sizechart/" + catDocId(code) + ".img";
@@ -700,7 +703,7 @@ async function saveSiteForm(code) {
     if (!await TBDCloud.write(sb => sb.storage.from("photos").upload(chartPath, f, { upsert: true, contentType: f.type || "image/png" }))) return false;
     o.sizeChart = chartPath; o.sizeChartAt = Date.now(); siteDraft.newChart = null;
   } else if (siteDraft.sizeChart) { o.sizeChart = siteDraft.sizeChart; if ((siteProducts[code] || {}).sizeChartAt) o.sizeChartAt = siteProducts[code].sizeChartAt; }
-  else if ((siteProducts[code] || {}).sizeChart) { await TBDCloud.write(sb => sb.storage.from("photos").remove([siteProducts[code].sizeChart])); }
+  else if ((siteProducts[code] || {}).sizeChart) { delete o.sizeChart; delete o.sizeChartAt; await TBDCloud.write(sb => sb.storage.from("photos").remove([siteProducts[code].sizeChart])); }
   const show = q("pf_site_show").checked;
   const old = siteProducts[code];
   if (!old && !show && !o.type && !o.fit && !o.material && !o.colors.length && !o.sizeChart) return true;
