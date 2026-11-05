@@ -1355,10 +1355,10 @@ function renderOrderItems() {
     + '<div class="oi-top">'
     + '<div class="oi-code"><input id="oic-' + it.id + '" value="' + esc(it.code) + '" placeholder="Code" autocomplete="off" oninput="onOrderCode(\'' + it.id + '\',this);showCodeSuggest(\'' + it.id + '\')" onfocus="showCodeSuggest(\'' + it.id + '\')" onblur="setTimeout(()=>hideCodeSuggest(\'' + it.id + '\'),150)" onkeydown="codeSuggestKey(event,\'' + it.id + '\')"></div>'
     + '<div class="oi-qty"><input id="oiq-' + it.id + '" type="number" min="1" value="' + esc(it.qty) + '" placeholder="Qty" oninput="onOrderQty(\'' + it.id + '\',this)"></div>'
-    + (prod(it) ? '<div class="oi-color"><input id="oicol-' + it.id + '" list="oicl-' + it.id + '" value="' + esc(it.color || "") + '" placeholder="Color" class="' + (it.color && it.color.trim() ? '' : 'need') + '" oninput="onBuilderColor(\'' + it.id + '\',this)"><datalist id="oicl-' + it.id + '">' + savedColors(it.code).map(c => '<option value="' + esc(c) + '">').join("") + '</datalist></div>' : '')
+    + ('<div class="oi-color"><input id="oicol-' + it.id + '" list="oicl-' + it.id + '" value="' + esc(it.color || "") + '" placeholder="Color" class="' + (it.color && it.color.trim() ? '' : 'need') + '" oninput="onBuilderColor(\'' + it.id + '\',this)"><datalist id="oicl-' + it.id + '">' + savedColors(it.code).map(c => '<option value="' + esc(c) + '">').join("") + '</datalist></div>' : '')
     + '<div class="oi-info" id="oiinfo-' + it.id + '"></div>'
     + (orderItems.length > 1 ? '<button class="oi-remove" onclick="removeOrderItem(\'' + it.id + '\')" aria-label="Remove style">×</button>' : '')
-    + (prod(it) ? '<button class="mk-link small oi-addcolor" onclick="addColorOf(\'' + it.id + '\')" title="Same style, another color">+ color</button>' : '')
+    + ('<button class="mk-link small oi-addcolor" onclick="addColorOf(\'' + it.id + '\')" title="Same style, another color">+ color</button>' : '')
     + '</div>'
     + '<div class="oi-suggest" id="oiac-' + it.id + '" hidden></div>'
     + itemControlsHTML(it)
@@ -1369,6 +1369,7 @@ function renderOrderItems() {
 }
 function updateItemInfo(it) {
   const p = prod(it), info = q("oiinfo-" + it.id); if (!info) return;
+  const dl = q("oicl-" + it.id); if (dl) dl.innerHTML = savedColors(it.code).map(c => '<option value="' + esc(c) + '">').join("");
   if (p) info.innerHTML = '<span class="pname">' + esc(p.name) + '</span>' + (p.vendor || p.memo ? '<span class="vend-line" title="Internal only">' + (p.vendor ? '<span class="vend-tag">' + esc(p.vendor) + '</span>' : '') + (p.memo ? ' ' + esc(p.memo) : '') + '</span>' : '');
   else if ((it.code || "").length) {
     const src = findElsewhere(it.code);
