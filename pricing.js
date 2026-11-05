@@ -87,15 +87,16 @@
 
   // ── Which method fits the order (Thamires's rule)
   // embroidered → Embroidery; printed + solid colors (≤3) + 10+ pieces → Silk Screen; anything else printed → DTF.
+  // Silk Screen can't mix light and dark shirts in one order (mixedShades) → DTF.
   function chooseMethod(o, cfg) {
     const C = cfg || CONFIG;
     if (o.deco === "emb") return "emb";
-    if (o.logoType === "solid" && (o.colors || 1) <= 3 && o.total >= C.silk.minPieces) return "silk";
+    if (o.logoType === "solid" && (o.colors || 1) <= 3 && o.total >= C.silk.minPieces && !o.mixedShades) return "silk";
     return "dtf";
   }
 
   // ── Whole order, as the website and the agent send it ──
-  // order = { method?, deco, logoType, colors, placement: lc|lcb|ff|bk|fb|other, otherSpots: ["small"|"large",…], sleeves: 0|1|2,
+  // order = { method?, deco, logoType, colors, mixedShades?, placement: lc|lcb|ff|bk|fb|other, otherSpots: ["small"|"large",…], sleeves: 0|1|2,
   //           items: [{ code, color, qty: { std, x2, x3 } }] }
   // products = { silk: {CODE: product}, dtf: {...}, emb: {...} } (from the database)
   const SITE_PLACE = {
@@ -116,7 +117,7 @@
     const items = (order.items || []).map(it => ({ ...it, qty: { std: +((it.qty || {}).std) || 0, x2: +((it.qty || {}).x2) || 0, x3: +((it.qty || {}).x3) || 0 } }));
     const pcs = it => it.qty.std + it.qty.x2 + it.qty.x3;
     const total = items.reduce((s, it) => s + pcs(it), 0);
-    const method = order.method || chooseMethod({ deco: order.deco, logoType: order.logoType, colors: order.colors, total }, C);
+    const method = order.method || chooseMethod({ deco: order.deco, logoType: order.logoType, colors: order.colors, mixedShades: order.mixedShades, total }, C);
     const cat = (products || {})[method] || {};
     const missing = items.filter(it => !cat[String(it.code).toUpperCase()]).map(it => it.code);
     // Caps are priced differently in the calculator (side/back spots, no sleeves): not sold through this order flow yet.

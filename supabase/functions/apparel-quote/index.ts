@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
   if (order.method && !["silk", "dtf", "emb"].includes(order.method)) return json({ error: "unknown method" }, 400);
   try {
     const total = order.items.reduce((s: number, it: any) => s + (+it?.qty?.std || 0) + (+it?.qty?.x2 || 0) + (+it?.qty?.x3 || 0), 0);
-    const method = order.method || P.chooseMethod({ deco: order.deco, logoType: order.logoType, colors: order.colors, total });
+    const method = order.method || P.chooseMethod({ deco: order.deco, logoType: order.logoType, colors: order.colors, mixedShades: !!order.mixedShades, total });
     const q = P.quoteOrder({ ...order, method }, { [method]: await products(method) });
     // Public answer: no cost, no vendor data.
     const { cost, ...pub } = q;
