@@ -930,13 +930,13 @@ function placeText(views, extras) {
 // ════════════════════════════════════════════
 const SUPPLIER_LIST = ["S&S Activewear", "SanMar"];
 function supplierOf(it) { const p = cat()[(it.code || "").toUpperCase()]; return (it.supplier || "").trim() || (p && p.vendor) || SUPPLIER_LIST[0]; }
-function supplierGroups() { const g = {}; validItems().forEach(it => { const k = supplierOf(it).toLowerCase(); g[k] = (g[k] || 0) + itemQty(it); }); return g; }
+function supplierGroups() { const g = {}; validItems().forEach(it => { const k = TBDPricing.supplierKey(supplierOf(it)); g[k] = (g[k] || 0) + itemQty(it); }); return g; }
 // Split is automatic when the styles in the order come from 2+ suppliers (from each product's Vendor, or the Supplier box).
 // The checkbox can still force it on, or off ("off") when the detection is wrong.
-function knownSupplier(it) { const p = prod(it); return ((it.supplier || "").trim() || (p && p.vendor || "").trim()).toLowerCase(); }
+function knownSupplier(it) { const p = prod(it); return TBDPricing.supplierKey((it.supplier || "").trim() || (p && p.vendor)); }
 function autoSplit() { return new Set(validItems().map(knownSupplier).filter(Boolean)).size > 1; }
 function splitOn() { return splitSuppliers === true || (splitSuppliers !== "off" && autoSplit()); }
-function shipQtyFor(it) { const t = totalQty(); if (!splitOn() || !METHODS[method].split) return t; return supplierGroups()[supplierOf(it).toLowerCase()] || t; }
+function shipQtyFor(it) { const t = totalQty(); if (!splitOn() || !METHODS[method].split) return t; return supplierGroups()[TBDPricing.supplierKey(supplierOf(it))] || t; }
 function tierShipQty(t) { if (!splitOn() || !METHODS[method].split) return t; return t / (Object.keys(supplierGroups()).length || 1); }
 function toggleSplitSuppliers(on) { splitSuppliers = on ? true : (autoSplit() ? "off" : false); renderOrderItems(); }
 function onSupplier(id, v) { const it = itemById(id); if (it) { it.supplier = v; updateOrderResults(); } }
@@ -961,8 +961,8 @@ function blankSubtotal(it) {
 }
 // Blank subtotal of the supplier order this style ships in (its supplier group when suppliers are split).
 function groupBlankSubtotal(it) {
-  const split = splitOn() && METHODS[method].split, k = supplierOf(it).toLowerCase();
-  return validItems().filter(o => !split || supplierOf(o).toLowerCase() === k).reduce((s, o) => s + blankSubtotal(o), 0);
+  const split = splitOn() && METHODS[method].split, k = TBDPricing.supplierKey(supplierOf(it));
+  return validItems().filter(o => !split || TBDPricing.supplierKey(supplierOf(o)) === k).reduce((s, o) => s + blankSubtotal(o), 0);
 }
 function shipWaived(subtotal) { return shipMode === "off" || (shipMode === "auto" && subtotal >= freeShipMin); }
 function suppShipFor(it, amt) { return shipWaived(groupBlankSubtotal(it)) ? 0 : amt; }

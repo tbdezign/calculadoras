@@ -107,7 +107,9 @@
     bk:  { sides: 1, dtf: "back" },
     fb:  { sides: 2, dtf: "front_back" },
   };
-  const DEFAULT_SUPPLIER = "s&s activewear";  // same default as the calculator when a product has no Vendor
+  const DEFAULT_SUPPLIER = "ss";  // S&S Activewear: same default as the calculator when a product has no Vendor
+  // "S&S", "S&S Activewear", "SS Activewear" → one supplier; "SanMar", "Sanmar " → one supplier
+  function supplierKey(v) { const k = String(v || "").toLowerCase().replace(/[^a-z0-9]/g, ""); return /^ss/.test(k) ? "ss" : /^sanmar/.test(k) ? "sanmar" : k; }
   const CAP_WORDS = /\b(cap|caps|bon[eé]s?|hat|hats|snapback|trucker|visor|beanie)\b/i;
   const SIZE_FIELDS = { silk: { std: "costStd", x2: "cost2xl", x3: "cost3xl" }, emb: { std: "cStd", x2: "c2xl", x3: "c3xl" } };
   function blankCost(method, p, size) {
@@ -139,7 +141,7 @@
     // Styles from different suppliers (product Vendor) ship separately: each supplier's shipping is split over its own pieces
     // and waived on its own subtotal (Silk Screen + DTF; Embroidery ships as one order).
     const itemBlanks = it => { const p = cat[String(it.code).toUpperCase()]; return ["std", "x2", "x3"].reduce((a, z) => a + blankCost(method, p, z) * it.qty[z], 0); };
-    const known = it => (String(it.supplier || "").trim() || String((cat[String(it.code).toUpperCase()] || {}).vendor || "").trim()).toLowerCase();
+    const known = it => supplierKey(String(it.supplier || "").trim() || (cat[String(it.code).toUpperCase()] || {}).vendor);
     const split = method !== "emb" && new Set(items.map(known).filter(Boolean)).size > 1;
     const groupOf = it => split ? (known(it) || DEFAULT_SUPPLIER) : "all";
     const groups = {};
@@ -182,7 +184,7 @@
     return out;
   }
 
-  const api = { CONFIG, ceil10, round10, silk, silkSetup, dtf, emb, v2Tier, v2Fees, v2Base, v2Price, chooseMethod, quoteOrder, blankCost };
+  const api = { CONFIG, ceil10, round10, silk, silkSetup, dtf, emb, v2Tier, v2Fees, v2Base, v2Price, chooseMethod, quoteOrder, blankCost, supplierKey };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.TBDPricing = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
