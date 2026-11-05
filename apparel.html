@@ -121,6 +121,9 @@
   .order-item .oi-qty { flex: 0 0 60px; }
   .order-item .oi-qty input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; text-align: center; outline: none; font-family: 'SF Mono','Fira Code',monospace; }
   .order-item .oi-color { flex: 0 0 120px; }
+  .order-item .oi-color { display: flex; gap: 4px; align-items: center; }
+  .order-item .oi-color select { width: 100%; padding: 8px 6px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; background: #fff; font-family: inherit; }
+  .order-item .oi-color select.need { border-color: #f0b4b4; background: #fff7f7; }
   .order-item .oi-color input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; outline: none; font-family: inherit; }
   .order-item .oi-color input.need { border-color: #f0b4b4; background: #fff7f7; }
   .order-item .oi-top { flex-wrap: wrap; }
@@ -1359,6 +1362,28 @@ function renderYmqTable() {
 function addOrderItem() { orderItems.push(newItem()); renderOrderItems(); }
 function removeOrderItem(id) { orderItems = orderItems.filter(i => String(i.id) !== String(id)); if (!orderItems.length) orderItems.push(newItem()); renderOrderItems(); }
 function onOrderCode(id, el) { el.value = el.value.toUpperCase(); const it = itemById(id); if (!it) return; it.code = el.value; updateItemInfo(it); updateOrderResults(); }
+// Colors this style already has in the calculator: photo library + the site's color list.
+function colorOptions(code) {
+  code = String(code || "").toUpperCase(); const m = {};
+  savedColors(code).forEach(c => m[c.toLowerCase()] = c);
+  ((siteProducts[code] || {}).colors || []).forEach(c => { if (c && c.name && !m[c.name.toLowerCase()]) m[c.name.toLowerCase()] = c.name; });
+  return Object.values(m).sort((a, b) => a.localeCompare(b));
+}
+function colorFieldHTML(it) {
+  const opts = colorOptions(it.code), cur = (it.color || "").trim(), need = cur ? '' : ' need';
+  if (it.colorOther || !opts.length) return '<input id="oicol-' + it.id + '" value="' + esc(it.color || "") + '" placeholder="Color" class="' + need.trim() + '" oninput="onBuilderColor(\'' + it.id + '\',this)">'
+    + (opts.length ? '<button class="mk-link small" onclick="setColorOther(\'' + it.id + '\',false)">list</button>' : '');
+  const list = cur && !opts.some(c => c.toLowerCase() === cur.toLowerCase()) ? [cur, ...opts] : opts;
+  const withPhoto = new Set(savedColors(it.code).map(c => c.toLowerCase()));
+  return '<select id="oicol-' + it.id + '" class="' + need.trim() + '" onchange="onBuilderColorSelect(\'' + it.id + '\',this)">'
+    + '<option value="">Color…</option>' + list.map(c => '<option value="' + esc(c) + '"' + (c.toLowerCase() === cur.toLowerCase() ? ' selected' : '') + '>' + esc(c) + (withPhoto.has(c.toLowerCase()) ? ' 📷' : '') + '</option>').join("")
+    + '<option value="__other">Other…</option></select>';
+}
+function setColorOther(id, on) { const it = itemById(id); if (!it) return; it.colorOther = on; const w = q("oicolw-" + id); if (w) { w.innerHTML = colorFieldHTML(it); const el = q("oicol-" + id); if (el && on) el.focus(); } }
+function onBuilderColorSelect(id, el) {
+  if (el.value === "__other") { const it = itemById(id); if (it) it.color = ""; setColorOther(id, true); return; }
+  onBuilderColor(id, el);
+}
 function savedColors(code) { const m = {}; Object.values(photoLib).forEach(ph => { if (ph.code === String(code || "").toUpperCase()) m[ph.color.toLowerCase()] = ph.color; }); return Object.values(m).sort(); }
 let builderColorTimer = null;
 function onBuilderColor(id, el) {
@@ -1468,7 +1493,7 @@ function renderOrderItems() {
     + '<div class="oi-top">'
     + '<div class="oi-code"><input id="oic-' + it.id + '" value="' + esc(it.code) + '" placeholder="Code" autocomplete="off" oninput="onOrderCode(\'' + it.id + '\',this);showCodeSuggest(\'' + it.id + '\')" onfocus="showCodeSuggest(\'' + it.id + '\')" onblur="setTimeout(()=>hideCodeSuggest(\'' + it.id + '\'),150)" onkeydown="codeSuggestKey(event,\'' + it.id + '\')"></div>'
     + '<div class="oi-qty"><input id="oiq-' + it.id + '" type="number" min="1" value="' + esc(it.qty) + '" placeholder="Qty" oninput="onOrderQty(\'' + it.id + '\',this)"></div>'
-    + '<div class="oi-color"><input id="oicol-' + it.id + '" list="oicl-' + it.id + '" value="' + esc(it.color || "") + '" placeholder="Color" class="' + (it.color && it.color.trim() ? '' : 'need') + '" oninput="onBuilderColor(\'' + it.id + '\',this)"><datalist id="oicl-' + it.id + '">' + savedColors(it.code).map(c => '<option value="' + esc(c) + '">').join("") + '</datalist></div>'
+    + '<div class="oi-color" id="oicolw-' + it.id + '">' + colorFieldHTML(it) + '</div>'
     + '<div class="oi-info" id="oiinfo-' + it.id + '"></div>'
     + (orderItems.length > 1 ? '<button class="oi-remove" onclick="removeOrderItem(\'' + it.id + '\')" aria-label="Remove style">×</button>' : '')
     + '<button class="mk-link small oi-addcolor" onclick="addColorOf(\'' + it.id + '\')" title="Same style, another color">+ color</button>'
@@ -1482,7 +1507,7 @@ function renderOrderItems() {
 }
 function updateItemInfo(it) {
   const p = prod(it), info = q("oiinfo-" + it.id); if (!info) return;
-  const dl = q("oicl-" + it.id); if (dl) dl.innerHTML = savedColors(it.code).map(c => '<option value="' + esc(c) + '">').join("");
+  const cw = q("oicolw-" + it.id); if (cw && !cw.contains(document.activeElement)) cw.innerHTML = colorFieldHTML(it);
   if (p) info.innerHTML = '<span class="pname">' + esc(p.name) + '</span>' + (p.vendor || p.memo ? '<span class="vend-line" title="Internal only">' + (p.vendor ? '<span class="vend-tag">' + esc(p.vendor) + '</span>' : '') + (p.memo ? ' ' + esc(p.memo) : '') + '</span>' : '');
   else if ((it.code || "").length) {
     const src = findElsewhere(it.code);
@@ -2133,14 +2158,14 @@ function colorChipsHTML(it, p) {
 }
 function pickColor(id, color) {
   const it = itemById(id); if (!it) return;
-  it.color = color; const bc = q("oicol-" + id); if (bc) { bc.value = color; bc.classList.remove("need"); } clearBoxesFor(it.id);
+  it.color = color; const cw = q("oicolw-" + id); if (cw) cw.innerHTML = colorFieldHTML(it); clearBoxesFor(it.id);
   if (mk.edit && String(mk.edit.id) === String(id)) mk.edit = null;
   mk.sig = ""; renderMockRows(true); renderQuote();
 }
 let colorTimer = null;
 function onRowColor(id, v) {
   const it = itemById(id); if (!it) return;
-  it.color = v; const bc = q("oicol-" + id); if (bc) { bc.value = v; bc.classList.toggle("need", !v.trim()); }
+  it.color = v; const cw = q("oicolw-" + id); if (cw) cw.innerHTML = colorFieldHTML(it);
   const ch = q("mkch-" + id); if (ch) { ch.textContent = v.trim() ? colorName(it) : "pick a color"; ch.classList.toggle("need", !v.trim()); } clearBoxesFor(it.id); renderQuote();
   if (mk.edit && String(mk.edit.id) === String(id)) mk.edit = null;
   clearTimeout(colorTimer); colorTimer = setTimeout(() => { refreshRow(it); renderEditor(); }, 250);
@@ -2786,7 +2811,7 @@ const QUOTES_LS = "tbd-open-quotes", QUOTE_DAYS = 30, DAY = 86400000;
 function logoToJSON(lg) {
   if (!lg || !lg.raw) return null;
   if (!lg._data) {
-    const r = lg.raw, sc = Math.min(1, 1600 / Math.max(r.naturalWidth, r.naturalHeight));
+    const r = lg.raw, sc = Math.min(1, 1000 / Math.max(r.naturalWidth, r.naturalHeight));
     const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(r.naturalWidth * sc)); c.height = Math.max(1, Math.round(r.naturalHeight * sc));
     c.getContext("2d").drawImage(r, 0, 0, c.width, c.height);
     lg._data = c.toDataURL("image/png");
@@ -2797,14 +2822,23 @@ async function logoFromJSON(j) {
   if (!j || !j.data) return null;
   try { const raw = await loadImage(j.data); const lg = { raw, url: j.data, removeWhite: !!j.removeWhite, canvas: null, _data: j.data }; buildLogo(lg); return lg; } catch (e) { return null; }
 }
+// Each logo picture is stored once per quote (several colors of a style share the same logo).
 function quoteToJSON(sq) {
-  const logos = {}; Object.entries(sq.logos || {}).forEach(([k, v]) => logos[k] = logoToJSON(v));
-  return { ...sq, logos, orderItems: (sq.orderItems || []).map(it => ({ ...it, logo: logoToJSON(it.logo) })) };
+  const bank = {}, seen = {}, ref = lg => {
+    const j = logoToJSON(lg); if (!j) return null;
+    const k = j.data + "|" + j.removeWhite; let id = seen[k];
+    if (!id) { id = "L" + (Object.keys(bank).length + 1); bank[id] = j; seen[k] = id; }
+    return { ref: id };
+  };
+  const logos = {}; Object.entries(sq.logos || {}).forEach(([k, v]) => logos[k] = ref(v));
+  return { ...sq, logos, logoBank: bank, orderItems: (sq.orderItems || []).map(it => ({ ...it, logo: ref(it.logo) })) };
 }
 async function quoteFromJSON(j) {
-  const logos = {}; for (const [k, v] of Object.entries(j.logos || {})) logos[k] = await logoFromJSON(v);
-  const items = []; for (const it of (j.orderItems || [])) items.push({ ...it, logo: await logoFromJSON(it.logo) });
-  return { ...blankQuote(j.method), ...j, logos: { front:null, back:null, side:null, rside:null, ...logos }, orderItems: items.length ? items : null, boxes: j.boxes || {} };
+  const cache = {}, get = async v => { if (!v) return null; if (v.ref) { if (!(v.ref in cache)) cache[v.ref] = await logoFromJSON((j.logoBank || {})[v.ref]); return cache[v.ref]; } return logoFromJSON(v); };
+  const logos = {}; for (const [k, v] of Object.entries(j.logos || {})) logos[k] = await get(v);
+  const items = []; for (const it of (j.orderItems || [])) items.push({ ...it, logo: await get(it.logo) });
+  const { logoBank, ...rest } = j;
+  return { ...blankQuote(j.method), ...rest, logos: { front:null, back:null, side:null, rside:null, ...logos }, orderItems: items.length ? items : null, boxes: j.boxes || {} };
 }
 function quoteIsBlank(sq) { return !(sq.name || "").trim() && !(sq.orderItems || []).some(it => (it.code || "").trim()); }
 let savedQuotes = {}, quotesLoaded = false;
@@ -2826,7 +2860,7 @@ async function saveOpenQuotes() {
   const ups = Object.entries(now).filter(([id, js]) => savedQuotes[id] !== js), dels = Object.keys(savedQuotes).filter(id => !(id in now));
   if (!ups.length && !dels.length) return;
   const ok = await TBDCloud.write(async sb => {
-    if (ups.length) { const r = await sb.from("open_quotes").upsert(ups.map(([id, js]) => ({ id, app: "apparel", data: JSON.parse(js) }))); if (r.error) return r; }
+    for (const [id, js] of ups) { const r = await sb.from("open_quotes").upsert({ id, app: "apparel", data: JSON.parse(js) }); if (r.error) return r; }
     if (dels.length) { const r = await sb.from("open_quotes").delete().in("id", dels); if (r.error) return r; }
     return {};
   });
