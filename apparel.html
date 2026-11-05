@@ -1355,10 +1355,10 @@ function renderOrderItems() {
     + '<div class="oi-top">'
     + '<div class="oi-code"><input id="oic-' + it.id + '" value="' + esc(it.code) + '" placeholder="Code" autocomplete="off" oninput="onOrderCode(\'' + it.id + '\',this);showCodeSuggest(\'' + it.id + '\')" onfocus="showCodeSuggest(\'' + it.id + '\')" onblur="setTimeout(()=>hideCodeSuggest(\'' + it.id + '\'),150)" onkeydown="codeSuggestKey(event,\'' + it.id + '\')"></div>'
     + '<div class="oi-qty"><input id="oiq-' + it.id + '" type="number" min="1" value="' + esc(it.qty) + '" placeholder="Qty" oninput="onOrderQty(\'' + it.id + '\',this)"></div>'
-    + ('<div class="oi-color"><input id="oicol-' + it.id + '" list="oicl-' + it.id + '" value="' + esc(it.color || "") + '" placeholder="Color" class="' + (it.color && it.color.trim() ? '' : 'need') + '" oninput="onBuilderColor(\'' + it.id + '\',this)"><datalist id="oicl-' + it.id + '">' + savedColors(it.code).map(c => '<option value="' + esc(c) + '">').join("") + '</datalist></div>' : '')
+    + '<div class="oi-color"><input id="oicol-' + it.id + '" list="oicl-' + it.id + '" value="' + esc(it.color || "") + '" placeholder="Color" class="' + (it.color && it.color.trim() ? '' : 'need') + '" oninput="onBuilderColor(\'' + it.id + '\',this)"><datalist id="oicl-' + it.id + '">' + savedColors(it.code).map(c => '<option value="' + esc(c) + '">').join("") + '</datalist></div>'
     + '<div class="oi-info" id="oiinfo-' + it.id + '"></div>'
     + (orderItems.length > 1 ? '<button class="oi-remove" onclick="removeOrderItem(\'' + it.id + '\')" aria-label="Remove style">×</button>' : '')
-    + ('<button class="mk-link small oi-addcolor" onclick="addColorOf(\'' + it.id + '\')" title="Same style, another color">+ color</button>' : '')
+    + '<button class="mk-link small oi-addcolor" onclick="addColorOf(\'' + it.id + '\')" title="Same style, another color">+ color</button>'
     + '</div>'
     + '<div class="oi-suggest" id="oiac-' + it.id + '" hidden></div>'
     + itemControlsHTML(it)
