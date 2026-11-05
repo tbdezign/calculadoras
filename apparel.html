@@ -117,6 +117,16 @@
   .order-item .oi-code input { width: 100%; padding: 8px; border: 2px solid #1a7698; border-radius: 6px; font-size: 14px; font-weight: 700; text-align: center; outline: none; text-transform: uppercase; font-family: 'SF Mono','Fira Code',monospace; }
   .order-item .oi-qty { flex: 0 0 60px; }
   .order-item .oi-qty input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; text-align: center; outline: none; font-family: 'SF Mono','Fira Code',monospace; }
+  .order-item .oi-color { flex: 0 0 120px; }
+  .order-item .oi-color input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; outline: none; font-family: inherit; }
+  .order-item .oi-color input.need { border-color: #f0b4b4; background: #fff7f7; }
+  .order-item .oi-top { flex-wrap: wrap; }
+  .mk-sides { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0 2px; font-size: 12px; color: #666; }
+  .mk-sides .sd { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 3px; border: 1px solid #ddd; border-radius: 999px; background: #fff; font-size: 12px; }
+  .mk-sides .sd img { width: 22px; height: 22px; object-fit: contain; border-radius: 50%; background: #f4f4f4; }
+  .mk-sides button.sd { cursor: pointer; border-style: dashed; color: #1a7698; padding: 4px 10px; font-family: inherit; }
+  .mk-colorhead { font-weight: 700; color: #1a7698; }
+  .mk-colorhead.need { color: #c0392b; }
   .order-item .oi-info { flex: 1; font-size: 12px; color: #555; min-height: 20px; display: flex; align-items: center; }
   .order-item .oi-info .pname { font-weight: 600; color: #051024; }
   .order-item .oi-info { flex-wrap: wrap; }
@@ -1237,6 +1247,14 @@ function renderYmqTable() {
 function addOrderItem() { orderItems.push(newItem()); renderOrderItems(); }
 function removeOrderItem(id) { orderItems = orderItems.filter(i => String(i.id) !== String(id)); if (!orderItems.length) orderItems.push(newItem()); renderOrderItems(); }
 function onOrderCode(id, el) { el.value = el.value.toUpperCase(); const it = itemById(id); if (!it) return; it.code = el.value; updateItemInfo(it); updateOrderResults(); }
+function savedColors(code) { const m = {}; Object.values(photoLib).forEach(ph => { if (ph.code === String(code || "").toUpperCase()) m[ph.color.toLowerCase()] = ph.color; }); return Object.values(m).sort(); }
+let builderColorTimer = null;
+function onBuilderColor(id, el) {
+  const it = itemById(id); if (!it) return;
+  it.color = el.value; el.classList.toggle("need", !el.value.trim()); clearBoxesFor(it.id); renderQuote();
+  const mc = q("mkc-" + id); if (mc) mc.value = el.value;
+  clearTimeout(builderColorTimer); builderColorTimer = setTimeout(() => { mk.sig = ""; renderMockRows(true); }, 400);
+}
 function onOrderQty(id, el) { const it = itemById(id); if (!it) return; it.qty = el.value; if (method === "v2") updateItemInfo(it); updateOrderResults(); }
 function setItemField(id, f, v) { const it = itemById(id); if (!it) return; it[f] = v; renderOrderItems(); }
 function toggleCapView(id, f) { const it = itemById(id); if (!it) return; it[f] = it[f] === false; renderOrderItems(); }
@@ -1337,6 +1355,7 @@ function renderOrderItems() {
     + '<div class="oi-top">'
     + '<div class="oi-code"><input id="oic-' + it.id + '" value="' + esc(it.code) + '" placeholder="Code" autocomplete="off" oninput="onOrderCode(\'' + it.id + '\',this);showCodeSuggest(\'' + it.id + '\')" onfocus="showCodeSuggest(\'' + it.id + '\')" onblur="setTimeout(()=>hideCodeSuggest(\'' + it.id + '\'),150)" onkeydown="codeSuggestKey(event,\'' + it.id + '\')"></div>'
     + '<div class="oi-qty"><input id="oiq-' + it.id + '" type="number" min="1" value="' + esc(it.qty) + '" placeholder="Qty" oninput="onOrderQty(\'' + it.id + '\',this)"></div>'
+    + (prod(it) ? '<div class="oi-color"><input id="oicol-' + it.id + '" list="oicl-' + it.id + '" value="' + esc(it.color || "") + '" placeholder="Color" class="' + (it.color && it.color.trim() ? '' : 'need') + '" oninput="onBuilderColor(\'' + it.id + '\',this)"><datalist id="oicl-' + it.id + '">' + savedColors(it.code).map(c => '<option value="' + esc(c) + '">').join("") + '</datalist></div>' : '')
     + '<div class="oi-info" id="oiinfo-' + it.id + '"></div>'
     + (orderItems.length > 1 ? '<button class="oi-remove" onclick="removeOrderItem(\'' + it.id + '\')" aria-label="Remove style">×</button>' : '')
     + (prod(it) ? '<button class="mk-link small oi-addcolor" onclick="addColorOf(\'' + it.id + '\')" title="Same style, another color">+ color</button>' : '')
@@ -1929,7 +1948,7 @@ function renderMockRows(force) {
     const p = cat()[it.code.toUpperCase()], qty = itemQty(it);
     const colors = {}; Object.values(photoLib).forEach(ph => { if (ph.code === p.code) colors[ph.color.toLowerCase()] = ph.color; });
     return '<div class="mk-style" id="mks-' + it.id + '">'
-      + '<div class="mk-style-head"><div><b>' + esc(p.code) + '</b> <span>' + esc(displayName(it, p)) + '</span></div><span class="mono">' + (qty ? qty + ' pcs' : '') + '</span></div>'
+      + '<div class="mk-style-head"><div><b>' + esc(p.code) + '</b> · ' + '<span class="mk-colorhead' + (it.color && it.color.trim() ? '' : ' need') + '" id="mkch-' + it.id + '">' + (it.color && it.color.trim() ? esc(colorName(it)) : 'pick a color') + '</span>' + ' <span>' + esc(displayName(it, p)) + '</span></div><span class="mono">' + (qty ? qty + ' pcs' : '') + '</span></div>'
       + (method !== "silk" ? '<div class="mk-print">' + esc(itemPrint(it)) + '</div>' : '')
       + colorChipsHTML(it, p)
       + '<div class="field"><label for="mkc-' + it.id + '">' + (Object.keys(colors).length ? 'Or type a new color' : 'Garment color') + '</label><input id="mkc-' + it.id + '" list="mkcl-' + it.id + '" value="' + esc(it.color||"") + '" placeholder="White" oninput="onRowColor(\'' + it.id + '\',this.value)"></div>'
@@ -1937,6 +1956,7 @@ function renderMockRows(force) {
       + (capItem(it) ? '' : sleeveChecksHTML(it))
       + itemLogoHTML(it)
       + '<div class="mk-views">' + sidesOf(it).map(s => '<div class="mk-view" id="mkv-' + it.id + '-' + s + '"></div>').join("") + '</div>'
+      + sidePhotosHTML(it)
       + '<div class="mk-actions"><button class="mk-primary" id="mksave-' + it.id + '" onclick="saveMockup(\'' + it.id + '\')">Save PNG' + (groupOfItem(it).length > 1 ? ' (' + groupOfItem(it).length + ' colors)' : '') + '</button><button class="mk-secondary" id="mkcopy-' + it.id + '" onclick="copyMockup(\'' + it.id + '\')">Copy image</button></div>'
       + '<button class="mk-link" style="margin-top:6px" onclick="addColorOf(\'' + it.id + '\')">+ Another color of ' + esc(p.code) + '</button>'
       + '</div>';
@@ -1945,6 +1965,15 @@ function renderMockRows(force) {
       : (styleGroups(items).length > 1 ? '<button class="mk-all" onclick="saveAllMockups()">Save all mockups (' + styleGroups(items).length + ', one file per style)</button>' : ''));
   refreshViews();
   renderEditor();
+}
+// Photos saved for this style + color (front, back, side). Add the others now so they're ready for future orders.
+function sidePhotosHTML(it) {
+  if (!it.color || !slugPart(it.color)) return '';
+  return '<div class="mk-sides"><span>Photos for ' + esc(colorName(it)) + ':</span>' + ["front", "back", "side"].map(sd => {
+    const rec = photoFor(it, sd).rec;
+    return rec ? '<span class="sd" title="Saved"><img src="' + esc(photoSrc(rec)) + '" alt="">' + SIDE_EN[sd] + ' ✓</span>'
+      : '<button class="sd" onclick="pickGarment(\'' + it.id + '\',\'' + sd + '\')">+ ' + SIDE_EN[sd] + ' photo</button>';
+  }).join("") + '</div>';
 }
 // Saved colors for this style, as buttons with a small photo, so nobody has to remember the names.
 function colorChipsHTML(it, p) {
@@ -1962,14 +1991,15 @@ function colorChipsHTML(it, p) {
 }
 function pickColor(id, color) {
   const it = itemById(id); if (!it) return;
-  it.color = color; clearBoxesFor(it.id);
+  it.color = color; const bc = q("oicol-" + id); if (bc) { bc.value = color; bc.classList.remove("need"); } clearBoxesFor(it.id);
   if (mk.edit && String(mk.edit.id) === String(id)) mk.edit = null;
   mk.sig = ""; renderMockRows(true); renderQuote();
 }
 let colorTimer = null;
 function onRowColor(id, v) {
   const it = itemById(id); if (!it) return;
-  it.color = v; clearBoxesFor(it.id); renderQuote();
+  it.color = v; const bc = q("oicol-" + id); if (bc) { bc.value = v; bc.classList.toggle("need", !v.trim()); }
+  const ch = q("mkch-" + id); if (ch) { ch.textContent = v.trim() ? colorName(it) : "pick a color"; ch.classList.toggle("need", !v.trim()); } clearBoxesFor(it.id); renderQuote();
   if (mk.edit && String(mk.edit.id) === String(id)) mk.edit = null;
   clearTimeout(colorTimer); colorTimer = setTimeout(() => { refreshRow(it); renderEditor(); }, 250);
 }
