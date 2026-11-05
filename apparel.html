@@ -857,7 +857,7 @@ const I18N = {
         tierNote:"A faixa de preço vale pela quantidade total do pedido. Pode misturar modelos e cores do mesmo tom.",
         tierNoteMix:"A faixa de preço vale pela quantidade total do pedido. Pode misturar modelos e cores.",
         ship:(a,b,bd) => "Frete grátis · Produção: " + a + " a " + b + " dias" + (bd ? " úteis" : "") + " após aprovação da arte",
-        total:"Total", order:"Pedido",
+        total:"Total", order:"Pedido", colorsL:"Cores",
         disclaimer:"Mockup ilustrativo. A prova final é enviada para aprovação após a confirmação do pedido." },
   en: { perPc:" per piece", pcs:n => n + " pcs", plus:n => n + "+ pcs", each:" each", perPiece:"Price per piece", code:"Code",
         silk:"Screen print", dtf:"DTF transfer · Full color", emb:"Embroidery", colors:n => n + (n === 1 ? " color" : " colors"),
@@ -870,7 +870,7 @@ const I18N = {
         tierNote:"Pricing is based on the total order quantity. You can mix styles and colors of the same tone.",
         tierNoteMix:"Pricing is based on the total order quantity. You can mix styles and colors.",
         ship:(a,b,bd) => "Free shipping · Production: " + a + "–" + b + (bd ? " business" : "") + " days after artwork approval",
-        total:"Total", order:"Order",
+        total:"Total", order:"Order", colorsL:"Colors",
         disclaimer:"Illustrative mockup. The final proof is sent for approval after the order is confirmed." },
   es: { perPc:" por pieza", pcs:n => n + (n === 1 ? " pieza" : " piezas"), plus:n => n + "+ piezas", each:" c/u", perPiece:"Precio por pieza", code:"Cód.",
         silk:"Serigrafía", dtf:"Transfer DTF · A todo color", emb:"Bordado", colors:n => n + (n === 1 ? " color" : " colores"),
@@ -883,7 +883,7 @@ const I18N = {
         tierNote:"El precio se basa en la cantidad total del pedido. Puede combinar modelos y colores del mismo tono.",
         tierNoteMix:"El precio se basa en la cantidad total del pedido. Puede combinar modelos y colores.",
         ship:(a,b,bd) => "Envío gratis · Producción: " + a + " a " + b + " días" + (bd ? " hábiles" : "") + " después de aprobar el arte",
-        total:"Total", order:"Pedido",
+        total:"Total", order:"Pedido", colorsL:"Colores",
         disclaimer:"Mockup ilustrativo. La prueba final se envía para aprobación después de confirmar el pedido." },
 };
 function T() { return I18N[quoteLang] || I18N.pt; }
@@ -1339,6 +1339,7 @@ function renderOrderItems() {
     + '<div class="oi-qty"><input id="oiq-' + it.id + '" type="number" min="1" value="' + esc(it.qty) + '" placeholder="Qty" oninput="onOrderQty(\'' + it.id + '\',this)"></div>'
     + '<div class="oi-info" id="oiinfo-' + it.id + '"></div>'
     + (orderItems.length > 1 ? '<button class="oi-remove" onclick="removeOrderItem(\'' + it.id + '\')" aria-label="Remove style">×</button>' : '')
+    + (prod(it) ? '<button class="mk-link small oi-addcolor" onclick="addColorOf(\'' + it.id + '\')" title="Same style, another color">+ color</button>' : '')
     + '</div>'
     + '<div class="oi-suggest" id="oiac-' + it.id + '" hidden></div>'
     + itemControlsHTML(it)
@@ -1405,6 +1406,22 @@ function updateOrderResults() {
 // WHATSAPP QUOTE — Options (one message per style + closing) / Final order (one message)
 // ════════════════════════════════════════════
 let quoteBlocks = [];
+// Same style in several colors: one block in the quote, one picture with every color.
+function groupKey(it) { return (it.code || "").toUpperCase() + "|" + itemPrint(it) + "|" + JSON.stringify(viewsOf(it)); }
+function styleGroups(list) { const m = new Map(); list.forEach(it => { const k = groupKey(it); if (!m.has(k)) m.set(k, []); m.get(k).push(it); }); return [...m.values()]; }
+function groupOfItem(it) { return styleGroups(mockItems()).find(g => g.includes(it)) || [it]; }
+function colorName(it) { return titleCase((it.color || "").trim()) || "—"; }
+function addColorOf(id) {
+  const src = itemById(id); if (!src) return;
+  const copy = JSON.parse(JSON.stringify({ ...src, logo: null }));
+  const nu = Object.assign(copy, { id: Date.now() + Math.random(), color: "", qty: "", q2: "", q3: "", supplier: src.supplier || "" });
+  nu.logo = src.logo;  // same logo for every color
+  orderItems.splice(orderItems.indexOf(src) + 1, 0, nu);
+  // copy the logo position too
+  Object.keys(mk.boxes).forEach(k => { if (k.startsWith(src.id + "|")) mk.boxes[nu.id + k.slice(String(src.id).length)] = { ...mk.boxes[k] }; });
+  mk.sig = ""; renderOrderItems(); renderMockRows(true); renderQuote();
+  const el = q("mkc-" + nu.id); if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); el.focus(); }
+}
 function styleTitle(it, p) { const c = (it.color || "").trim(); return T().code + " " + p.code + (c ? " · " + c.replace(/\b\w/g, x => x.toUpperCase()) : ""); }
 function setQuoteMode(m) { quoteMode = m; mk.sig = ""; renderQuote(); renderMockRows(true); }
 function setTiers(on) { tierPref[method] = on; renderQuote(); }
@@ -1422,11 +1439,20 @@ function renderQuote() {
   if (quoteMode === "options") {
     const tiersOn = showTiers() || tq < 1;
     bar.innerHTML = '<label><input type="checkbox" ' + (showTiers() ? "checked" : "") + ' onchange="setTiers(this.checked)"> Tier breaks</label><span>' + (!showTiers() && tq < 1 ? "Enter a quantity to show one exact price. Until then, the tiers are shown." : multi ? "One message per style, then the closing message once." : "Send with the mockup.") + '</span>';
-    items.forEach(it => {
-      const p = prod(it), L = ["*" + styleTitle(it, p) + "*", displayName(it, p)], d = descFor(p), qn = itemQty(it);
+    const groups = styleGroups(items);
+    groups.forEach(g => {
+      const it = g[0], p = prod(it), many = g.length > 1;
+      const L = ["*" + (many ? L0.code + " " + p.code : styleTitle(it, p)) + "*", displayName(it, p)], d = descFor(p), qn = itemQty(it);
       if (d.trim()) L.push(d.trim());
+      if (many) L.push(L0.colorsL + ": " + g.map(colorName).join(", "));
       L.push(itemPrint(it), "");
-      if (tiersOn) {
+      if (many && !tiersOn) {
+        g.forEach(c => {
+          const ls = itemQty(c) > 0 && tq > 0 ? sizeLines(c) : [];
+          if (hasSizes(c)) ls.forEach(l => L.push(colorName(c) + " · " + SIZE_LABEL[l.size] + ": " + L0.pcs(l.q) + " · " + fmt(l.r.perPiece) + L0.each));
+          else if (ls[0]) L.push(colorName(c) + ": " + L0.pcs(itemQty(c)) + " · " + fmt(ls[0].r.perPiece) + L0.each);
+        });
+      } else if (tiersOn) {
         M.tiers.forEach((t, i) => { const pr = M.tierPrice(it, t); if (pr != null) L.push((i === M.tiers.length - 1 ? L0.plus(t) : L0.pcs(t)) + ": " + fmt(pr) + L0.each); });
         // Bigger sizes only when "+ 2XL / 3XL" is on for this style.
         if (hasSizes(it)) { const t0 = M.tiers[0], base = M.tierPrice(it, t0), ups = ["x2","x3"].map(z => SIZE_LABEL[z] + " +" + fmt(M.tierPrice(it, t0, z) - base)); L.push(ups.join(" · ") + L0.perPc); }
@@ -1435,10 +1461,10 @@ function renderQuote() {
         if (hasSizes(it)) ls.forEach(l => L.push(SIZE_LABEL[l.size] + ": " + L0.pcs(l.q) + " · " + fmt(l.r.perPiece) + L0.each));
         else if (ls[0]) L.push(L0.pcs(qn) + ": " + fmt(ls[0].r.perPiece) + L0.each);
       }
-      if (!multi) { if (st) L.push("", ...st.lines); L.push("", ship); }
-      quoteBlocks.push({ label: p.code + (it.color ? " · " + titleCase(it.color.trim()) : ""), text: L.join("\n") });
+      if (groups.length === 1) { if (st) L.push("", ...st.lines); L.push("", ship); }
+      quoteBlocks.push({ label: p.code + (many ? " · " + g.length + " colors" : it.color ? " · " + titleCase(it.color.trim()) : ""), text: L.join("\n") });
     });
-    if (multi) {
+    if (groups.length > 1) {
       const C = [];
       if (tiersOn) C.push(M.tierNote(), "");
       if (st) C.push(...st.lines, "");
@@ -1451,13 +1477,15 @@ function renderQuote() {
     if (!priced.length) quoteBlocks.push({ label: "Final order", text: "", empty: "Enter the quantity for each style the client chose." });
     else {
       const L = []; let sum = 0;
-      priced.forEach((it, i) => {
-        const p = prod(it), ls = sizeLines(it); if (!ls.length) return;
-        if (i) L.push("");
-        L.push("*" + styleTitle(it, p) + "*", displayName(it, p));
+      styleGroups(priced).forEach((g, i) => {
+        const it = g[0], p = prod(it), many = g.length > 1;
+        if (!g.some(c => sizeLines(c).length)) return;
+        if (L.length) L.push("");
+        L.push("*" + (many ? L0.code + " " + p.code : styleTitle(it, p)) + "*", displayName(it, p));
         const d = descFor(p); if (d.trim()) L.push(d.trim());
         if (prints.length > 1) L.push(itemPrint(it));
-        ls.forEach(l => { sum += l.r.perPiece * l.q; L.push((hasSizes(it) ? SIZE_LABEL[l.size] + ": " : "") + L0.pcs(l.q) + " x " + fmt(l.r.perPiece) + " = " + fmt(l.r.perPiece * l.q)); });
+        g.forEach(c => sizeLines(c).forEach(l => { sum += l.r.perPiece * l.q;
+          L.push((many ? colorName(c) + (hasSizes(c) ? " · " : ": ") : "") + (hasSizes(c) ? SIZE_LABEL[l.size] + ": " : "") + L0.pcs(l.q) + " x " + fmt(l.r.perPiece) + " = " + fmt(l.r.perPiece * l.q)); }));
       });
       if (prints.length === 1) L.push("", prints[0]);
       if (st) L.push("", ...st.lines);
@@ -1886,7 +1914,7 @@ function getBox(it, side, img, rec) {
 function renderMockup() { renderPlacement(); renderLogos(); renderMockRows(true); renderEditor(); }
 function renderMockRows(force) {
   const items = mockItems();
-  const sig = JSON.stringify([method, items.map(i => [i.id, i.code.toUpperCase(), i.qty, viewsOf(i), itemPrint(i)]), mk.oneSide, quoteLang]);
+  const sig = JSON.stringify([method, items.map(i => [i.id, i.code.toUpperCase(), i.qty, viewsOf(i), itemPrint(i)]), mk.oneSide, quoteLang, quoteMode]);
   if (!force && sig === mk.sig) return;
   mk.sig = sig;
   renderPlacement(); renderLogos();
@@ -1909,11 +1937,12 @@ function renderMockRows(force) {
       + (capItem(it) ? '' : sleeveChecksHTML(it))
       + itemLogoHTML(it)
       + '<div class="mk-views">' + sidesOf(it).map(s => '<div class="mk-view" id="mkv-' + it.id + '-' + s + '"></div>').join("") + '</div>'
-      + '<div class="mk-actions"><button class="mk-primary" id="mksave-' + it.id + '" onclick="saveMockup(\'' + it.id + '\')">Save PNG</button><button class="mk-secondary" id="mkcopy-' + it.id + '" onclick="copyMockup(\'' + it.id + '\')">Copy image</button></div>'
+      + '<div class="mk-actions"><button class="mk-primary" id="mksave-' + it.id + '" onclick="saveMockup(\'' + it.id + '\')">Save PNG' + (groupOfItem(it).length > 1 ? ' (' + groupOfItem(it).length + ' colors)' : '') + '</button><button class="mk-secondary" id="mkcopy-' + it.id + '" onclick="copyMockup(\'' + it.id + '\')">Copy image</button></div>'
+      + '<button class="mk-link" style="margin-top:6px" onclick="addColorOf(\'' + it.id + '\')">+ Another color of ' + esc(p.code) + '</button>'
       + '</div>';
   }).join("") + (quoteMode === "final"
       ? '<div class="mk-final"><div class="mk-final-title">Final order image</div><div class="mk-final-sub">All styles with a quantity, in one picture.</div><div class="mk-actions"><button class="mk-primary" onclick="saveOrderImage()">Save order image</button><button class="mk-secondary" onclick="copyOrderImage()">Copy order image</button></div></div>'
-      : (items.length > 1 ? '<button class="mk-all" onclick="saveAllMockups()">Save all mockups (' + items.length + ', one file each)</button>' : ''));
+      : (styleGroups(items).length > 1 ? '<button class="mk-all" onclick="saveAllMockups()">Save all mockups (' + styleGroups(items).length + ', one file per style)</button>' : ''));
   refreshViews();
   renderEditor();
 }
@@ -2380,6 +2409,11 @@ async function handleBrandFile(file) {
 // ── export: 1:1 for one side, 16:9 for front + back ──
 async function exportBlob(id) {
   const it = itemById(id); if (!it) return null;
+  const grp = groupOfItem(it).filter(c => c.color && slugPart(c.color));
+  if (grp.length > 1) {
+    const p0 = cat()[it.code.toUpperCase()];
+    return exportGridBlob(grp, { qty: false, title: T().code + " " + p0.code + " · " + grp.length + " " + T().colorsL.toLowerCase(), sub: itemPrint(it) });
+  }
   const p = cat()[it.code.toUpperCase()], sides = sidesOf(it);
   const views = [];
   for (const side of sides) {
@@ -2432,11 +2466,13 @@ async function exportBlob(id) {
   return new Promise(res => c.toBlob(res, "image/png"));
 }
 function mockupName(id) {
-  const it = itemById(id);
+  const it = itemById(id), grp = groupOfItem(it).filter(c => c.color && slugPart(c.color));
+  if (grp.length > 1) return "mockup-" + slugPart(it.code) + "-" + grp.map(c => slugPart(c.color)).join("-") + ".png";
   return "mockup-" + slugPart(it.code) + "-" + slugPart(it.color) + "-" + sidesOf(it).map(sd => SIDE_PT[sd]).join("-").toLowerCase() + ".png";
 }
 function exportError(e) {
   const m = String(e && e.message || "");
+  if (/^missing-\w+-/.test(m) || m.startsWith("nocolor-")) return orderImageError(e);
   if (m.startsWith("missing-")) return "Add the " + SIDE_EN[m.slice(8)].toLowerCase() + " photo for this style first.";
   return null;
 }
@@ -2455,12 +2491,17 @@ async function saveMockup(id) {
     mkMsg(e && e.code === "rate_limited" ? "A save is already waiting for confirmation." : "Couldn't save the file. Try Copy image instead.", true);
   }
 }
-function missingSide(id) { const it = itemById(id); return it ? sidesOf(it).find(sd => !optView(it, sd) && !photoFor(it, sd).rec) : null; }
+function missingSide(id) { const it = itemById(id); if (!it) return null; for (const c of groupOfItem(it).filter(c => c.color && slugPart(c.color)).concat(it.color ? [] : [it])) { const m = sidesOf(c).find(sd => !optView(c, sd) && !photoFor(c, sd).rec); if (m) return m; } return null; }
 // ── Final order: every style with a quantity in one image ──
 function orderImageItems() { return mockItems().filter(it => itemQty(it) > 0); }
 async function exportOrderBlob() {
   const list = orderImageItems();
   if (!list.length) throw new Error("noqty");
+  const total = list.reduce((a, it) => a + itemQty(it), 0), prints = [...new Set(list.map(itemPrint))];
+  return exportGridBlob(list, { qty: true, title: T().order + " · " + T().pcs(total), sub: prints.length === 1 ? prints[0] : methodLabel() });
+}
+// One picture with several garments (the final order, or one style in several colors).
+async function exportGridBlob(list, o) {
   const views = [];
   for (const it of list) {
     if (!it.color || !slugPart(it.color)) throw new Error("nocolor-" + it.code);
@@ -2486,12 +2527,12 @@ async function exportOrderBlob() {
     const t = document.createElement("canvas"); t.width = w; t.height = h; const lg = logoFor(v.side, v.it);
     compose(t.getContext("2d"), w, h, v.img, lg && lg.canvas, getBox(v.it, v.side, v.img, v.rec), mk.shade, false, isEmb(v.it));
     cx.drawImage(t, Math.round(x0 + (cellW - w) / 2), Math.round(y0 + (cellH - h) / 2));
-    const q = itemQty(v.it);
+    const q = itemQty(v.it), sameStyle = !o.qty;
     cx.textAlign = "center"; cx.textBaseline = "alphabetic";
     cx.fillStyle = "#1A1A1A"; cx.font = "600 " + Math.round(Math.min(56, cellW * 0.07)) + "px " + sys;
-    cx.fillText(T().code + " " + v.it.code.toUpperCase() + " · " + titleCase(v.it.color.trim()) + (multiSide ? " · " + sideLabel(v.side, capItem(v.it)) : ""), x0 + cellW / 2, y0 + cellH + labelH * 0.42);
-    cx.fillStyle = "#666"; cx.font = "400 " + Math.round(Math.min(46, cellW * 0.058)) + "px " + sys;
-    cx.fillText(T().pcs(q), x0 + cellW / 2, y0 + cellH + labelH * 0.78);
+    cx.fillText((sameStyle ? "" : T().code + " " + v.it.code.toUpperCase() + " · ") + titleCase(v.it.color.trim()) + (multiSide ? " · " + sideLabel(v.side, capItem(v.it)) : ""), x0 + cellW / 2, y0 + cellH + labelH * (sameStyle && !q ? 0.55 : 0.42));
+    if (q) { cx.fillStyle = "#666"; cx.font = "400 " + Math.round(Math.min(46, cellW * 0.058)) + "px " + sys;
+      cx.fillText(T().pcs(q), x0 + cellW / 2, y0 + cellH + labelH * 0.78); }
   });
   const top = H - F, pad = gap;
   cx.fillStyle = "#E8E8E8"; cx.fillRect(pad, top, W - pad * 2, 2);
@@ -2500,11 +2541,9 @@ async function exportOrderBlob() {
     const bh = F * 0.15, bw = Math.min(W * 0.22, mk.brand.naturalWidth * bh / mk.brand.naturalHeight), bh2 = bw * mk.brand.naturalHeight / mk.brand.naturalWidth;
     cx.drawImage(mk.brand, pad, rowTop - bh2, bw, bh2);
   } else { cx.textAlign = "left"; cx.fillStyle = "#1A1A1A"; cx.font = "700 " + fs * 0.9 + "px " + sys; cx.fillText("TBDezign Print", pad, rowTop); }
-  const total = list.reduce((a, it) => a + itemQty(it), 0);
   cx.textAlign = "right"; cx.fillStyle = "#1A1A1A"; cx.font = "600 " + fs + "px " + sys;
-  cx.fillText(T().order + " · " + T().pcs(total), W - pad, rowTop);
-  const prints = [...new Set(list.map(itemPrint))];
-  cx.fillStyle = "#666"; cx.font = "400 " + fs * 0.8 + "px " + sys; cx.fillText(prints.length === 1 ? prints[0] : methodLabel(), W - pad, rowBot);
+  cx.fillText(o.title, W - pad, rowTop);
+  cx.fillStyle = "#666"; cx.font = "400 " + fs * 0.8 + "px " + sys; cx.fillText(o.sub, W - pad, rowBot);
   cx.textAlign = "left"; cx.fillStyle = "#999"; cx.font = "400 " + fs * 0.66 + "px " + sys;
   cx.fillText(T().disclaimer, pad, rowBot);
   return new Promise(res => c.toBlob(res, "image/png"));
@@ -2540,7 +2579,7 @@ async function copyOrderImage() {
 // Saves every style's mockup one after another (skips styles still missing a color or photo).
 async function saveAllMockups() {
   if (!mk.logos.front) { mkMsg("Add the client logo first.", true); return; }
-  const list = mockItems(), ready = list.filter(it => it.color && slugPart(it.color) && !missingSide(it.id));
+  const list = styleGroups(mockItems()).map(g => g.find(c => c.color && slugPart(c.color)) || g[0]), ready = list.filter(it => it.color && slugPart(it.color) && !missingSide(it.id));
   if (!ready.length) { mkMsg("Each style needs its garment color and photo before it can be saved.", true); return; }
   let saved = 0;
   for (const it of ready) {
