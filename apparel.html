@@ -858,7 +858,7 @@ async function importCatalog() {
 const I18N = {
   pt: { perPc:" por peça", pcs:n => n + (n === 1 ? " peça" : " peças"), plus:n => n + "+ peças", each:" cada", perPiece:"Preço por peça", code:"Cód.",
         silk:"Silk Screen", dtf:"DTF Transfer · Colorido", emb:"Bordado", colors:n => n + (n === 1 ? " cor" : " cores"),
-        front:"Frente", back:"Costas", side:"Lateral", sleeve:"Manga", sleeveL:"Manga esquerda", sleeveR:"Manga direita", capBack:"Atrás", place:{ lc:"peito esquerdo", cc:"centro do peito", ff:"frente inteira", cf:"centro", lf:"lado esquerdo", rf:"lado direito" },
+        front:"Frente", back:"Costas", side:"Lateral", sleeve:"Manga", sleeveL:"Manga esquerda", sleeveR:"Manga direita", upperBack:"Costas (nuca)", capBack:"Atrás", place:{ lc:"peito esquerdo", cc:"centro do peito", ff:"frente inteira", cf:"centro", lf:"lado esquerdo", rf:"lado direito" },
         extra:n => n + " extra" + (n > 1 ? "s" : "") + " (manga)",
         screens:n => n + " telas", once:"Cobrado uma única vez para o pedido todo. ",
         oneTime:n => "Taxa única para criar " + (n > 1 ? "as telas" : "a tela") + " de impressão da sua arte. ",
@@ -871,7 +871,7 @@ const I18N = {
         disclaimer:"Mockup ilustrativo. A prova final é enviada para aprovação após a confirmação do pedido." },
   en: { perPc:" per piece", pcs:n => n + " pcs", plus:n => n + "+ pcs", each:" each", perPiece:"Price per piece", code:"Code",
         silk:"Screen print", dtf:"DTF transfer · Full color", emb:"Embroidery", colors:n => n + (n === 1 ? " color" : " colors"),
-        front:"Front", back:"Back", side:"Side", sleeve:"Sleeve", sleeveL:"Left sleeve", sleeveR:"Right sleeve", capBack:"Back", place:{ lc:"left chest", cc:"center chest", ff:"full front", cf:"center", lf:"left side", rf:"right side" },
+        front:"Front", back:"Back", side:"Side", sleeve:"Sleeve", sleeveL:"Left sleeve", sleeveR:"Right sleeve", upperBack:"Upper back", capBack:"Back", place:{ lc:"left chest", cc:"center chest", ff:"full front", cf:"center", lf:"left side", rf:"right side" },
         extra:n => n + " extra (sleeve" + (n > 1 ? "s" : "") + ")",
         screens:n => n + " screens", once:"Charged only once for the whole order. ",
         oneTime:n => "One-time fee to create the print screen" + (n > 1 ? "s" : "") + " for your artwork. ",
@@ -884,7 +884,7 @@ const I18N = {
         disclaimer:"Illustrative mockup. The final proof is sent for approval after the order is confirmed." },
   es: { perPc:" por pieza", pcs:n => n + (n === 1 ? " pieza" : " piezas"), plus:n => n + "+ piezas", each:" c/u", perPiece:"Precio por pieza", code:"Cód.",
         silk:"Serigrafía", dtf:"Transfer DTF · A todo color", emb:"Bordado", colors:n => n + (n === 1 ? " color" : " colores"),
-        front:"Frente", back:"Espalda", side:"Lateral", sleeve:"Manga", sleeveL:"Manga izquierda", sleeveR:"Manga derecha", capBack:"Atrás", place:{ lc:"pecho izquierdo", cc:"centro del pecho", ff:"frente completo", cf:"centro", lf:"lado izquierdo", rf:"lado derecho" },
+        front:"Frente", back:"Espalda", side:"Lateral", sleeve:"Manga", sleeveL:"Manga izquierda", sleeveR:"Manga derecha", upperBack:"Espalda (nuca)", capBack:"Atrás", place:{ lc:"pecho izquierdo", cc:"centro del pecho", ff:"frente completo", cf:"centro", lf:"lado izquierdo", rf:"lado derecho" },
         extra:n => n + " extra" + (n > 1 ? "s" : "") + " (manga)",
         screens:n => n + " pantallas", once:"Se cobra una sola vez por todo el pedido. ",
         oneTime:n => "Cargo único para crear " + (n > 1 ? "las pantallas" : "la pantalla") + " de impresión de su arte. ",
@@ -928,11 +928,25 @@ function descFor(p) {
   return d;
 }
 // "Frente (peito esquerdo) + Costas" from a style's views.
-function placeText(views, extras) {
+function placeText(views, extras, it) {
   const L = T(), parts = views.map(([side, place]) => side === "back" ? (place === "cb" ? L.capBack : L.back) : side === "side" ? L.side : L.front + " (" + (L.place[place] || L.place.lc) + ")");
   let t = parts.join(" + ");
-  if (extras > 0) t += " + " + L.extra(extras);
+  if (extras > 0) t += it ? " + " + spotWhere(it).slice(0, extras).map(w => SPOT_WHERE[w].name()).join(" + ") : " + " + L.extra(extras);
   return t;
+}
+// Extra spots: where each one goes (shirts). Defaults: left sleeve, then right sleeve.
+const SPOT_WHERE = {
+  sl: { label: "Left sleeve",  name: () => T().sleeveL, view: ["side", "sl"] },
+  sr: { label: "Right sleeve", name: () => T().sleeveR, view: ["rside", "sr"] },
+  bn: { label: "Upper back",   name: () => T().upperBack, view: ["back", "bn"] },
+};
+function spotWhere(it) { const w = (it.spotWhere || []).slice(); const def = ["sl", "sr", "bn"]; for (let i = 0; i < 3; i++) if (!SPOT_WHERE[w[i]]) w[i] = def.find(d => !w.includes(d)) || "sl"; return w; }
+function setSpotWhere(id, i, v) { const it = itemById(id); if (!it) return; const w = spotWhere(it); const j = w.indexOf(v); if (j >= 0 && j !== i) w[j] = w[i]; w[i] = v; it.spotWhere = w; mk.sig = ""; renderOrderItems(); renderMockRows(true); renderQuote(); }
+function spotWhereHTML(it, n) {
+  if (!n || capItem(it)) return "";
+  const w = spotWhere(it);
+  return Array.from({ length: n }, (_, i) => '<div class="pl-row" style="align-items:center"><span class="muted small" style="min-width:56px">' + (n > 1 ? 'Spot ' + (i + 1) : 'Where?') + '</span>'
+    + Object.keys(SPOT_WHERE).map(k => '<button class="pl-btn' + (w[i] === k ? ' active' : '') + '" onclick="setSpotWhere(\'' + it.id + '\',' + i + ',\'' + k + '\')">' + SPOT_WHERE[k].label + '</button>').join("") + '</div>').join("");
 }
 
 // ════════════════════════════════════════════
@@ -1074,7 +1088,7 @@ const METHODS = {
   silk: {
     label:"Silk Screen", min:PCFG.silk.minPieces, tiers:PCFG.silk.tiers, split:true,
     views: it => silkViews(),
-    print: it => T().silk + " · " + T().colors(numColors) + " · " + placeText(silkViews(), extraSpots),
+    print: it => T().silk + " · " + T().colors(numColors) + " · " + placeText(silkViews(), extraSpots, it),
     price(it, size) { const c = sizeCost(it, size), r = silkCalc(c, totalQty(), shipQtyFor(it), suppShipFor(it, SHIP_IN)); return { ...r, detail: fmt(c) + "÷" + r.divisor + (r.shipIn ? " + $" + r.shipIn + "/" + r.shipQty : " + free supplier ship") + " + print + $25/" + totalQty() }; },
     tierPrice(it, t, size) { return silkCalc(sizeCost(it, size), t, tierShipQty(t), tierSuppShip(sizeCost(it, "std"), t, SHIP_IN)).perPiece; },
     setup() { const n = numColors * (numSides + extraSpots), multi = validItems().length > 1, L = T();
@@ -1084,7 +1098,7 @@ const METHODS = {
   dtf: {
     label:"DTF · Vendor 1", min:0, tiers:PCFG.dtf.tiers, split:true,
     views: it => dtfPl(it).views,
-    print: it => T().dtf + " · " + placeText(dtfPl(it).views, it.extraSpots || 0),
+    print: it => T().dtf + " · " + placeText(dtfPl(it).views, it.extraSpots || 0, it),
     price(it) { const p = prod(it), pl = dtfPl(it), r = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, it.extraSize, suppShipFor(it, 30));
       const ex = DTF_EXTRA[it.extraSize || "small"];
       return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() }; },
@@ -1107,7 +1121,7 @@ const METHODS = {
   emb: {
     label:"Embroidery", min:PCFG.emb.minPieces, tiers:PCFG.emb.tiers, split:false,
     views: it => embViews(it),
-    print: it => T().emb + " · " + placeText(embPrintViews(it), isCap(it) ? 0 : embSpots(it)),
+    print: it => T().emb + " · " + placeText(embPrintViews(it), isCap(it) ? 0 : embSpots(it), isCap(it) ? null : it),
     price(it, size) { const c = sizeCost(it, size), es = embSpots(it), sp = suppShipFor(it, embSet.suppShip), r = embCalc(c, totalQty(), es, sp);
       return { ...r, detail: fmt(c) + "×2 + " + fmt(embSet.rate) + "×2" + (es > 0 ? "×" + (1 + es) + " spots" : "") + " + $" + (sp + embSet.clientShip) + " ship/" + totalQty() + (sp ? "" : " (supplier ship free)") }; },
     tierPrice(it, t, size) { return embCalc(sizeCost(it, size), t, embSpots(it), tierSuppShip(sizeCost(it, "std"), t, embSet.suppShip)).perPiece; },
@@ -1122,9 +1136,10 @@ function viewsOf(it) {
   let v = capItem(it) ? base : base.filter(x => !hide[x[0]]);
   if (!v.length) v = base.slice(0, 1);
   if (!capItem(it)) {
-    const sl = []; if (it.showSleeve) sl.push("side"); if (it.showRSleeve) sl.push("rside");
-    const n = sleeveSpots(it);
-    sl.forEach((sd, i) => v.push([sd, i < n ? (sd === "side" ? "sl" : "sr") : "none"]));
+    const n = sleeveSpots(it), printed = spotWhere(it).slice(0, n);
+    printed.forEach(w => { const pv = SPOT_WHERE[w].view; if (!v.some(x => x[0] === pv[0])) v.push(pv.slice()); });
+    if (it.showSleeve && !v.some(x => x[0] === "side")) v.push(["side", "none"]);
+    if (it.showRSleeve && !v.some(x => x[0] === "rside")) v.push(["rside", "none"]);
   }
   return v;
 }
@@ -1216,7 +1231,7 @@ function shipCtlHTML() {
 function setShipMode(m) { shipMode = m; renderSettings(); updateOrderResults(); }
 function setColors(n) { numColors = n; renderSettings(); updateOrderResults(); }
 function setSides(n) { numSides = n; mk.sig = ""; renderSettings(); updateOrderResults(); renderMockup(); }
-function setExtra(n) { extraSpots = n; renderSettings(); updateOrderResults(); renderPlacement(); }
+function setExtra(n) { extraSpots = n; renderSettings(); renderOrderItems(); renderPlacement(); mk.sig = ""; renderMockRows(true); }
 
 // ── Silk: Shopify / YMQ tier reference (kept from the Silk Screen calculator) ──
 let ymqOpen = false, ymqCosts = { std:7.47, x2:8.50, x3:10.56 };
@@ -1326,7 +1341,8 @@ function itemControlsHTML(it) {
     const es = it.extraSpots || 0, esz = it.extraSize || "small";
     return '<div class="pl-row">' + DTF_PL.map(p => pb("placementId", p.id, it.placementId, p.label, fmt(p.retail))).join("") + '</div>'
       + '<label class="lbl">Extra spots (sleeves, etc.)</label><div class="pl-row">' + pb("extraSpots", 0, es, "None") + pb("extraSpots", 1, es, "+1 Spot") + pb("extraSpots", 2, es, "+2 Spots")
-      + (es > 0 ? '<span class="pl-gap"></span>' + pb("extraSize", "small", esz, "Small", "$8.00") + pb("extraSize", "large", esz, "Large", "$15.00") : '') + '</div>';
+      + (es > 0 ? '<span class="pl-gap"></span>' + pb("extraSize", "small", esz, "Small", "$8.00") + pb("extraSize", "large", esz, "Large", "$15.00") : '') + '</div>'
+      + spotWhereHTML(it, es);
   }
   if (method === "v2") {
     return '<input class="oi-name" value="' + esc(it.name || "") + '" placeholder="Item name in the quote (optional)" oninput="onItemName(\'' + id + '\',this.value)">'
@@ -1347,8 +1363,8 @@ function itemControlsHTML(it) {
     }
     return kind + '<div class="pl-row">' + EMB_PL.map(p => pb("placementId", p.id, it.placementId, p.label)).join("") + '</div>'
       + '<label class="lbl">Extra spots (sleeves, etc.)</label><div class="pl-row">' + pb("extraSpots", 0, es, "None") + pb("extraSpots", 1, es, "+1 Spot", "+" + fmt(embSet.rate * 2) + " · +" + fmt(DIG_RETAIL) + " dig.") + pb("extraSpots", 2, es, "+2 Spots") + '</div>'
-      + sizesHTML(it); }
-  if (method === "silk") return sizesHTML(it);
+      + spotWhereHTML(it, es) + sizesHTML(it); }
+  if (method === "silk") return spotWhereHTML(it, extraSpots) + sizesHTML(it);
   return "";
 }
 function sizesHTML(it) {
@@ -1616,6 +1632,7 @@ const PRESETS = {
   sr: { label:"Right sleeve",     side:"rside", cx:.50, cy:.33, maxW:.14, maxH:.10 },
   sd: { label:"Cap side",         side:"side",  cx:.50, cy:.46, maxW:.24, maxH:.14 },
   cb: { label:"Cap back",         side:"back",  cx:.50, cy:.40, maxW:.22, maxH:.10 },
+  bn: { label:"Upper back",       side:"back",  cx:.50, cy:.20, maxW:.16, maxH:.08 },
 };
 const SIDE_PT = { front:"Frente", back:"Costas", side:"Lateral", rside:"Manga-direita" };
 const SIDE_EN = { front:"Front", back:"Back", side:"Side", rside:"Right sleeve" };
