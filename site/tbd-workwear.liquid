@@ -1,0 +1,546 @@
+<style>
+  .ww * { box-sizing: border-box; }
+  .ww { font-family: 'Poppins', 'Helvetica Neue', sans-serif; color: #051024; -webkit-font-smoothing: antialiased; background: #f7f7f7; }
+  .ww button { font-family: inherit; cursor: pointer; }
+  .ww button:disabled { cursor: default; opacity: .45; }
+  .ww a { color: #1a7698; }
+  .ww-hero-wrap { background: #fff; border-bottom: 1px solid #e2e2e2; padding: 0 5vw; }
+  .ww-hero { padding: 28px 0 34px; max-width: 1180px; margin: 0 auto; }
+  .ww-crumb { font-size: 13px; color: #6b7280; margin-bottom: 18px; }
+  .ww-crumb a { color: #051024; text-decoration: none; }
+  .ww-crumb a:hover { text-decoration: underline; }
+  .ww-tag { font-family: 'Montserrat', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #749a37; background: #f2f8e8; border: 1px solid #c8e49a; padding: 5px 16px; border-radius: 20px; display: inline-block; margin-bottom: 20px; }
+  .ww-h1 { font-family: 'Montserrat', 'Helvetica Neue', sans-serif; font-size: clamp(28px, 3.5vw, 40px); font-weight: 700; line-height: 1.1; letter-spacing: -.025em; margin: 0 0 14px; }
+  .ww-h1 em { font-style: italic; color: #41a9cc; font-weight: 400; }
+  .ww-sub { font-size: 15px; font-weight: 300; color: #6b7280; line-height: 1.7; margin: 0 0 20px; max-width: 760px; }
+  .ww-trust { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+  .ww-trust span { font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+  .ww-trust span::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #91bc4d; }
+  .ww-main { max-width: 1180px; margin: 0 auto; padding: 24px 5vw 56px; }
+  @media (min-width: 1300px) { .ww-main { padding-left: 0; padding-right: 0; } }
+
+  /* filters */
+  .ww-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .ww-dd { position: relative; }
+  .ww-ddbtn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 10px; border: 1.5px solid #d6dbe1; background: #fff; color: #051024; font-size: 14px; font-weight: 500; }
+  .ww-ddbtn.on { background: #051024; color: #fff; border-color: #051024; }
+  .ww-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 20; min-width: 220px; background: #fff; border: 1px solid #e6e8ec; border-radius: 12px; box-shadow: 0 10px 30px rgba(5,16,36,.12); padding: 8px; }
+  .ww-opt { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px; border: none; border-radius: 8px; background: #fff; color: #051024; font-size: 14px; text-align: left; }
+  .ww-opt.on { background: #f3f8ea; }
+  .ww-box { width: 18px; height: 18px; flex: none; border-radius: 4px; border: 1.5px solid #c9d1da; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; font-weight: 700; }
+  .ww-opt.on .ww-box { background: #051024; border-color: #051024; }
+  .ww-box.dot { border-radius: 50%; }
+  .ww-opt.on .ww-box.dot { border-color: #1a7698; box-shadow: 0 0 0 2px #fff inset; }
+  .ww-count { margin-left: auto; font-size: 14px; color: #4b5563; }
+  .ww-link { border: none; background: none; color: #1a7698; font-size: 14px; font-weight: 600; padding: 8px; }
+
+  /* catalog grid */
+  .ww-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+  .ww-card { background: #fff; border: 1px solid #e2e2e2; border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; transition: box-shadow .2s, transform .2s; }
+  .ww-card:hover { box-shadow: 0 4px 20px rgba(5,16,36,.08); transform: translateY(-2px); }
+  .ww-img { background: #f4f6f8; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+  .ww-img img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .ww-img svg { width: 62%; height: 62%; }
+  .ww-cbody { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .ww-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+  .ww-badge { font-size: 10.5px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; border-radius: 4px; padding: 3px 8px; }
+  .ww-cname { font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 700; line-height: 1.35; margin: 0; }
+  .ww-dots { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+  .ww-dots span.d { width: 16px; height: 16px; border-radius: 50%; border: 1px solid #c9d1da; }
+  .ww-dots small { font-size: 12px; color: #4b5563; }
+  .ww-from { font-size: 14px; color: #4b5563; margin-top: auto; }
+  .ww-from b { color: #051024; font-size: 17px; }
+  .ww-cta { display: block; width: 100%; text-align: center; padding: 11px; border-radius: 10px; border: none; background: #051024; color: #fff !important; text-decoration: none; font-weight: 600; font-size: 14px; }
+  .ww-cta:hover { background: #1a7698; }
+  .ww-note { font-size: 12px; color: #4b5563; margin: 16px 0 0; }
+  .ww-empty { background: #fff; border: 1px dashed #c9d1da; border-radius: 14px; padding: 32px; text-align: center; color: #4b5563; font-size: 15px; }
+
+  /* order flow */
+  .ww-steps { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
+  .ww-step { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid #d6dbe1; background: #fff; color: #051024; font-size: 13px; font-weight: 500; }
+  .ww-step i { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; font-style: normal; background: #eef1f4; color: #4b5563; }
+  .ww-step.cur { background: #051024; color: #fff; border-color: #051024; }
+  .ww-step.cur i { background: #41a9cc; color: #fff; }
+  .ww-step.done i { background: #91bc4d; color: #fff; }
+  .ww-cols { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .ww-panel { flex: 999 1 560px; min-width: 0; background: #fff; border: 1px solid #e6e8ec; border-radius: 18px; padding: 28px; }
+  .ww-aside { flex: 1 1 280px; min-width: 0; background: #fff; border: 1px solid #e6e8ec; border-radius: 18px; padding: 22px; position: sticky; top: 16px; }
+  .ww-h2 { font-family: 'Montserrat', sans-serif; font-size: 22px; font-weight: 700; letter-spacing: -.2px; margin: 0 0 4px; }
+  .ww-p { margin: 0 0 18px; color: #4b5563; font-size: 14px; }
+  .ww-q { font-weight: 600; font-size: 15px; margin: 18px 0 10px; }
+  .ww-mini { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 22px; }
+  .ww-mcard { border: 1px solid #e3e3e3; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 6px; background: #fff; text-align: left; }
+  .ww-mcard .ww-img { border-radius: 8px; }
+  .ww-mcard b { font-size: 13px; line-height: 1.3; font-weight: 600; }
+  .ww-mcard small { font-size: 12px; color: #4b5563; }
+  .ww-add { margin-top: auto; padding: 8px; border-radius: 8px; border: 1.5px solid #051024; background: #fff; color: #051024; font-weight: 600; font-size: 13px; }
+  .ww-add:hover { background: #051024; color: #fff; }
+  .ww-line { border: 1px solid #e3e3e3; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .ww-lhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .ww-lhead > div { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .ww-thumb { width: 48px; height: 48px; flex: none; border-radius: 8px; background: #f4f6f8; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .ww-thumb img { width: 100%; height: 100%; object-fit: contain; }
+  .ww-thumb svg { width: 80%; height: 80%; }
+  .ww-sw { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .ww-sw button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #d6dbe1; box-shadow: inset 0 0 0 2px #fff; padding: 0; }
+  .ww-sw button.on { border-color: #1a7698; }
+  .ww-sizes { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+  .ww-size { border: 1px solid #e3e3e3; border-radius: 8px; padding: 6px; text-align: center; }
+  .ww-size label { display: block; font-size: 12px; color: #4b5563; margin-bottom: 4px; }
+  .ww-size div { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+  .ww-size button { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #d6dbe1; background: #fff; font-size: 16px; line-height: 1; padding: 0; flex: none; }
+  .ww-size input { width: 100%; min-width: 0; border: none; text-align: center; font-weight: 600; font-size: 16px; font-family: inherit; background: transparent; -moz-appearance: textfield; padding: 0; }
+  .ww-size input::-webkit-outer-spin-button, .ww-size input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .ww-dash { border: 1.5px dashed #c9d1da; border-radius: 12px; padding: 20px; text-align: center; color: #4b5563; font-size: 14px; }
+  .ww-choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .ww-ch { text-align: left; padding: 14px 16px; border-radius: 14px; border: 2px solid #e3e3e3; background: #fff; color: #051024; }
+  .ww-ch.on { border-color: #1a7698; background: #f5fafc; }
+  .ww-ch b { display: block; font-size: 15px; margin-bottom: 3px; }
+  .ww-ch span { font-size: 13px; color: #4b5563; }
+  .ww-ch .ww-swatch { height: 46px; border-radius: 8px; margin-bottom: 10px; }
+  .ww-ch .ww-pop { display: inline-block; font-size: 10.5px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: #4f7a1f; background: #eef6e2; border-radius: 4px; padding: 3px 9px; margin-bottom: 6px; }
+  .ww-pills { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .ww-pill { padding: 9px 16px; border-radius: 999px; border: 1.5px solid #d6dbe1; background: #fff; color: #051024; font-weight: 600; font-size: 14px; }
+  .ww-pill.on { background: #051024; border-color: #051024; color: #fff; }
+  .ww-upload { width: 100%; padding: 22px; border-radius: 12px; border: 1.5px dashed #c9d1da; background: #fafbfc; color: #051024; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .ww-upload.on { border-color: #1a7698; }
+  .ww-upload img { max-height: 54px; max-width: 120px; object-fit: contain; }
+  .ww-hint { font-size: 12px; color: #1a7698; margin: -4px 0 10px; }
+  .ww-method { border-radius: 14px; background: #051024; color: #fff; padding: 18px 20px; margin-bottom: 14px; }
+  .ww-method small { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: #9fd3e6; }
+  .ww-method b { display: block; font-family: 'Montserrat', sans-serif; font-size: 24px; margin: 2px 0 4px; }
+  .ww-method p { font-size: 14px; color: #d5dee8; margin: 0; }
+  .ww-method em { display: block; font-style: normal; font-size: 13px; color: #9fd3e6; margin-top: 8px; }
+  .ww-msg { border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-bottom: 14px; }
+  .ww-msg.green { border: 1.5px solid #91bc4d; background: #f3f8ea; }
+  .ww-msg.grey { border: 1px solid #e3e3e3; background: #fafbfc; }
+  .ww-msg.red { border: 1px solid #f3c9c9; background: #fdf2f2; color: #8a1c1c; }
+  .ww-ta { width: 100%; padding: 12px; border-radius: 10px; border: 1.5px solid #c9d1da; font-family: inherit; font-size: 16px; resize: vertical; }
+  .ww-spot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border: 1px solid #e3e3e3; border-radius: 10px; margin-bottom: 8px; }
+  .ww-spot > b { font-size: 14px; min-width: 56px; }
+  .ww-spot .ww-pill { padding: 7px 12px; font-size: 13px; }
+  .ww-prevs { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .ww-prev { border: 1px solid #e3e3e3; border-radius: 12px; padding: 12px; text-align: center; }
+  .ww-pimg { position: relative; aspect-ratio: 1; background: #f4f6f8; border-radius: 8px; overflow: hidden; }
+  .ww-pimg > img, .ww-pimg > svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+  .ww-logo { position: absolute; display: flex; align-items: center; justify-content: center; }
+  .ww-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .ww-logo span { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 10px; border-radius: 3px; }
+  .ww-prev b { display: block; font-size: 13px; margin-top: 8px; }
+  .ww-prev small { display: block; font-size: 12px; color: #4b5563; }
+  .ww-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 26px; flex-wrap: wrap; }
+  .ww-btn { padding: 12px 24px; border-radius: 10px; border: none; background: #051024; color: #fff; font-weight: 600; font-size: 14px; }
+  .ww-btn.ghost { border: 1.5px solid #c9d1da; background: #fff; color: #051024; }
+  .ww-btn.pay { background: #1a7698; }
+  .ww-aside h3 { font-family: 'Montserrat', sans-serif; font-size: 17px; margin: 0 0 12px; }
+  .ww-row { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; margin-top: 6px; }
+  .ww-row b { text-align: right; }
+  .ww-sline { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
+  .ww-total { display: flex; justify-content: space-between; align-items: baseline; font-size: 15px; margin-top: 14px; padding-top: 12px; border-top: 2px solid #051024; }
+  .ww-total b { font-family: 'Montserrat', sans-serif; font-size: 24px; }
+  .ww-fine { font-size: 12px; color: #4b5563; margin-top: 8px; }
+  .ww-loading { padding: 40px; text-align: center; color: #6b7280; }
+  @media (max-width: 768px) {
+    .ww-panel { padding: 18px; }
+    .ww-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .ww-cbody { padding: 10px 12px 12px; }
+    .ww-cname { font-size: 13px; }
+    .ww-aside { position: static; }
+    .ww-count { margin-left: 0; width: 100%; }
+  }
+</style>
+
+<div class="ww" id="tbd-ww" data-api="{{ section.settings.api_url | escape }}">
+  <div class="ww-hero-wrap"><div class="ww-hero" id="ww-hero"></div></div>
+  <div class="ww-main" id="ww-app"><div class="ww-loading">Loading styles…</div></div>
+</div>
+
+{% raw %}
+<script>
+(function () {
+  var root = document.getElementById('tbd-ww'); if (!root) return;
+  var API = root.getAttribute('data-api');
+  var hero = document.getElementById('ww-hero'), app = document.getElementById('ww-app');
+
+  // ── shapes for styles without a photo ──
+  var SHAPE = {
+    'T-shirt': 'M35 12 L22 16 L8 30 L18 40 L26 34 L26 90 L74 90 L74 34 L82 40 L92 30 L78 16 L65 12 Q50 22 35 12 Z',
+    'Long sleeve': 'M35 12 L22 16 L5 56 L15 60 L26 36 L26 90 L74 90 L74 36 L85 60 L95 56 L78 16 L65 12 Q50 22 35 12 Z',
+    'Polo': 'M36 12 L22 16 L8 30 L18 40 L26 34 L26 90 L74 90 L74 34 L82 40 L92 30 L78 16 L64 12 L56 22 L50 34 L44 22 Z'
+  };
+  SHAPE['Scrub top'] = 'M34 12 L22 16 L8 30 L18 40 L26 34 L26 90 L74 90 L74 34 L82 40 L92 30 L78 16 L66 12 L50 38 Z';
+  function shapeSvg(type, hex) { return '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="' + (SHAPE[type] || SHAPE['T-shirt']) + '" fill="' + (hex || '#fff') + '" stroke="#c9d1da" stroke-width="1.2" stroke-linejoin="round"/></svg>'; }
+
+  var MAT = { 'Performance': ['#1a5f78', '#e6f4f9'], '100% cotton': ['#4f7a1f', '#eef6e2'], 'Cotton blend': ['#6b4e1f', '#f7efe2'] };
+  var FAMHEX = { White: '#ffffff', Black: '#1d1d1f', Navy: '#232c44', Blue: '#2554a6', Grey: '#9ea3a8', Red: '#b3202a', Green: '#24452f' };
+  function fam(n) {
+    n = String(n).toLowerCase();
+    if (/white|natural/.test(n)) return 'White';
+    if (/black/.test(n)) return 'Black';
+    if (/navy/.test(n)) return 'Navy';
+    if (/royal|blue|ceil|caribbean|sapphire|teal|aqua/.test(n)) return 'Blue';
+    if (/grey|gray|graphite|silver|charcoal|pewter|heather/.test(n)) return 'Grey';
+    if (/red|maroon|wine|cardinal|burgundy/.test(n)) return 'Red';
+    if (/green|forest|hunter|kelly|olive/.test(n)) return 'Green';
+    return 'Other';
+  }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function pcs(n) { return n + (n === 1 ? ' pc' : ' pcs'); }
+  function money(n) { return '$' + (+n).toFixed(2); }
+  function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+
+  // photo for a style + color + side: exact color, then a color that shares the last word (Navy ↔ Sport Dark Navy)
+  function photoFor(st, color, side) {
+    var ps = (st.photos || []).filter(function (p) { return p.side === side; });
+    if (!ps.length) return null;
+    if (!color) return ps[0];
+    var c = slug(color), last = c.split(' ').pop();
+    return ps.filter(function (p) { return slug(p.color) === c; })[0]
+      || ps.filter(function (p) { var pc = slug(p.color); return pc.split(' ').pop() === last || c.indexOf(pc) >= 0 || pc.indexOf(c) >= 0; })[0] || null;
+  }
+  function hexOf(st, color) { var c = (st.colors || []).filter(function (x) { return x.name === color; })[0]; return c ? c.hex : '#ffffff'; }
+  function imgHtml(st, color) {
+    var p = photoFor(st, color, 'front') || (color ? null : (st.photos || [])[0]);
+    return p ? '<img src="' + esc(p.url) + '" alt="' + esc(st.name + (color ? ' in ' + color : '')) + '" loading="lazy">' : shapeSvg(st.type, hexOf(st, color || (st.colors[0] || {}).name));
+  }
+
+  var DATA = null, STYLES = [], byCode = {};
+  var F = { type: [], fit: [], mat: [], fam: [], open: null };
+  var O = { step: 1, lines: [], deco: null, logo: null, logoType: null, inks: 1, placement: 'lc', sleeves: 0, otherText: '', otherSpots: ['small'], nextId: 1, quote: null, upsell: null, checkout: false };
+  var SIZES = [['XS', 'std'], ['S', 'std'], ['M', 'std'], ['L', 'std'], ['XL', 'std'], ['2XL', 'x2'], ['3XL', 'x3']];
+  var NAMES = { silk: 'Silk Screen', dtf: 'DTF Full-Color Print', emb: 'Embroidery' };
+  var PLACES = [['lc', 'Left chest'], ['lcb', 'Left chest + Full back'], ['ff', 'Full front'], ['bk', 'Full back'], ['fb', 'Front + back'], ['other', 'Other']];
+
+  // ── routing: #order opens the order flow; #order/TT11 starts it with that style ──
+  function route() {
+    var h = location.hash.replace(/^#/, '');
+    if (h.indexOf('order') === 0) {
+      var code = decodeURIComponent(h.split('/')[1] || '');
+      if (code && byCode[code] && !O.lines.some(function (l) { return l.code === code; })) addLine(code);
+      renderOrder();
+    } else renderCatalog();
+    window.scrollTo(0, root.offsetTop - 10);
+  }
+  window.addEventListener('hashchange', route);
+
+  function heroHtml(order) {
+    return '<div class="ww-crumb"><a href="/">Home</a> › ' + (order ? '<a href="#">Workwear &amp; Apparel</a> &rsaquo; Order custom shirts' : 'Workwear &amp; Apparel') + '</div>'
+      + '<span class="ww-tag">' + (order ? 'Order custom shirts' : 'Workwear &amp; Apparel') + '</span>'
+      + (order ? '<h1 class="ww-h1">Your team, your logo<br><em>ready in a few clicks.</em></h1><p class="ww-sub">Pick your shirts and upload your logo. We choose the best print method for your order and show your price right away.</p>'
+               : '<h1 class="ww-h1">Branded workwear<br><em>your team will actually wear.</em></h1><p class="ww-sub">Pick a style, add your logo and see your price right away. Printed or embroidered, we choose the best method for your order.</p>')
+      + '<div class="ww-trust"><span>Mix styles &amp; colors</span><span>From ' + DATA.minimums.dtf + ' pieces</span><span>Free shipping</span><span>Free proof before printing</span></div>';
+  }
+
+  // ════════ CATALOG ════════
+  var FDEF = [
+    { key: 'type', title: 'Style', opts: [['T-shirt', 'T-shirts'], ['Long sleeve', 'Long sleeve'], ['Polo', 'Polos'], ['Scrub top', 'Scrub tops'], ['Hoodie', 'Hoodies']] },
+    { key: 'fit', title: 'Fit', opts: [["Men's", "Men's"], ["Women's", "Women's"], ['Unisex', 'Unisex'], ['Youth', 'Youth']] },
+    { key: 'mat', title: 'Material', opts: [['Performance', 'Performance', 'moisture-wicking'], ['100% cotton', '100% cotton'], ['Cotton blend', 'Cotton blend']] },
+    { key: 'fam', title: 'Color', color: true, opts: Object.keys(FAMHEX).map(function (k) { return [k, k]; }) }
+  ];
+  function filtered() {
+    return STYLES.filter(function (s) {
+      if (F.type.length && F.type.indexOf(s.type) < 0) return false;
+      if (F.fit.length && F.fit.indexOf(s.fit) < 0) return false;
+      if (F.mat.length && F.mat.indexOf(s.material) < 0) return false;
+      if (F.fam.length && !s.colors.some(function (c) { return F.fam.indexOf(fam(c.name)) >= 0; })) return false;
+      return true;
+    });
+  }
+  function renderCatalog() {
+    hero.innerHTML = heroHtml(false);
+    var list = filtered(), any = F.type.length + F.fit.length + F.mat.length + F.fam.length;
+    var h = '<div class="ww-filters">';
+    FDEF.forEach(function (d) {
+      // only offer options that exist in the catalog
+      var opts = d.opts.filter(function (o) { return STYLES.some(function (s) { return d.key === 'type' ? s.type === o[0] : d.key === 'fit' ? s.fit === o[0] : d.key === 'mat' ? s.material === o[0] : s.colors.some(function (c) { return fam(c.name) === o[0]; }); }); });
+      if (opts.length < 2) return;
+      var sel = F[d.key], n = sel.length, names = opts.filter(function (o) { return sel.indexOf(o[0]) >= 0; }).map(function (o) { return o[1]; });
+      h += '<div class="ww-dd"><button class="ww-ddbtn' + (n ? ' on' : '') + '" data-dd="' + d.key + '" aria-expanded="' + (F.open === d.key) + '">'
+        + esc(n === 0 ? d.title : n === 1 ? d.title + ': ' + names[0] : d.title + ' (' + n + ')')
+        + '<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 L6 8 L9.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>';
+      if (F.open === d.key) {
+        h += '<div class="ww-menu">' + opts.map(function (o) {
+          var on = sel.indexOf(o[0]) >= 0;
+          return '<button class="ww-opt' + (on ? ' on' : '') + '" data-f="' + d.key + '" data-v="' + esc(o[0]) + '" aria-pressed="' + on + '">'
+            + '<span class="ww-box' + (d.color ? ' dot' : '') + '"' + (d.color ? ' style="background:' + FAMHEX[o[0]] + '"' : '') + '>' + (on && !d.color ? '✓' : '') + '</span>'
+            + '<span style="flex:1">' + esc(o[1]) + '</span><small style="color:#6b7280">' + esc(o[2] || '') + '</small></button>';
+        }).join('') + '</div>';
+      }
+      h += '</div>';
+    });
+    h += '<span class="ww-count"><b style="color:#051024">' + list.length + '</b> styles' + (any ? ' <button class="ww-link" data-clear>Clear</button>' : '') + '</span></div>';
+    if (!list.length) h += '<div class="ww-empty">No styles match these filters. <button class="ww-link" data-clear>Clear filters</button></div>';
+    h += '<div class="ww-grid">' + list.map(function (s) {
+      var shown = null;
+      if (F.fam.length) { var m = s.colors.filter(function (c) { return F.fam.indexOf(fam(c.name)) >= 0; }); if (m.length) shown = m[0].name; }
+      var mb = MAT[s.material], badges = (mb ? '<span class="ww-badge" style="color:' + mb[0] + ';background:' + mb[1] + '">' + esc(s.material) + '</span>' : '')
+        + (s.fit === "Women's" || s.fit === 'Youth' ? '<span class="ww-badge" style="color:#51406f;background:#efeafa">' + esc(s.fit) + '</span>' : '');
+      return '<article class="ww-card"><a class="ww-img" href="#order/' + encodeURIComponent(s.code) + '" tabindex="-1">' + imgHtml(s, shown) + '</a><div class="ww-cbody">'
+        + '<div class="ww-badges">' + badges + '</div><h2 class="ww-cname">' + esc(s.name) + '</h2>'
+        + '<div class="ww-dots" aria-label="Available colors">' + s.colors.slice(0, 8).map(function (c) { return '<span class="d" title="' + esc(c.name) + '" style="background:' + esc(c.hex) + '"></span>'; }).join('')
+        + (s.colors.length > 8 ? '<small>+' + (s.colors.length - 8) + '</small>' : '') + '</div>'
+        + (s.from ? '<div class="ww-from">From <b>' + money(s.from) + '</b> / piece</div>' : '<div class="ww-from"></div>')
+        + '<a class="ww-cta" href="#order/' + encodeURIComponent(s.code) + '">Customize this style</a></div></article>';
+    }).join('') + '</div>';
+    h += '<p class="ww-note">"From" price: 25+ pieces with a 1-color left chest print. Your exact price shows as you build your order.</p>';
+    app.innerHTML = h;
+  }
+
+  // ════════ ORDER ════════
+  function addLine(code) { var st = byCode[code]; O.lines.push({ id: O.nextId++, code: code, color: (st.colors[0] || {}).name || '', sizes: {} }); O.quote = null; }
+  function qtyOf(l) { return SIZES.reduce(function (a, s) { return a + (+l.sizes[s[0]] || 0); }, 0); }
+  function total() { return O.lines.reduce(function (a, l) { return a + qtyOf(l); }, 0); }
+  function method() {
+    if (O.deco === 'emb') return 'emb';
+    if (O.deco === 'print' && O.logoType) return (O.logoType === 'solid' && O.inks <= 3 && total() >= DATA.minimums.silk) ? 'silk' : 'dtf';
+    return null;
+  }
+  function orderBody(overrides) {
+    var o = { deco: O.deco === 'emb' ? 'emb' : 'print', logoType: O.logoType || 'unsure', colors: O.inks, placement: O.placement, otherSpots: O.placement === 'other' ? O.otherSpots : [], sleeves: O.sleeves,
+      items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) {
+        var q = { std: 0, x2: 0, x3: 0 }; SIZES.forEach(function (s) { q[s[1]] += +l.sizes[s[0]] || 0; });
+        return { code: l.code, color: l.color, qty: q };
+      }) };
+    for (var k in overrides || {}) o[k] = overrides[k];
+    return o;
+  }
+  var qTimer = null, qSeq = 0;
+  function requote() {
+    clearTimeout(qTimer);
+    var m = method(), t = total();
+    if (!m || !t || t < DATA.minimums[m]) { O.quote = null; O.upsell = null; renderAside(); return; }
+    qTimer = setTimeout(function () {
+      var seq = ++qSeq, body = orderBody();
+      post(body).then(function (q) {
+        if (seq !== qSeq) return; O.quote = q; renderAside();
+      });
+      // simple logo under 10 pieces: show what Silk Screen would cost at 10
+      if (m === 'dtf' && O.logoType === 'solid' && O.inks <= 3 && t < DATA.minimums.silk && body.items.length) {
+        var up = JSON.parse(JSON.stringify(body)); up.method = 'silk'; up.items[0].qty.std += DATA.minimums.silk - t;
+        post(up).then(function (q) { if (seq !== qSeq) return; O.upsell = q && !q.errors.length ? q : null; if (O.step === 4) renderPanel(); });
+      } else O.upsell = null;
+    }, 250);
+  }
+  function post(body) {
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); }).catch(function () { return null; });
+  }
+
+  function stepOk(n) {
+    var m = method(), t = total();
+    if (n === 1) return t > 0;
+    if (n === 2) return !!O.deco;
+    if (n === 3) return O.deco === 'emb' || (!!O.logo && !!O.logoType);
+    if (n === 4) return !!m && t >= DATA.minimums[m] && (O.placement !== 'other' || O.otherText.trim().length > 2);
+    return true;
+  }
+  function maxStep() { var n = 1; while (n < 5 && stepOk(n)) n++; return n; }
+  function go(n) { if (n === 3 && O.deco === 'emb') n = O.step < 3 ? 4 : 2; O.step = Math.max(1, Math.min(n, maxStep())); O.checkout = false; renderOrder(); window.scrollTo(0, app.offsetTop - 10); }
+
+  function renderOrder() { hero.innerHTML = heroHtml(true); app.innerHTML = '<nav class="ww-steps" id="ww-steps" aria-label="Order steps"></nav><div class="ww-cols"><section class="ww-panel" id="ww-panel"></section><aside class="ww-aside" id="ww-aside"></aside></div>'; renderPanel(); requote(); renderAside(); }
+  function renderSteps() {
+    var ms = maxStep();
+    document.getElementById('ww-steps').innerHTML = [['Shirts', 1], ['Look', 2], ['Logo', 3], ['Method', 4], ['Preview', 5]].map(function (x) {
+      var n = x[1], skip = n === 3 && O.deco === 'emb';
+      return '<button class="ww-step' + (O.step === n ? ' cur' : n < O.step ? ' done' : '') + '" data-go="' + n + '"' + (n > ms || skip ? ' disabled' : '') + '><i>' + n + '</i>' + x[0] + (skip ? ' (not needed)' : '') + '</button>';
+    }).join('');
+  }
+  function renderPanel() {
+    renderSteps();
+    var p = document.getElementById('ww-panel'), h = '', m = method(), t = total();
+    if (O.step === 1) {
+      h += '<h2 class="ww-h2">1. Choose your shirts</h2><p class="ww-p">Mix styles and colors. The minimum counts for the whole order, not per style.</p>';
+      if (!O.lines.length) h += '<div class="ww-dash" style="margin-bottom:16px">Add a shirt below to start your order.</div>';
+      O.lines.forEach(function (l) {
+        var st = byCode[l.code];
+        h += '<div class="ww-line"><div class="ww-lhead"><div><span class="ww-thumb">' + imgHtml(st, l.color) + '</span><div><b style="font-size:14px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small></div></div>'
+          + '<button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></div>'
+          + '<div class="ww-sw" role="group" aria-label="Color">' + st.colors.map(function (c) { return '<button class="' + (c.name === l.color ? 'on' : '') + '" style="background:' + esc(c.hex) + '" title="' + esc(c.name) + '" aria-label="' + esc(c.name) + '" data-line="' + l.id + '" data-color="' + esc(c.name) + '"></button>'; }).join('') + '</div>'
+          + '<div class="ww-sizes">' + SIZES.map(function (s) {
+            var q = +l.sizes[s[0]] || 0;
+            return '<div class="ww-size"><label for="q' + l.id + s[0] + '">' + s[0] + '</label><div><button data-line="' + l.id + '" data-dec="' + s[0] + '" aria-label="Fewer ' + s[0] + '">−</button><input id="q' + l.id + s[0] + '" type="number" inputmode="numeric" min="0" value="' + (q || '') + '" placeholder="0" data-line="' + l.id + '" data-size="' + s[0] + '"><button data-line="' + l.id + '" data-inc="' + s[0] + '" aria-label="More ' + s[0] + '">+</button></div></div>';
+          }).join('') + '</div></div>';
+      });
+      if (O.lines.length) h += '<div class="ww-q" style="margin-top:22px">Add another style</div>';
+      h += '<div class="ww-mini">' + STYLES.map(function (s) {
+        return '<div class="ww-mcard"><div class="ww-img">' + imgHtml(s) + '</div><b>' + esc(s.name) + '</b><small>' + esc([s.type, s.fit].filter(Boolean).join(' · ')) + ' · ' + s.colors.length + ' colors</small><button class="ww-add" data-add="' + esc(s.code) + '">+ Add to order</button></div>';
+      }).join('') + '</div>';
+    } else if (O.step === 2) {
+      h += '<h2 class="ww-h2">2. Printed or embroidered?</h2><p class="ww-p">Pick the look you want. We take care of the technical part.</p><div class="ww-choice">'
+        + '<button class="ww-ch' + (O.deco === 'print' ? ' on' : '') + '" data-deco="print"><b>Printed</b><span>Smooth, flat print. Great for big logos, full color and the best price per shirt.</span></button>'
+        + '<button class="ww-ch' + (O.deco === 'emb' ? ' on' : '') + '" data-deco="emb"><b>Embroidered</b><span>Stitched thread for a premium look. Best for small logos on the chest. Min ' + DATA.minimums.emb + ' pieces.</span></button></div>';
+    } else if (O.step === 3) {
+      h += '<h2 class="ww-h2">3. Your logo</h2><p class="ww-p">Upload your logo. PNG, JPG, PDF or AI.</p>'
+        + '<label class="ww-upload' + (O.logo ? ' on' : '') + '" for="ww-file">' + (O.logo ? (O.logo.url ? '<img src="' + O.logo.url + '" alt="Your logo">' : '<b>LOGO</b>') + '<span><b>' + esc(O.logo.name) + '</b><br><small style="color:#4b5563">Tap to change the file</small></span>' : '<span><b>Upload your logo</b></span>') + '</label>'
+        + '<input type="file" id="ww-file" accept=".png,.jpg,.jpeg,.pdf,.ai,.svg,.eps,image/*,application/pdf" style="position:absolute;left:-9999px">';
+      if (O.logo) {
+        h += '<div class="ww-q">What does your logo look like?</div>';
+        if (O.logo.guess) h += '<div class="ww-hint">' + esc(O.logo.guess) + ' Change it if that\'s not right.</div>';
+        h += '<div class="ww-choice">' + [
+          ['solid', 'Solid colors (up to 3)', 'Flat colors, no shading. Like most company logos.', 'linear-gradient(90deg,#051024 0 34%,#fff 34% 38%,#41a9cc 38% 72%,#fff 72% 76%,#91bc4d 76%)'],
+          ['full', 'Full color / effects', 'Gradients, shadows, photos or many colors.', 'linear-gradient(90deg,#91bc4d,#41a9cc,#b5b5f7,#f2a65a)'],
+          ['unsure', 'Not sure', 'No problem. We check your file for you.', 'repeating-linear-gradient(45deg,#eef1f4 0 8px,#e3e7ec 8px 16px)']
+        ].map(function (o) { return '<button class="ww-ch' + (O.logoType === o[0] ? ' on' : '') + '" data-lt="' + o[0] + '"><div class="ww-swatch" style="background:' + o[3] + '"></div><b>' + o[1] + '</b><span>' + o[2] + '</span></button>'; }).join('') + '</div>';
+        if (O.logoType === 'solid') h += '<div class="ww-pills" style="margin-top:14px"><span style="font-size:14px">How many colors?</span>' + [1, 2, 3].map(function (n) { return '<button class="ww-pill' + (O.inks === n ? ' on' : '') + '" data-inks="' + n + '">' + n + '</button>'; }).join('') + '</div>';
+      }
+    } else if (O.step === 4) {
+      var why = m === 'silk' ? 'Your logo has ' + O.inks + (O.inks === 1 ? ' color' : ' colors') + ' and your order has ' + t + ' pieces: screen printing gives the most durable print and the best price.'
+        : m === 'emb' ? 'Stitched directly into the shirt for a premium, long-lasting look.'
+        : O.logoType === 'full' ? 'Your logo has gradients or many colors. DTF prints it in full color with sharp detail.'
+        : O.logoType === 'unsure' ? 'DTF works with any logo, so your order is safe either way.'
+        : 'For orders under ' + DATA.minimums.silk + ' pieces, DTF is the best option for your logo.';
+      var d = DATA.days[m];
+      h += '<h2 class="ww-h2" style="margin-bottom:14px">4. Your print method</h2><div class="ww-method"><small>Best for your order</small><b>' + NAMES[m] + '</b><p>' + why + '</p><em>Production: ' + d[0] + '–' + d[1] + ' business days after artwork approval</em></div>';
+      if (O.upsell && m === 'dtf') { var add = DATA.minimums.silk - t, unitNow = O.quote && O.quote.lines.length ? O.quote.total$ / O.quote.total : 0;
+        h += '<div class="ww-msg green">Add ' + add + ' more piece' + (add === 1 ? '' : 's') + ' and your order switches to Silk Screen: about ' + money(O.upsell.total$ / O.upsell.total) + ' per piece' + (unitNow ? ' instead of ' + money(unitNow) : '') + '.</div>'; }
+      if (m === 'dtf' && O.logoType === 'unsure') h += '<div class="ww-msg grey">Not sure about your logo? No problem. We check every file before printing. If it can be screen printed, we refund the difference.</div>';
+      if (t < DATA.minimums[m]) h += '<div class="ww-msg red">' + NAMES[m] + ' needs at least ' + DATA.minimums[m] + ' pieces in the order. You have ' + t + '.</div>';
+      h += '<div class="ww-q">Where should the logo go?</div><div class="ww-choice" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">' + PLACES.filter(function (x) { return !(m === 'emb' && /^(ff|bk|fb|lcb)$/.test(x[0])); }).map(function (x) {
+        return '<button class="ww-ch' + (O.placement === x[0] ? ' on' : '') + '" data-place="' + x[0] + '" style="text-align:center">' + (x[0] === 'lcb' ? '<span class="ww-pop">Most popular</span>' : '') + '<b style="margin:0">' + x[1] + '</b></button>';
+      }).join('') + '</div>';
+      if (O.placement === 'other') {
+        h += '<label for="ww-other" class="ww-q" style="display:block;font-size:14px">Tell us where the logo goes</label><textarea id="ww-other" class="ww-ta" rows="3" placeholder="E.g. small logo on the back of the neck, name on the right chest…">' + esc(O.otherText) + '</textarea>'
+          + '<div class="ww-q" style="font-size:14px">How many places will the logo go?</div>'
+          + O.otherSpots.map(function (z, i) { return '<div class="ww-spot"><b>Spot ' + (i + 1) + '</b>' + (m === 'dtf' ? '<button class="ww-pill' + (z === 'small' ? ' on' : '') + '" data-spot="' + i + '" data-z="small">Small · up to 4×4 in</button><button class="ww-pill' + (z === 'large' ? ' on' : '') + '" data-spot="' + i + '" data-z="large">Large · bigger than 4×4 in</button>' : '') + (O.otherSpots.length > 1 ? '<button class="ww-link" style="margin-left:auto;color:#4b5563" data-rmspot="' + i + '">Remove</button>' : '') + '</div>'; }).join('')
+          + '<button class="ww-pill" data-addspot' + (O.otherSpots.length >= 4 ? ' disabled' : '') + ' style="border-style:dashed">+ Add another place</button>'
+          + '<div class="ww-fine">We\'ll check your request and confirm any price difference on WhatsApp before printing.</div>';
+      }
+      h += '<div class="ww-q">Add the logo on the sleeves?</div><div class="ww-pills">' + [[0, 'None'], [1, '1 sleeve'], [2, '2 sleeves']].map(function (x) { return '<button class="ww-pill' + (O.sleeves === x[0] ? ' on' : '') + '" data-sleeves="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>';
+    } else {
+      h += '<h2 class="ww-h2">5. Preview and pay</h2><p class="ww-p">This is a quick preview. We send a final proof for your approval before printing.</p><div class="ww-prevs">' + previews() + '</div>';
+      if (O.checkout) h += '<div class="ww-msg green" style="margin-top:16px">Almost there! Secure checkout is being connected. For now, send us a message on WhatsApp and we\'ll finish your order.</div>';
+    }
+    h += '<div class="ww-nav"><button class="ww-btn ghost" data-back' + (O.step === 1 ? ' disabled' : '') + '>Back</button>'
+      + (O.step < 5 ? '<button class="ww-btn" data-next' + (stepOk(O.step) ? '' : ' disabled') + '>Continue</button>' : '<button class="ww-btn pay" data-pay' + (O.quote ? '' : ' disabled') + '>Continue to secure checkout</button>') + '</div>';
+    p.innerHTML = h;
+  }
+
+  // logo on the real photo, at the spot saved in the calculator (or a standard spot)
+  var DEF = { lc: { cx: .63, cy: .34, maxW: .15, maxH: .12 }, ff: { cx: .5, cy: .47, maxW: .36, maxH: .38 }, fb: { cx: .5, cy: .42, maxW: .38, maxH: .40 }, sl: { cx: .5, cy: .33, maxW: .14, maxH: .10 } };
+  function view(st, color, side, spot, label) {
+    var ph = photoFor(st, color, side), pl = (ph && ph.place && ph.place[spot]) || DEF[spot], hex = hexOf(st, color);
+    var dark = !/white|natural|silver|grey|gray|light|ceil|sand|oatmeal|yellow|pink/i.test(color);
+    var logo = O.logo && O.logo.url ? '<img src="' + O.logo.url + '" alt="">' : '<span style="background:' + (dark ? '#fff' : '#051024') + ';color:' + (dark ? '#051024' : '#fff') + '">LOGO</span>';
+    var box = 'left:' + (pl.cx - pl.maxW / 2) * 100 + '%;top:' + (pl.cy - pl.maxH / 2) * 100 + '%;width:' + pl.maxW * 100 + '%;height:' + pl.maxH * 100 + '%';
+    var base = ph ? '<img src="' + esc(ph.url) + '" alt="">' : (side === 'front' ? shapeSvg(st.type, hex) : '');
+    if (!base) return '';
+    return '<div class="ww-prev"><div class="ww-pimg">' + base + '<div class="ww-logo" style="' + box + '">' + logo + '</div></div><b>' + esc(st.name) + '</b><small>' + esc(color) + ' · ' + label + '</small></div>';
+  }
+  function previews() {
+    var out = '';
+    O.lines.filter(function (l) { return qtyOf(l) > 0; }).forEach(function (l) {
+      var st = byCode[l.code], pl = O.placement;
+      var front = pl === 'lc' || pl === 'lcb' || pl === 'other' ? 'lc' : pl === 'ff' || pl === 'fb' ? 'ff' : null;
+      var back = pl === 'bk' || pl === 'fb' || pl === 'lcb';
+      if (front) out += view(st, l.color, 'front', front, 'Front' + (pl === 'other' ? ' (placement you described)' : ''));
+      if (back) out += view(st, l.color, 'back', 'fb', 'Back') || (front ? '' : view(st, l.color, 'front', 'ff', 'Back (shown on front)'));
+      if (O.sleeves) out += view(st, l.color, 'side', 'sl', O.sleeves === 1 ? 'Sleeve' : 'Sleeves (both)');
+    });
+    return out || '<div class="ww-dash">Add shirts to see the preview.</div>';
+  }
+
+  function renderAside() {
+    var a = document.getElementById('ww-aside'); if (!a) return;
+    var m = method(), t = total(), q = O.quote;
+    var h = '<h3>Your order</h3>';
+    if (!O.lines.length) h += '<div style="font-size:13px;color:#4b5563">No shirts yet.</div>';
+    O.lines.forEach(function (l) { h += '<div class="ww-sline"><span>' + esc(byCode[l.code].name) + ' · ' + esc(l.color) + '</span><b style="white-space:nowrap">' + pcs(qtyOf(l)) + '</b></div>'; });
+    var place = (PLACES.filter(function (x) { return x[0] === O.placement; })[0] || [])[1] + (O.placement === 'other' ? ' · ' + O.otherSpots.length + (O.otherSpots.length === 1 ? ' place' : ' places') : '') + (O.sleeves ? ' + ' + O.sleeves + (O.sleeves === 1 ? ' sleeve' : ' sleeves') : '');
+    h += '<div class="ww-row" style="margin-top:10px"><span>Total pieces</span><b>' + t + '</b></div>'
+      + '<div class="ww-row"><span>Method</span><b>' + (m ? NAMES[m] : '—') + '</b></div>'
+      + (O.step >= 4 ? '<div class="ww-row"><span>Logo</span><b>' + esc(place) + '</b></div>' : '')
+      + '<div class="ww-row"><span>Per piece</span><b>' + (q && q.total ? money(q.subtotal / q.total) + ' avg' : '—') + '</b></div>'
+      + (m ? '<div class="ww-row"><span>Production</span><b>' + DATA.days[m][0] + '–' + DATA.days[m][1] + ' business days</b></div>' : '')
+      + (q && q.setup ? '<div class="ww-row"><span>' + (m === 'emb' ? 'Digitizing (one-time)' : 'Screen setup (one-time)') + '</span><b>' + money(q.setup) + '</b></div>' : '')
+      + '<div class="ww-total"><span>Total</span><b>' + (q ? money(q.total$) : '—') + '</b></div>'
+      + '<div class="ww-fine">Free shipping.' + (!m ? ' Your price shows after you tell us about your logo.' : '') + '</div>';
+    a.innerHTML = h;
+  }
+
+  // ── logo: read the file; for images, guess how many colors it has ──
+  function readLogo(file) {
+    O.logo = { name: file.name, url: null, guess: '' };
+    if (!/^image\/(png|jpe?g|svg\+xml|webp|gif)$/.test(file.type)) { O.logoType = O.logoType || 'unsure'; renderPanel(); return; }
+    var fr = new FileReader();
+    fr.onload = function () {
+      O.logo.url = fr.result;
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var c = document.createElement('canvas'), W = 120, H = Math.max(1, Math.round(120 * img.height / img.width));
+          c.width = W; c.height = H; var x = c.getContext('2d'); x.drawImage(img, 0, 0, W, H);
+          var d = x.getImageData(0, 0, W, H).data, buckets = {}, n = 0;
+          for (var i = 0; i < d.length; i += 4) {
+            if (d[i + 3] < 128) continue;
+            var r = d[i], g = d[i + 1], b = d[i + 2];
+            if (r > 240 && g > 240 && b > 240) continue; // background white
+            var k = (r >> 5) + '-' + (g >> 5) + '-' + (b >> 5); buckets[k] = (buckets[k] || 0) + 1; n++;
+          }
+          var main = Object.keys(buckets).filter(function (k) { return buckets[k] > n * 0.04; });
+          var covered = main.reduce(function (s, k) { return s + buckets[k]; }, 0) / (n || 1);
+          if (n && main.length <= 3 && covered > 0.85) { O.logoType = 'solid'; O.inks = Math.max(1, main.length); O.logo.guess = 'We checked your file: it looks like ' + O.inks + ' solid color' + (O.inks === 1 ? '' : 's') + '.'; }
+          else if (n) { O.logoType = 'full'; O.logo.guess = 'We checked your file: it looks like it has many colors or effects.'; }
+        } catch (e) {}
+        renderPanel(); requote();
+      };
+      img.src = fr.result;
+    };
+    fr.readAsDataURL(file);
+  }
+
+  // ── events ──
+  function lineById(id) { return O.lines.filter(function (l) { return String(l.id) === String(id); })[0]; }
+  app.addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b || !app.contains(b)) { if (F.open) { F.open = null; renderCatalog(); } return; }
+    var ds = b.dataset;
+    if (ds.dd) { F.open = F.open === ds.dd ? null : ds.dd; renderCatalog(); return; }
+    if (ds.f) { var a = F[ds.f], i = a.indexOf(ds.v); if (i >= 0) a.splice(i, 1); else a.push(ds.v); renderCatalog(); return; }
+    if ('clear' in ds) { F.type = []; F.fit = []; F.mat = []; F.fam = []; F.open = null; renderCatalog(); return; }
+    if (ds.add) { addLine(ds.add); renderPanel(); requote(); var ls = app.querySelectorAll('.ww-line'); if (ls.length) ls[ls.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if (ds.rm) { O.lines = O.lines.filter(function (l) { return String(l.id) !== ds.rm; }); renderPanel(); requote(); return; }
+    if (ds.color) { lineById(ds.line).color = ds.color; renderPanel(); requote(); return; }
+    if (ds.inc || ds.dec) { var l = lineById(ds.line), s = ds.inc || ds.dec; l.sizes[s] = Math.max(0, (+l.sizes[s] || 0) + (ds.inc ? 1 : -1)); renderPanel(); requote(); return; }
+    if (ds.deco) { O.deco = ds.deco; if (ds.deco === 'emb' && /^(ff|bk|fb|lcb)$/.test(O.placement)) O.placement = 'lc'; renderPanel(); requote(); return; }
+    if (ds.lt) { O.logoType = ds.lt; renderPanel(); requote(); return; }
+    if (ds.inks) { O.inks = +ds.inks; renderPanel(); requote(); return; }
+    if (ds.place) { O.placement = ds.place; renderPanel(); requote(); return; }
+    if (ds.sleeves != null) { O.sleeves = +ds.sleeves; renderPanel(); requote(); return; }
+    if (ds.spot != null) { O.otherSpots[+ds.spot] = ds.z; renderPanel(); requote(); return; }
+    if (ds.rmspot != null) { O.otherSpots.splice(+ds.rmspot, 1); renderPanel(); requote(); return; }
+    if ('addspot' in ds) { O.otherSpots.push('small'); renderPanel(); requote(); return; }
+    if (ds.go) { go(+ds.go); return; }
+    if ('next' in ds) { var n = O.step + 1; if (n === 3 && O.deco === 'emb') n = 4; go(n); return; }
+    if ('back' in ds) { var n2 = O.step - 1; if (n2 === 3 && O.deco === 'emb') n2 = 2; go(n2); return; }
+    if ('pay' in ds) { O.checkout = true; renderPanel(); return; }
+  });
+  app.addEventListener('change', function (e) {
+    if (e.target.id === 'ww-file' && e.target.files[0]) readLogo(e.target.files[0]);
+  });
+  app.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t.dataset.size) { var ln = lineById(t.dataset.line); ln.sizes[t.dataset.size] = Math.max(0, parseInt(t.value, 10) || 0); requote(); renderSteps();
+      var pc = document.getElementById('pcs' + ln.id); if (pc) pc.textContent = ln.color + ' · ' + pcs(qtyOf(ln));
+      var nb = app.querySelector('[data-next]'); if (nb) nb.disabled = !stepOk(O.step); }
+    if (t.id === 'ww-other') { O.otherText = t.value; var nb2 = app.querySelector('[data-next]'); if (nb2) nb2.disabled = !stepOk(O.step); renderSteps(); }
+  });
+  document.addEventListener('click', function (e) { if (F.open && e.composedPath().indexOf(root) < 0) { F.open = null; renderCatalog(); } });
+
+  fetch(API).then(function (r) { return r.json(); }).then(function (d) {
+    DATA = d; STYLES = d.styles || [];
+    STYLES.forEach(function (s) { s.name = s.name.split(' ').filter(function (w) { return w.toUpperCase() !== s.code.toUpperCase(); }).join(' '); byCode[s.code] = s; });
+    route();
+  }).catch(function () { app.innerHTML = '<div class="ww-empty">We couldn\'t load the styles right now. Please refresh the page or message us on WhatsApp.</div>'; });
+})();
+</script>
+{% endraw %}
+
+{% schema %}
+{
+  "name": "TBD Workwear",
+  "settings": [
+    { "type": "text", "id": "api_url", "label": "Pricing service URL", "default": "https://fipimpagtmdhuznclqdn.supabase.co/functions/v1/apparel-quote" }
+  ],
+  "presets": [{ "name": "TBD Workwear" }]
+}
+{% endschema %}
