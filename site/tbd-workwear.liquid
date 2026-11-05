@@ -83,7 +83,7 @@
   .ww-add { margin-top: auto; padding: 8px; border-radius: 8px; border: 1.5px solid #051024; background: #fff; color: #051024; font-weight: 600; font-size: 13px; }
   .ww-add:hover { background: #051024; color: #fff; }
   .ww-line { border: 1px solid #e3e3e3; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
-  .ww-lhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .ww-lhead { display: flex; justify-content: space-between; align-items: center; gap: 6px 12px; margin-bottom: 10px; flex-wrap: wrap; }
   .ww-lhead > div { display: flex; align-items: center; gap: 10px; min-width: 0; }
   .ww-thumb { width: 48px; height: 48px; flex: none; border-radius: 8px; background: #fff; border: 1px solid #eee; overflow: hidden; display: flex; align-items: center; justify-content: center; }
   .ww-thumb img { width: 100%; height: 100%; object-fit: contain; }
@@ -148,6 +148,14 @@
   .ww-chart { background: #fff; border-radius: 12px; padding: 16px; max-width: min(92vw, 900px); max-height: 88vh; overflow: auto; text-align: center; }
   .ww-chart b { display: block; font-family: 'Montserrat', sans-serif; font-size: 15px; margin-bottom: 10px; }
   .ww-chart img { max-width: 100%; height: auto; }
+  .ww-chart { cursor: default; }
+  .ww-tbl { overflow-x: auto; }
+  .ww-tbl table { border-collapse: collapse; font-size: 14px; min-width: 100%; }
+  .ww-tbl th, .ww-tbl td { padding: 9px 12px; text-align: center; border-bottom: 1px solid #eceef1; white-space: nowrap; }
+  .ww-tbl thead th { background: #051024; color: #fff; font-family: 'Montserrat', sans-serif; font-size: 13px; }
+  .ww-tbl tbody th { text-align: left; font-weight: 600; color: #051024; position: sticky; left: 0; background: #fff; }
+  .ww-tbl tbody tr:nth-child(even) td, .ww-tbl tbody tr:nth-child(even) th { background: #f7f8fa; }
+  .ww-tnote { display: block; margin-top: 10px; color: #6b7280; font-size: 12px; text-align: left; }
   .ww-zoom-x { position: absolute; top: 14px; right: 18px; color: #fff; font-size: 34px; line-height: 1; background: none; border: none; }
   .ww-prev b { display: block; font-size: 13px; margin-top: 8px; }
   .ww-prev small { display: block; font-size: 12px; color: #4b5563; }
@@ -169,6 +177,10 @@
     .ww-cbody { padding: 10px 12px 12px; }
     .ww-cname { font-size: 13px; }
     .ww-aside { position: static; }
+    .ww-tbl table { font-size: 13px; }
+    .ww-tbl th, .ww-tbl td { padding: 8px 9px; }
+    .ww-tbl tbody th { white-space: normal; min-width: 96px; }
+    .ww-chart { padding: 14px 10px; }
     .ww-mini, .ww-mini.few { grid-template-columns: 1fr 1fr; }
     .ww-more { grid-column: 1 / -1; flex-direction: row; gap: 14px; }
     .ww-morebtn { flex-direction: row; gap: 8px; white-space: nowrap; }
@@ -311,7 +323,7 @@
         + '<div class="ww-badges">' + badges + '</div><h2 class="ww-cname">' + esc(s.name) + '</h2>'
         + '<div class="ww-dots" aria-label="Available colors">' + s.colors.slice(0, 8).map(function (c) { return '<span class="d" title="' + esc(c.name) + '" style="background:' + esc(c.hex) + '"></span>'; }).join('')
         + (s.colors.length > 8 ? '<small>+' + (s.colors.length - 8) + '</small>' : '') + '</div>'
-        + (s.sizeChart ? '<button class="ww-link" style="padding:0;font-size:13px;text-align:left" data-chart="' + esc(s.code) + '">Size chart</button>' : '')
+        + (s.sizeChart || s.sizeTable ? '<button class="ww-link" style="padding:0;font-size:13px;text-align:left" data-chart="' + esc(s.code) + '">Size chart</button>' : '')
         + (s.from ? '<div class="ww-from">From <b>' + money(s.from) + '</b> / piece</div>' : '<div class="ww-from"></div>')
         + '<a class="ww-cta" href="#order/' + encodeURIComponent(s.code) + '">Customize this style</a></div></article>';
     }).join('') + '</div>';
@@ -390,8 +402,16 @@
       return (n > 1 ? '<span class="ww-sep" aria-hidden="true">›</span>' : '') + '<button class="ww-step' + (O.step === n ? ' cur' : n < O.step ? ' done' : '') + '" data-go="' + n + '"' + (n > ms || skip ? ' disabled' : '') + '><i>' + n + '</i><span class="ww-lbl">' + x[0] + '</span></button>';
     }).join('');
   }
+  // sizes this style comes in (from its size table); the site sells XS–3XL
+  function sizeTableHtml(st) {
+    var t = st.sizeTable, keep = t.cols.map(function (c, i) { return SIZES.some(function (s) { return s[0] === c; }) ? i : -1; }).filter(function (i) { return i >= 0; });
+    return '<div class="ww-tbl"><table><thead><tr><th></th>' + keep.map(function (i) { return '<th>' + esc(t.cols[i]) + '</th>'; }).join('') + '</tr></thead><tbody>'
+      + t.rows.map(function (r) { return '<tr><th>' + esc(r.label) + '</th>' + keep.map(function (i) { return '<td>' + esc(r.values[i]) + '</td>'; }).join('') + '</tr>'; }).join('')
+      + '</tbody></table></div><small class="ww-tnote">Measurements in inches. Lay a shirt you like flat and compare.</small>';
+  }
+  function sizesFor(code) { var t = (byCode[code] || {}).sizeTable; return t && t.cols ? SIZES.filter(function (s) { return t.cols.indexOf(s[0]) >= 0; }) : SIZES; }
   function sizesHtml(l) {
-    return '<div class="ww-sizes">' + SIZES.map(function (s) {
+    return '<div class="ww-sizes">' + sizesFor(l.code).map(function (s) {
       var q = +l.sizes[s[0]] || 0;
       return '<div class="ww-size"><label for="q' + l.id + s[0] + '">' + s[0] + '</label><div><button data-line="' + l.id + '" data-dec="' + s[0] + '" aria-label="Fewer ' + s[0] + '">−</button><input id="q' + l.id + s[0] + '" type="number" inputmode="numeric" min="0" value="' + (q || '') + '" placeholder="0" data-line="' + l.id + '" data-size="' + s[0] + '"><button data-line="' + l.id + '" data-inc="' + s[0] + '" aria-label="More ' + s[0] + '">+</button></div></div>';
     }).join('') + '</div>';
@@ -412,7 +432,7 @@
       O.lines.forEach(function (l) {
         var st = byCode[l.code];
         h += '<div class="ww-line"><div class="ww-lhead"><div><span class="ww-thumb">' + imgHtml(st, l.color) + '</span><div><b style="font-size:14px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small></div></div>'
-          + '<span style="white-space:nowrap">' + (st.sizeChart ? '<button class="ww-link" data-chart="' + esc(st.code) + '">Size chart</button>' : '') + '<button class="ww-link" data-dup="' + l.id + '">+ Another color</button><button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></span></div>'
+          + '<span style="white-space:nowrap">' + (st.sizeChart || st.sizeTable ? '<button class="ww-link" data-chart="' + esc(st.code) + '">Size chart</button>' : '') + '<button class="ww-link" data-dup="' + l.id + '">+ Another color</button><button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></span></div>'
           + '<div class="ww-sw" role="group" aria-label="Color">' + st.colors.map(function (c) { return '<button class="' + (c.name === l.color ? 'on' : '') + '" style="background:' + esc(c.hex) + '" title="' + esc(c.name) + '" aria-label="' + esc(c.name) + '" data-line="' + l.id + '" data-color="' + esc(c.name) + '"></button>'; }).join('') + '</div>'
           + sizesHtml(l) + '</div>';
       });
@@ -618,7 +638,7 @@
   app.addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b || !app.contains(b)) { if (F.open) { F.open = null; renderCatalog(); } return; }
     var ds = b.dataset;
-    if (ds.chart) { var cs = byCode[ds.chart]; if (cs && cs.sizeChart) openZoom('<div class="ww-chart"><b>' + esc(cs.name) + ' · size chart</b><img src="' + esc(cs.sizeChart) + '" alt="Size chart for ' + esc(cs.name) + '"></div>'); return; }
+    if (ds.chart) { var cs = byCode[ds.chart]; if (cs && (cs.sizeTable || cs.sizeChart)) openZoom('<div class="ww-chart" onclick="event.stopPropagation()"><b>' + esc(cs.name) + ' · size chart</b>' + (cs.sizeTable ? sizeTableHtml(cs) : '<img src="' + esc(cs.sizeChart) + '" alt="Size chart for ' + esc(cs.name) + '">') + '</div>'); return; }
     if (ds.dd) { F.open = F.open === ds.dd ? null : ds.dd; renderCatalog(); return; }
     if (ds.f) { var a = F[ds.f], i = a.indexOf(ds.v); if (i >= 0) a.splice(i, 1); else a.push(ds.v); renderCatalog(); return; }
     if ('clear' in ds) { F.type = []; F.fit = []; F.mat = []; F.fam = []; F.open = null; renderCatalog(); return; }

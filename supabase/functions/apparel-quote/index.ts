@@ -76,6 +76,7 @@ async function catalog() {
       photos: pics.filter((p: any) => p.meta.code === s.key && signed[p.key + ".img"])
         .map((p: any) => ({ color: p.meta.color, side: p.meta.side, url: signed[p.key + ".img"], place: p.meta.place || {} })),
       sizeChart: d.sizeChart && signed[d.sizeChart] ? signed[d.sizeChart] : null,
+      sizeTable: d.sizeTable || null,
       from,
     };
   }).filter(Boolean);
