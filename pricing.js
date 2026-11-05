@@ -96,7 +96,9 @@
   }
 
   // ── Whole order, as the website and the agent send it ──
-  // order = { method?, deco, logoType, colors, mixedShades?, placement: lc|lcb|ff|bk|fb|other, otherSpots: ["small"|"large",…], sleeves: 0|1|2,
+  // reorderSpots: on a reorder with the same artwork, how many of the logo places were already set up before
+  //   (no screens / digitizing charged again for those; new places are charged).
+  // order = { method?, deco, logoType, colors, mixedShades?, reorderSpots?, placement: lc|lcb|ff|bk|fb|other, otherSpots: ["small"|"large",…], sleeves: 0|1|2,
   //           items: [{ code, color, qty: { std, x2, x3 } }] }
   // products = { silk: {CODE: product}, dtf: {...}, emb: {...} } (from the database)
   const SITE_PLACE = {
@@ -162,8 +164,11 @@
         out.subtotal += r.perPiece * q; out.cost += r.unitCost * q;
       });
     });
-    if (method === "silk") { const colors = Math.max(1, Math.min(3, +order.colors || 1)); out.setup = silkSetup(colors, spotsForSetup, C); out.setupLabel = "Screen setup"; }
-    if (method === "emb") { out.setup = spotsForSetup * C.emb.digRetail; out.cost += spotsForSetup * C.emb.digCost; out.setupLabel = "Digitizing"; }
+    const covered = Math.max(0, Math.min(spotsForSetup, Math.floor(+order.reorderSpots || 0)));
+    const newSpots = spotsForSetup - covered;
+    if (method === "silk") { const colors = Math.max(1, Math.min(3, +order.colors || 1)); out.setup = silkSetup(colors, newSpots, C); out.setupLabel = "Screen setup"; }
+    if (method === "emb") { out.setup = newSpots * C.emb.digRetail; out.cost += newSpots * C.emb.digCost; out.setupLabel = "Digitizing"; }
+    if (covered) out.reorderSpots = covered;
     out.subtotal = Math.round(out.subtotal * 100) / 100;
     out.total$ = Math.round((out.subtotal + out.setup) * 100) / 100;
     out.cost = Math.round(out.cost * 100) / 100;
