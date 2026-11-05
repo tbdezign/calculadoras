@@ -144,8 +144,12 @@
   .ww-msg.red { border: 1px solid #f3c9c9; background: #fdf2f2; color: #8a1c1c; }
   .ww-ta { width: 100%; padding: 12px; border-radius: 10px; border: 1.5px solid #c9d1da; font-family: inherit; font-size: 16px; resize: vertical; }
   .ww-spot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border: 1px solid #e3e3e3; border-radius: 10px; margin-bottom: 8px; }
-  .ww-spot > b { font-size: 14px; min-width: 56px; }
+  .ww-spot > b { font-size: 14px; min-width: 96px; }
   .ww-spot .ww-pill { padding: 7px 12px; font-size: 13px; }
+  .ww-xup { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border: 1.5px dashed #c9d1da; border-radius: 999px; font-size: 13px; cursor: pointer; background: #fafbfc; max-width: 100%; }
+  .ww-xup.on { border-style: solid; border-color: #1a7698; }
+  .ww-xup span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
+  .ww-xup img { height: 26px; max-width: 60px; object-fit: contain; border-radius: 4px; background: #9aa3ad repeating-conic-gradient(#b8c0c8 0 25%, #9aa3ad 0 50%) 0 0 / 10px 10px; }
   .ww-prevs { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
   .ww-prev { border: 1px solid #e3e3e3; border-radius: 12px; padding: 12px; text-align: center; }
   .ww-pimg { position: relative; aspect-ratio: 1; background: #fff; border-radius: 8px; overflow: hidden; }
@@ -268,7 +272,7 @@
 
   var DATA = null, STYLES = [], byCode = {};
   var F = { type: [], fit: [], mat: [], fam: [], open: null };
-  var O = { reorder: false, reorderNo: '', step: 1, lines: [], deco: null, logo: null, logoType: null, inks: 1, placement: 'lc', sleeves: 0, otherText: '', otherSpots: ['small'], nextId: 1, quote: null, upsell: null, checkout: false };
+  var O = { reorder: false, reorderNo: '', step: 1, lines: [], deco: null, logo: null, logoType: null, inks: 1, placement: 'lc', sleeves: 0, otherText: '', otherSpots: ['small'], xlogo: {}, nextId: 1, quote: null, upsell: null, checkout: false };
   var SIZES = [['2XS', 'std'], ['XS', 'std'], ['S', 'std'], ['M', 'std'], ['L', 'std'], ['XL', 'std'], ['2XL', 'x2'], ['3XL', 'x3']];
   var NAMES = { silk: 'Silk Screen', dtf: 'DTF Full-Color Print', emb: 'Embroidery' };
   var PLACES = [['lc', 'Left chest'], ['lcb', 'Left chest + Full back'], ['ff', 'Full front'], ['bk', 'Full back'], ['fb', 'Front + back'], ['other', 'Other']];
@@ -370,8 +374,20 @@
     if (O.deco === 'print' && O.logoType) return silkFits() && !mixedShades() ? 'silk' : 'dtf';
     return null;
   }
+  // Extra spots (sleeves, more spots) can carry the same logo or a different one.
+  // Embroidery: each different logo has its own digitizing; the same logo in more spots is digitized once.
+  function extraSpots() {
+    var k = [];
+    if (O.placement === 'other') for (var i = 1; i < O.otherSpots.length; i++) k.push(['o' + i, 'Spot ' + (i + 1)]);
+    if (O.sleeves === 1) k.push(['sl', 'Sleeve']);
+    if (O.sleeves === 2) { k.push(['sr', 'Right sleeve']); k.push(['sl', 'Left sleeve']); }
+    return k;
+  }
+  function xl(key) { return O.xlogo[key] || (O.xlogo[key] = { diff: false, logo: null }); }
+  function newLogos() { return extraSpots().filter(function (k) { return xl(k[0]).diff; }).length; }
+  function logoFor(key) { var x = key && O.xlogo[key]; return x && x.diff ? x.logo : O.logo; }
   function orderBody(overrides) {
-    var o = { deco: O.deco === 'emb' ? 'emb' : 'print', logoType: O.logoType || 'unsure', colors: O.inks, mixedShades: mixedShades(), reorder: (method() === 'silk' || method() === 'emb') && O.reorder, reorderNo: O.reorder ? O.reorderNo : '', placement: O.placement, otherSpots: O.placement === 'other' ? O.otherSpots : [], sleeves: O.sleeves,
+    var o = { deco: O.deco === 'emb' ? 'emb' : 'print', logoType: O.logoType || 'unsure', colors: O.inks, mixedShades: mixedShades(), reorder: (method() === 'silk' || method() === 'emb') && O.reorder, reorderNo: O.reorder ? O.reorderNo : '', placement: O.placement, otherSpots: O.placement === 'other' ? O.otherSpots : [], sleeves: O.sleeves, newLogos: newLogos(),
       items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) {
         var q = { std: 0, x2: 0, x3: 0 }; SIZES.forEach(function (s) { q[s[1]] += +l.sizes[s[0]] || 0; });
         return { code: l.code, color: l.color, qty: q };
@@ -407,7 +423,7 @@
     if (n === 1) return t > 0;
     if (n === 2) return !!O.deco;
     if (n === 3) return !!O.logo && (O.deco === 'emb' || O.logoType === 'unsure' || (!!O.logoType && O.confirmed));
-    if (n === 4) return !!m && t >= DATA.minimums[m] && (O.placement !== 'other' || O.otherText.trim().length > 2);
+    if (n === 4) return !!m && t >= DATA.minimums[m] && (O.placement !== 'other' || O.otherText.trim().length > 2) && extraSpots().every(function (k) { var x = xl(k[0]); return !x.diff || !!x.logo; });
     return true;
   }
   function maxStep() { var n = 1; while (n < 5 && stepOk(n)) n++; return n; }
@@ -518,7 +534,18 @@
           + '<button class="ww-pill" data-addspot' + (O.otherSpots.length >= 4 ? ' disabled' : '') + ' style="border-style:dashed">+ Add another spot</button>'
           + '<div class="ww-fine">We\'ll check your request and confirm any price difference on WhatsApp before printing.</div>';
       }
-      h += '<div class="ww-q">Add the logo on the sleeves?</div><div class="ww-pills">' + [[0, 'None'], [1, '1 sleeve'], [2, '2 sleeves']].map(function (x) { return '<button class="ww-pill' + (O.sleeves === x[0] ? ' on' : '') + '" data-sleeves="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>';
+      h += '<div class="ww-q">Add a logo on the sleeves?</div><div class="ww-pills">' + [[0, 'None'], [1, '1 sleeve'], [2, '2 sleeves']].map(function (x) { return '<button class="ww-pill' + (O.sleeves === x[0] ? ' on' : '') + '" data-sleeves="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>';
+      var xs = extraSpots();
+      if (xs.length) {
+        h += '<div class="ww-q" style="font-size:14px">Which logo goes there?</div>' + xs.map(function (k) {
+          var x = xl(k[0]);
+          return '<div class="ww-spot"><b>' + k[1] + '</b><button class="ww-pill' + (!x.diff ? ' on' : '') + '" data-xl="' + k[0] + '" data-v="0">Same logo</button><button class="ww-pill' + (x.diff ? ' on' : '') + '" data-xl="' + k[0] + '" data-v="1">A different logo</button>'
+            + (x.diff ? '<label class="ww-xup' + (x.logo ? ' on' : '') + '" for="ww-x-' + k[0] + '">' + (x.logo && x.logo.url ? '<img src="' + x.logo.url + '" alt="">' : '') + '<span>' + (x.logo ? esc(x.logo.name) : 'Upload this logo') + '</span></label><input type="file" id="ww-x-' + k[0] + '" data-xfile="' + k[0] + '" accept="image/*,.pdf,.ai,.eps,.svg" hidden>' : '') + '</div>';
+        }).join('');
+        if (m === 'emb') h += '<div class="ww-fine">The same logo in more spots is digitized only once. Each different logo has its own one-time digitizing fee.</div>';
+        else if (newLogos()) h += '<div class="ww-fine">Your price uses the color count of your main logo. If another logo needs more colors, we\'ll confirm before printing.</div>';
+        if (xs.some(function (k) { var x = xl(k[0]); return x.diff && !x.logo; })) h += '<div class="ww-fine" style="color:#b45309">Upload each different logo to continue.</div>';
+      }
       if (m === 'silk' || m === 'emb') {
         var setupWord = m === 'silk' ? 'screen setup' : 'digitizing';
         h += '<div class="ww-q">Is this a reorder?</div><div class="ww-pills"><button class="ww-pill' + (!O.reorder ? ' on' : '') + '" data-reorder="0">No, new order</button><button class="ww-pill' + (O.reorder ? ' on' : '') + '" data-reorder="1">Yes, same artwork as before</button></div>';
@@ -539,10 +566,11 @@
 
   // logo on the real photo, at the spot saved in the calculator (or a standard spot)
   var DEF = { lc: { cx: .63, cy: .34, maxW: .15, maxH: .12 }, ff: { cx: .5, cy: .47, maxW: .36, maxH: .38 }, fb: { cx: .5, cy: .42, maxW: .38, maxH: .40 }, sl: { cx: .5, cy: .33, maxW: .14, maxH: .10 } };
-  function view(st, color, side, spot, label) {
+  function view(st, color, side, spot, label, lg) {
     var ph = photoFor(st, color, side), pl = (ph && ph.place && ph.place[spot]) || DEF[spot], hex = hexOf(st, color);
     var dark = !/white|natural|silver|grey|gray|light|ceil|sand|oatmeal|yellow|pink/i.test(color);
-    var logo = O.logo && O.logo.url ? '<img src="' + O.logo.url + '" alt="">' : '<span style="background:' + (dark ? '#fff' : '#051024') + ';color:' + (dark ? '#051024' : '#fff') + '">LOGO</span>';
+    lg = lg || O.logo;
+    var logo = lg && lg.url ? '<img src="' + lg.url + '" alt="">' : '<span style="background:' + (dark ? '#fff' : '#051024') + ';color:' + (dark ? '#051024' : '#fff') + '">LOGO</span>';
     var box = 'left:' + (pl.cx - pl.maxW / 2) * 100 + '%;top:' + (pl.cy - pl.maxH / 2) * 100 + '%;width:' + pl.maxW * 100 + '%;height:' + pl.maxH * 100 + '%';
     var base = ph ? '<img src="' + esc(ph.url) + '" alt="" crossorigin="anonymous">' : (side === 'front' ? shapeSvg(st.type, hex) : '');
     if (!base) return '';
@@ -587,7 +615,11 @@
       var back = pl === 'bk' || pl === 'fb' || pl === 'lcb';
       if (front) out += view(st, l.color, 'front', front, 'Front' + (pl === 'other' ? ' (placement you described)' : ''));
       if (back) out += view(st, l.color, 'back', 'fb', 'Back') || (front ? '' : view(st, l.color, 'front', 'ff', 'Back (shown on front)'));
-      if (O.sleeves) out += view(st, l.color, 'side', 'sl', O.sleeves === 1 ? 'Sleeve' : 'Sleeves (both)');
+      if (O.sleeves === 1) out += view(st, l.color, 'side', 'sl', 'Sleeve', logoFor('sl'));
+      if (O.sleeves === 2) {
+        if (logoFor('sr') === logoFor('sl')) out += view(st, l.color, 'side', 'sl', 'Sleeves (both)', logoFor('sl'));
+        else out += view(st, l.color, 'side', 'sl', 'Right sleeve', logoFor('sr')) + view(st, l.color, 'side', 'sl', 'Left sleeve', logoFor('sl'));
+      }
     });
     return out || '<div class="ww-dash">Add shirts to see the preview.</div>';
   }
@@ -598,7 +630,7 @@
     var h = '<h3>Your order</h3>';
     if (!O.lines.length) h += '<div style="font-size:13px;color:#4b5563">No shirts yet.</div>';
     O.lines.forEach(function (l) { h += '<div class="ww-sline"><span>' + esc(byCode[l.code].name) + ' · ' + esc(l.color) + '</span><b style="white-space:nowrap">' + pcs(qtyOf(l)) + '</b></div>'; });
-    var place = (PLACES.filter(function (x) { return x[0] === O.placement; })[0] || [])[1] + (O.placement === 'other' ? ' · ' + O.otherSpots.length + (O.otherSpots.length === 1 ? ' spot' : ' spots') : '') + (O.sleeves ? ' + ' + O.sleeves + (O.sleeves === 1 ? ' sleeve' : ' sleeves') : '');
+    var place = (PLACES.filter(function (x) { return x[0] === O.placement; })[0] || [])[1] + (O.placement === 'other' ? ' · ' + O.otherSpots.length + (O.otherSpots.length === 1 ? ' spot' : ' spots') : '') + (O.sleeves ? ' + ' + O.sleeves + (O.sleeves === 1 ? ' sleeve' : ' sleeves') : '') + (newLogos() ? ' · ' + (1 + newLogos()) + ' logos' : '');
     h += '<div class="ww-row" style="margin-top:10px"><span>Total pieces</span><b>' + t + '</b></div>'
       + '<div class="ww-row"><span>Method</span><b>' + (m ? NAMES[m] : '—') + '</b></div>'
       + (O.step >= 4 ? '<div class="ww-row"><span>Logo</span><b>' + esc(place) + '</b></div>' : '')
@@ -682,6 +714,7 @@
     if (ds.inks) { O.inks = +ds.inks; O.confirmed = false; renderPanel(); requote(); return; }
     if (ds.place) { O.placement = ds.place; renderPanel(); requote(); return; }
     if (ds.sleeves != null) { O.sleeves = +ds.sleeves; renderPanel(); requote(); return; }
+    if (ds.xl != null) { xl(ds.xl).diff = ds.v === '1'; renderPanel(); requote(); return; }
     if (ds.spot != null) { O.otherSpots[+ds.spot] = ds.z; renderPanel(); requote(); return; }
     if (ds.rmspot != null) { O.otherSpots.splice(+ds.rmspot, 1); renderPanel(); requote(); return; }
     if ('addspot' in ds) { O.otherSpots.push('small'); renderPanel(); requote(); return; }
@@ -709,6 +742,10 @@
   app.addEventListener('change', function (e) {
     if (e.target.id === 'ww-conf') { O.confirmed = e.target.checked; renderSteps(); var nb = app.querySelector('[data-next]'); if (nb) nb.disabled = !stepOk(O.step); }
     if (e.target.id === 'ww-file' && e.target.files[0]) readLogo(e.target.files[0]);
+    if (e.target.dataset && e.target.dataset.xfile && e.target.files[0]) {
+      var xf = e.target.files[0], xk = e.target.dataset.xfile; xl(xk).logo = { name: xf.name, url: null };
+      if (/^image\//.test(xf.type)) { var xr = new FileReader(); xr.onload = function () { xl(xk).logo.url = xr.result; renderPanel(); }; xr.readAsDataURL(xf); } else renderPanel();
+    }
   });
   app.addEventListener('input', function (e) {
     var t = e.target;

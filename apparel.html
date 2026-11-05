@@ -955,7 +955,8 @@ function spotWhereHTML(it, n) {
   if (!n || capItem(it)) return "";
   const w = spotWhere(it);
   return Array.from({ length: n }, (_, i) => '<div class="pl-row" style="align-items:center"><span class="muted small" style="min-width:56px">' + (n > 1 ? 'Spot ' + (i + 1) : 'Where?') + '</span>'
-    + Object.keys(SPOT_WHERE).map(k => '<button class="pl-btn' + (w[i] === k ? ' active' : '') + '" onclick="setSpotWhere(\'' + it.id + '\',' + i + ',\'' + k + '\')">' + SPOT_WHERE[k].label + '</button>').join("") + '</div>').join("");
+    + Object.keys(SPOT_WHERE).map(k => '<button class="pl-btn' + (w[i] === k ? ' active' : '') + '" onclick="setSpotWhere(\'' + it.id + '\',' + i + ',\'' + k + '\')">' + SPOT_WHERE[k].label + '</button>').join("")
+    + (method === "emb" ? '<span class="pl-gap"></span>' + logoPickHTML(it, String(i)) : '') + '</div>').join("");
 }
 
 // ════════════════════════════════════════════
@@ -1165,7 +1166,17 @@ function sleeveSpots(it) {
 function sleevePrinted(it) { return sleeveSpots(it) > 0; }
 function embSpots(it) { if (!it) return 0; if (isCap(it)) return (it.capSide ? 1 : 0) + (it.capBack ? 1 : 0); return Math.min(2, it.extraSpots || 0); }
 // Digitizing: one per embroidery location (main spot + extra spots), using the style with the most spots.
-function embDigCount() { return 1 + validItems().reduce((m, it) => Math.max(m, embSpots(it)), 0); }
+// Digitizing: once per different logo. The main logo is always one; an extra spot adds one only when it has a new logo
+// (the same logo in more spots is digitized once). Uses the style with the most new logos.
+function embLogoKeys(it) { return isCap(it) ? ["capSide", "capBack"].filter(f => it[f]) : Array.from({ length: embSpots(it) }, (_, i) => String(i)); }
+function embNewLogos(it) { return embLogoKeys(it).filter(k => it.newLogo && it.newLogo[k]).length; }
+function embDigCount() { return 1 + validItems().reduce((m, it) => Math.max(m, embNewLogos(it)), 0); }
+function setNewLogo(id, k, v) { const it = itemById(id); if (!it) return; it.newLogo = { ...(it.newLogo || {}), [k]: !!v }; renderOrderItems(); }
+function logoPickHTML(it, k) {
+  const on = !!(it.newLogo && it.newLogo[k]);
+  return '<button class="pl-btn' + (!on ? ' active' : '') + '" onclick="setNewLogo(\'' + it.id + '\',\'' + k + '\',0)">Same logo<span class="pl-price">no dig.</span></button>'
+    + '<button class="pl-btn' + (on ? ' active' : '') + '" onclick="setNewLogo(\'' + it.id + '\',\'' + k + '\',1)">New logo<span class="pl-price">+' + fmt(DIG_RETAIL) + ' dig.</span></button>';
+}
 function embCalc(blank, tq, extra, suppShip, shipQty) {
   suppShip = suppShip == null ? embSet.suppShip : suppShip;
   // combined order: supplier shipping split over that supplier's pieces, one client delivery split over every piece
@@ -1306,7 +1317,7 @@ function renderSettingsBody() {
   } else {
     el.innerHTML = '<div class="card-label">Embroidery</div>'
       + '<div class="fee-row"><span>Rate / piece <small>retail ×2 = <b id="embRetail">' + fmt(embSet.rate * 2) + '</b></small></span><input type="number" step="0.01" min="0" value="' + embSet.rate + '" oninput="embSet.rate=parseFloat(this.value)||0;q(\'embRetail\').textContent=fmt(embSet.rate*2);updateOrderResults()"></div>'
-      + '<div class="fee-row"><span>Digitizing <small>$5 cost / $20 retail per location, once</small></span><label class="switch"><input type="checkbox" ' + (embSet.dig ? 'checked' : '') + ' onchange="embSet.dig=this.checked;updateOrderResults()"><span></span></label></div>'
+      + '<div class="fee-row"><span>Digitizing <small>$5 cost / $20 retail per different logo, once</small></span><label class="switch"><input type="checkbox" ' + (embSet.dig ? 'checked' : '') + ' onchange="embSet.dig=this.checked;updateOrderResults()"><span></span></label></div>'
       + '<div class="fee-row"><span>Supplier shipping <small>÷ total pcs, added to price</small></span><input type="number" step="0.01" min="0" value="' + embSet.suppShip + '" oninput="embSet.suppShip=parseFloat(this.value)||0;updateOrderResults()"></div>'
       + '<div class="fee-row"><span>Client shipping <small>÷ total pcs, added to price</small></span><input type="number" step="0.01" min="0" value="' + embSet.clientShip + '" oninput="embSet.clientShip=parseFloat(this.value)||0;updateOrderResults()"></div>';
   }
@@ -1463,17 +1474,18 @@ function itemControlsHTML(it) {
   if (method === "emb") { const es = embSpots(it), cap = isCap(it);
     const kind = '<div class="pl-row">' + pb("garment", "shirt", cap ? "cap" : "shirt", "Shirt") + pb("garment", "cap", cap ? "cap" : "shirt", "Cap") + '</div>';
     if (cap) {
-      const tg = (f, label) => '<button class="pl-btn' + (it[f] ? ' active' : '') + '" onclick="toggleCapSpot(\'' + id + '\',\'' + f + '\')">' + label + '<span class="pl-price">+' + fmt(embSet.rate * 2) + '/pc · +' + fmt(DIG_RETAIL) + ' dig.</span></button>';
+      const tg = (f, label) => '<button class="pl-btn' + (it[f] ? ' active' : '') + '" onclick="toggleCapSpot(\'' + id + '\',\'' + f + '\')">' + label + '<span class="pl-price">+' + fmt(embSet.rate * 2) + '/pc</span></button>';
       const cur = CAP_PL.some(c => c.id === it.capPlace) ? it.capPlace : "cf";
       const vw = (f, emb, label) => it[emb]
         ? '<button class="pl-btn active" disabled title="Already shown because it has embroidery">' + label + '<span class="pl-price">embroidered</span></button>'
         : '<button class="pl-btn' + (it[f] !== false ? ' active' : '') + '" onclick="toggleCapView(\'' + id + '\',\'' + f + '\')">' + label + '<span class="pl-price">' + (it[f] !== false ? 'shown' : 'hidden') + '</span></button>';
       return kind + '<div class="pl-row">' + CAP_PL.map(c => pb("capPlace", c.id, cur, c.label)).join("") + '</div>'
         + '<label class="lbl">Extra spots</label><div class="pl-row">' + tg("capSide", "+ Side") + tg("capBack", "+ Back") + '</div>'
+        + embLogoKeys(it).map(k => '<div class="pl-row" style="align-items:center"><span class="muted small" style="min-width:56px">' + (k === "capSide" ? "Side" : "Back") + '</span>' + logoPickHTML(it, k) + '</div>').join("")
         + '<label class="lbl">Show on mockup (photo only, no embroidery)</label><div class="pl-row">' + vw("showSide", "capSide", "Side view") + vw("showBack", "capBack", "Back view") + '</div>';
     }
     return kind + '<div class="pl-row">' + EMB_PL.map(p => pb("placementId", p.id, it.placementId, p.label)).join("") + '</div>'
-      + '<label class="lbl">Extra spots (sleeves, etc.)</label><div class="pl-row">' + pb("extraSpots", 0, es, "None") + pb("extraSpots", 1, es, "+1 Spot", "+" + fmt(embSet.rate * 2) + " · +" + fmt(DIG_RETAIL) + " dig.") + pb("extraSpots", 2, es, "+2 Spots") + '</div>'
+      + '<label class="lbl">Extra spots (sleeves, etc.)</label><div class="pl-row">' + pb("extraSpots", 0, es, "None") + pb("extraSpots", 1, es, "+1 Spot", "+" + fmt(embSet.rate * 2) + "/pc") + pb("extraSpots", 2, es, "+2 Spots") + '</div>'
       + spotWhereHTML(it, es) + sizesHTML(it); }
   if (method === "silk") return spotWhereHTML(it, extraSpots) + sizesHTML(it);
   return "";

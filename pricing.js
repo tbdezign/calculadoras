@@ -97,7 +97,8 @@
 
   // ── Whole order, as the website and the agent send it ──
   // reorder: same artwork as a previous order → no screens / digitizing charged (only charged again if the artwork changes).
-  // order = { method?, deco, logoType, colors, mixedShades?, reorder?, placement: lc|lcb|ff|bk|fb|other, otherSpots: ["small"|"large",…], sleeves: 0|1|2,
+  // newLogos (embroidery): how many extra spots use a different logo; each one adds digitizing. Left out = every extra spot is digitized.
+  // order = { method?, deco, logoType, colors, mixedShades?, reorder?, newLogos?, placement: lc|lcb|ff|bk|fb|other, otherSpots: ["small"|"large",…], sleeves: 0|1|2,
   //           items: [{ code, color, qty: { std, x2, x3 } }] }
   // products = { silk: {CODE: product}, dtf: {...}, emb: {...} } (from the database)
   const SITE_PLACE = {
@@ -166,7 +167,8 @@
           r = dtf({ cost: blankCost("dtf", p), pl, tq: total, shipQty: g.qty, extras, shipIn: g.blanks >= C.freeShipMin ? 0 : C.dtf.shipIn }, C);
         } else {
           const extra = (other ? otherSpots.length - 1 : 0) + sleeves;
-          spotsForSetup = 1 + extra;
+          // Digitizing is per different logo: the same logo in more spots is digitized once (newLogos = extra spots with a different logo).
+          spotsForSetup = 1 + (order.newLogos != null ? Math.max(0, Math.min(+order.newLogos || 0, extra)) : extra);
           r = emb({ blank: blankCost("emb", p, size), tq: total, extra, suppShip: g.blanks >= C.freeShipMin ? 0 : C.emb.suppShip }, C);
         }
         out.lines.push({ code: p.code, name: p.name, color: it.color || "", size, q, unit: Math.round(r.perPiece * 100) / 100, amount: Math.round(r.perPiece * q * 100) / 100 });
