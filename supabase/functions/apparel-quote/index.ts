@@ -2,7 +2,7 @@
 // Public (the website calls it). Returns retail prices only — never costs, vendors or memos.
 // pricing.js is loaded straight from the calculators' repo, pinned to a commit: the function and the calculators run the same file.
 // When pricing.js changes: push, then change the commit below and redeploy.
-import "https://cdn.jsdelivr.net/gh/tbdezign/calculadoras@b6a763d/pricing.js";
+import "https://cdn.jsdelivr.net/gh/tbdezign/calculadoras@a569991/pricing.js";
 const P = (globalThis as any).TBDPricing;
 
 const CORS = {
