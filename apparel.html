@@ -1814,8 +1814,10 @@ async function loadLocalLib() {
 // Each saved record gets updatedAt; cloudAt = the version that is in the database (missing = not uploaded yet).
 async function localPut(key, rec) {
   rec = { ...rec, updatedAt: Date.now() }; delete rec.cloudAt; delete rec.src;
-  if (TBDCloud.loggedIn && await cloudPutPhoto(key, rec)) rec.cloudAt = rec.updatedAt;
   await idbDo("readwrite", st => st.put(rec, key));
+  // Upload in the background: the photo is usable right away. If the page closes first,
+  // the next sync uploads it (it has no cloudAt yet).
+  if (TBDCloud.loggedIn) cloudPutPhoto(key, rec).then(ok => { if (ok) idbDo("readwrite", st => st.put({ ...rec, cloudAt: rec.updatedAt }, key)).catch(() => {}); });
 }
 async function localDel(key) {
   await idbDo("readwrite", st => st.delete(key));
@@ -1828,8 +1830,8 @@ function photoMeta(rec) { const { blob, origBlob, src, cloudAt, ...m } = rec; m.
 async function cloudPutPhoto(key, rec) {
   return TBDCloud.write(async sb => {
     const up = (path, b) => sb.storage.from("photos").upload(path, b, { upsert: true, contentType: b.type || "image/jpeg" });
-    let r = await up(key + ".img", rec.blob); if (r.error) return r;
-    if (rec.origBlob) { r = await up(key + "__orig.img", rec.origBlob); if (r.error) return r; }
+    const rs = await Promise.all([up(key + ".img", rec.blob), rec.origBlob ? up(key + "__orig.img", rec.origBlob) : null]);
+    const bad = rs.find(r => r && r.error); if (bad) return bad;
     return await sb.from("garment_photos").upsert({ key, meta: photoMeta(rec) });
   });
 }
@@ -2366,14 +2368,14 @@ async function handleGarmentFile(file, id, side) {
   mkMsg("Adding photo…");
   try {
     const src = await loadImage(URL.createObjectURL(file));
-    // Downscale to 1800px and flatten onto white (JPEG keeps the library light).
-    const s = Math.min(1, 3000 / Math.max(src.naturalWidth, src.naturalHeight));
+    // Downscale to 2400px (the size the mockups use) and flatten onto white (JPEG keeps the library light and uploads fast).
+    const s = Math.min(1, 2400 / Math.max(src.naturalWidth, src.naturalHeight));
     const c = document.createElement("canvas"); c.width = Math.round(src.naturalWidth*s); c.height = Math.round(src.naturalHeight*s);
     const cx = c.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0,0,c.width,c.height); cx.drawImage(src,0,0,c.width,c.height);
-    const orig = await new Promise(r => c.toBlob(r, "image/jpeg", 0.95));
+    const orig = await new Promise(r => c.toBlob(r, "image/jpeg", 0.9));
     // Remove the background automatically so every style is framed the same way (Undo keeps the original).
     let cleaned = null; try { cleaned = cleanBackgroundCanvas(c); } catch (e) {}
-    const blob = cleaned ? await new Promise(r => cleaned.toBlob(r, "image/jpeg", 0.95)) : orig;
+    const blob = cleaned ? await new Promise(r => cleaned.toBlob(r, "image/jpeg", 0.9)) : orig;
     await storePhoto(code, color, side, blob, null, cleaned ? orig : null);
     mkMsg((mkDb || localLib) ? "Photo saved to the library as " + code + " · " + color + " · " + SIDE_EN[side] + "." + (cleaned ? " Background removed automatically (Undo is under the photo)." : " No plain background found, so it was kept as it is.") : "Photo added for this session only. The library isn't available in this view.");
     mk.pasteTarget = null;
