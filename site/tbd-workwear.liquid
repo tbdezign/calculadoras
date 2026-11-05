@@ -338,7 +338,7 @@
     qTimer = setTimeout(function () {
       var seq = ++qSeq, body = orderBody();
       post(body).then(function (q) {
-        if (seq !== qSeq) return; O.quote = q; renderAside();
+        if (seq !== qSeq) return; O.quote = q; renderAside(); if (O.step === 4) renderPanel();
       });
       // simple logo under 10 pieces: show what Silk Screen would cost at 10
       if (m === 'dtf' && O.logoType === 'solid' && O.inks <= 3 && t < DATA.minimums.silk && body.items.length) {
@@ -423,8 +423,9 @@
       var d = DATA.days[m];
       h += '<h2 class="ww-h2" style="margin-bottom:14px">4. Your print method</h2><div class="ww-method"><small>Best for your order</small><b>' + NAMES[m] + '</b><p>' + why + '</p><em>Production: ' + d[0] + '–' + d[1] + ' business days after artwork approval</em></div>';
       if (m === 'dtf' && silkFits() && mixedShades()) h += '<div class="ww-msg green">Your order mixes light and dark shirts. Silk Screen can\'t print both in the same order, so we\'re using DTF. Make all shirts light or all dark to switch to Silk Screen and a lower price.</div>';
-      if (O.upsell && m === 'dtf' && !mixedShades()) { var add = DATA.minimums.silk - t, unitNow = O.quote && O.quote.lines.length ? O.quote.total$ / O.quote.total : 0;
-        h += '<div class="ww-msg green">Add ' + add + ' more piece' + (add === 1 ? '' : 's') + ' and your order switches to Silk Screen: about ' + money(O.upsell.total$ / O.upsell.total) + ' per piece' + (unitNow ? ' instead of ' + money(unitNow) : '') + '.</div>'; }
+      // only when Silk Screen at the minimum is actually cheaper per piece (setup included)
+      if (O.upsell && m === 'dtf' && !mixedShades() && O.quote && O.quote.total) { var add = DATA.minimums.silk - t, save = O.quote.total$ / O.quote.total - O.upsell.total$ / O.upsell.total;
+        if (save >= 0.5) h += '<div class="ww-msg green">Add ' + add + ' more piece' + (add === 1 ? '' : 's') + ' and your order switches to Silk Screen: save ' + money(save) + ' per piece.</div>'; }
       if (m === 'dtf' && O.logoType === 'unsure') h += '<div class="ww-msg grey">Not sure about your logo? No problem. We check every file before printing. If it can be screen printed, we refund the difference.</div>';
       if (t < DATA.minimums[m]) h += '<div class="ww-msg red">' + NAMES[m] + ' needs at least ' + DATA.minimums[m] + ' pieces in the order. You have ' + t + '.</div>';
       h += '<div class="ww-q">Where should the logo go?</div><div class="ww-choice" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">' + PLACES.filter(function (x) { return !(m === 'emb' && /^(ff|bk|fb|lcb)$/.test(x[0])); }).map(function (x) {
@@ -449,7 +450,7 @@
         }
       }
     } else {
-      h += '<h2 class="ww-h2">5. Preview and pay</h2><p class="ww-p">This is a quick preview (tap a picture to see it bigger). We send a final proof for your approval before printing.</p><div class="ww-prevs">' + previews() + '</div>';
+      h += '<h2 class="ww-h2">5. Preview and pay</h2><p class="ww-p">This is a quick preview. We send a final proof for your approval before printing.</p><div class="ww-prevs">' + previews() + '</div>';
       if (O.checkout) h += '<div class="ww-msg green" style="margin-top:16px">Almost there! Secure checkout is being connected. For now, send us a message on WhatsApp and we\'ll finish your order.</div>';
     }
     h += '<div class="ww-nav"><button class="ww-btn ghost" data-back' + (O.step === 1 ? ' disabled' : '') + '>Back</button>'
