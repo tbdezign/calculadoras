@@ -119,6 +119,10 @@
   .ww-method p { font-size: 14px; color: #d5dee8; margin: 0; }
   .ww-method em { display: block; font-style: normal; font-size: 13px; color: #9fd3e6; margin-top: 8px; }
   .ww-msg { border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-bottom: 14px; }
+  .ww-up { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .ww-up .ww-pill { padding: 8px 14px; font-size: 13px; }
+  .ww-quick { border: 1.5px solid #91bc4d; border-radius: 12px; padding: 14px; margin: -6px 0 16px; display: grid; gap: 14px; background: #fff; }
+  .ww-qline + .ww-qline { border-top: 1px solid #f0f0f0; padding-top: 12px; }
   .ww-msg.green { border: 1.5px solid #91bc4d; background: #f3f8ea; }
   .ww-msg.grey { border: 1px solid #e3e3e3; background: #fafbfc; }
   .ww-msg.red { border: 1px solid #f3c9c9; background: #fdf2f2; color: #8a1c1c; }
@@ -344,7 +348,8 @@
     qTimer = setTimeout(function () {
       var seq = ++qSeq, body = orderBody();
       post(body).then(function (q) {
-        if (seq !== qSeq) return; O.quote = q; renderAside(); if (O.step === 4) renderPanel();
+        if (seq !== qSeq) return; O.quote = q; renderAside();
+        if (O.step === 4) { var ae = document.activeElement; if (ae && ae.dataset && ae.dataset.size && app.contains(ae)) O.dirty = true; else renderPanel(); }
       });
       // simple logo under 10 pieces: show what Silk Screen would cost at 10
       if (m === 'dtf' && O.logoType === 'solid' && O.inks <= 3 && t < DATA.minimums.silk && body.items.length) {
@@ -377,6 +382,19 @@
       return (n > 1 ? '<span class="ww-sep" aria-hidden="true">›</span>' : '') + '<button class="ww-step' + (O.step === n ? ' cur' : n < O.step ? ' done' : '') + '" data-go="' + n + '"' + (n > ms || skip ? ' disabled' : '') + '><i>' + n + '</i><span class="ww-lbl">' + x[0] + '</span></button>';
     }).join('');
   }
+  function sizesHtml(l) {
+    return '<div class="ww-sizes">' + SIZES.map(function (s) {
+      var q = +l.sizes[s[0]] || 0;
+      return '<div class="ww-size"><label for="q' + l.id + s[0] + '">' + s[0] + '</label><div><button data-line="' + l.id + '" data-dec="' + s[0] + '" aria-label="Fewer ' + s[0] + '">−</button><input id="q' + l.id + s[0] + '" type="number" inputmode="numeric" min="0" value="' + (q || '') + '" placeholder="0" data-line="' + l.id + '" data-size="' + s[0] + '"><button data-line="' + l.id + '" data-inc="' + s[0] + '" aria-label="More ' + s[0] + '">+</button></div></div>';
+    }).join('') + '</div>';
+  }
+  // quick quantity editor (step 4), so the client can add pieces without going back
+  function quickAddHtml() {
+    return '<div class="ww-quick">' + O.lines.map(function (l) {
+      var st = byCode[l.code];
+      return '<div class="ww-qline"><div class="ww-lhead" style="margin-bottom:6px"><div><span class="ww-thumb">' + imgHtml(st, l.color) + '</span><div><b style="font-size:13px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small></div></div></div>' + sizesHtml(l) + '</div>';
+    }).join('') + '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:14px">Total: <b id="ww-qtotal">' + pcs(total()) + '</b></span><button class="ww-pill on" data-quick="0">Done</button></div></div>';
+  }
   function renderPanel() {
     renderSteps();
     var p = document.getElementById('ww-panel'), h = '', m = method(), t = total();
@@ -388,10 +406,7 @@
         h += '<div class="ww-line"><div class="ww-lhead"><div><span class="ww-thumb">' + imgHtml(st, l.color) + '</span><div><b style="font-size:14px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small></div></div>'
           + '<span style="white-space:nowrap"><button class="ww-link" data-dup="' + l.id + '">+ Another color</button><button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></span></div>'
           + '<div class="ww-sw" role="group" aria-label="Color">' + st.colors.map(function (c) { return '<button class="' + (c.name === l.color ? 'on' : '') + '" style="background:' + esc(c.hex) + '" title="' + esc(c.name) + '" aria-label="' + esc(c.name) + '" data-line="' + l.id + '" data-color="' + esc(c.name) + '"></button>'; }).join('') + '</div>'
-          + '<div class="ww-sizes">' + SIZES.map(function (s) {
-            var q = +l.sizes[s[0]] || 0;
-            return '<div class="ww-size"><label for="q' + l.id + s[0] + '">' + s[0] + '</label><div><button data-line="' + l.id + '" data-dec="' + s[0] + '" aria-label="Fewer ' + s[0] + '">−</button><input id="q' + l.id + s[0] + '" type="number" inputmode="numeric" min="0" value="' + (q || '') + '" placeholder="0" data-line="' + l.id + '" data-size="' + s[0] + '"><button data-line="' + l.id + '" data-inc="' + s[0] + '" aria-label="More ' + s[0] + '">+</button></div></div>';
-          }).join('') + '</div></div>';
+          + sizesHtml(l) + '</div>';
       });
       if (O.lines.length) h += '<div class="ww-q" style="margin-top:22px">Add another style</div>';
       var inOrder = O.lines.map(function (l) { return l.code; });
@@ -432,7 +447,9 @@
       if (m === 'dtf' && silkFits() && mixedShades()) h += '<div class="ww-msg green">Your order mixes light and dark shirts. Silk Screen can\'t print both in the same order, so we\'re using DTF. Make all shirts light or all dark to switch to Silk Screen and a lower price.</div>';
       // only when Silk Screen at the minimum is actually cheaper per piece (setup included)
       if (O.upsell && m === 'dtf' && !mixedShades() && O.quote && O.quote.total) { var add = DATA.minimums.silk - t, save = O.quote.total$ / O.quote.total - O.upsell.total$ / O.upsell.total;
-        if (save >= 0.5) h += '<div class="ww-msg green">Add ' + add + ' more piece' + (add === 1 ? '' : 's') + ' and your order switches to Silk Screen: save ' + money(save) + ' per piece.</div>'; }
+        if (save >= 0.5) h += '<div class="ww-msg green ww-up"><span>Add ' + add + ' more piece' + (add === 1 ? '' : 's') + ' and your order switches to Silk Screen: save ' + money(save) + ' per piece.</span>' + (O.quick ? '' : '<button class="ww-pill on" data-quick="1">+ Add pieces</button>') + '</div>'; }
+      if (O.quick) h += quickAddHtml();
+      else h += '<div style="margin:-4px 0 14px"><button class="ww-link" style="padding:0;font-size:13px" data-quick="1">Need to change quantities? Edit here</button></div>';
       if (m === 'dtf' && O.logoType === 'unsure') h += '<div class="ww-msg grey">Not sure about your logo? No problem. We check every file before printing. If it can be screen printed, we refund the difference.</div>';
       if (t < DATA.minimums[m]) h += '<div class="ww-msg red">' + NAMES[m] + ' needs at least ' + DATA.minimums[m] + ' pieces in the order. You have ' + t + '.</div>';
       h += '<div class="ww-q">Where should the logo go?</div><div class="ww-choice" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">' + PLACES.filter(function (x) { return !(m === 'emb' && /^(ff|bk|fb|lcb)$/.test(x[0])); }).map(function (x) {
@@ -561,6 +578,7 @@
     if (ds.spot != null) { O.otherSpots[+ds.spot] = ds.z; renderPanel(); requote(); return; }
     if (ds.rmspot != null) { O.otherSpots.splice(+ds.rmspot, 1); renderPanel(); requote(); return; }
     if ('addspot' in ds) { O.otherSpots.push('small'); renderPanel(); requote(); return; }
+    if (ds.quick != null) { O.quick = ds.quick === '1'; renderPanel(); var qb = app.querySelector('.ww-quick input'); if (qb && O.quick) qb.closest('.ww-quick').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
     if (ds.reorder != null) { O.reorder = ds.reorder === '1'; renderPanel(); requote(); return; }
     if (ds.go) { go(+ds.go); return; }
     if ('next' in ds) { go(O.step + 1); return; }
@@ -576,6 +594,7 @@
     z.innerHTML = '<button class="ww-zoom-x" aria-label="Close">×</button>'; z.appendChild(pi.cloneNode(true));
     z.addEventListener('click', closeZoom); document.body.appendChild(z); document.addEventListener('keydown', zoomKey);
   });
+  app.addEventListener('focusout', function (e) { if (e.target.dataset && e.target.dataset.size && O.step === 4) setTimeout(function () { var ae = document.activeElement; if (!(ae && ae.dataset && ae.dataset.size)) { O.dirty = false; renderPanel(); } }, 0); });
   app.addEventListener('change', function (e) {
     if (e.target.id === 'ww-file' && e.target.files[0]) readLogo(e.target.files[0]);
   });
@@ -583,6 +602,7 @@
     var t = e.target;
     if (t.dataset.size) { var ln = lineById(t.dataset.line); ln.sizes[t.dataset.size] = Math.max(0, parseInt(t.value, 10) || 0); requote(); renderSteps();
       var pc = document.getElementById('pcs' + ln.id); if (pc) pc.textContent = ln.color + ' · ' + pcs(qtyOf(ln));
+      var qt = document.getElementById('ww-qtotal'); if (qt) qt.textContent = pcs(total());
       var nb = app.querySelector('[data-next]'); if (nb) nb.disabled = !stepOk(O.step); }
     if (t.id === 'ww-reno') { O.reorderNo = t.value; return; }
     if (t.id === 'ww-other') { O.otherText = t.value; var nb2 = app.querySelector('[data-next]'); if (nb2) nb2.disabled = !stepOk(O.step); renderSteps(); }
