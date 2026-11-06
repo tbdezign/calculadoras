@@ -598,11 +598,11 @@
           var pv = logoOnShirt(dc.c, dc.shirt.hex, swapHex);
           h += '<div class="ww-msg ' + (dc.on || swapHex ? 'green' : 'amber') + ' ww-drop" style="margin-top:16px">'
             + (pv ? '<div class="ww-dropimg" style="background:' + esc(dc.shirt.hex) + '"><img src="' + pv + '" alt="Your logo on a ' + esc(dc.shirt.name) + ' shirt"></div>' : '')
-            + '<div class="ww-save"><div>' + (dc.on ? 'Your logo has ' + esc(cn) + ' and your shirts are ' + esc(cn) + '. Here\u2019s how it\u2019ll look: the shirt shows through where the ' + esc(cn) + ' is. <b>One less color, lower price.</b> You\u2019ll see it on the proof before anything prints.'
+            + '<div class="ww-save"><div>' + (dc.on ? 'Your logo has ' + esc(cn) + ' and your shirts are ' + esc(cn) + '. Here\u2019s how it\u2019ll look: the shirt shows through where the ' + esc(cn) + ' is.' + (method() === 'silk' ? ' <b>One less color, lower price.</b>' : '') + ' You\u2019ll see it on the proof before anything prints.'
               : swapHex ? 'Here\u2019s your logo with the ' + esc(cn) + ' printed in ' + alt + '.' : '<b>Part of your logo disappears on ' + esc(cn) + ' shirts.</b> See the preview.') + '</div>'
             + '<div class="ww-pills" style="margin:0"><button class="ww-pill' + (dc.on ? ' on' : '') + '" data-drop="ok">Looks good</button><button class="ww-pill' + (!dc.on ? ' on' : '') + '" data-drop="fix">Fix it</button></div>'
             + (!dc.on && !swapHex ? '<div style="font-size:14px">How do you want to fix it?</div>' : '') + (!dc.on ? ''
-              + (swapHex ? '<div><b>Got it: we\u2019ll print that part in ' + alt + '.</b> Still ' + O.inks + ' color' + (O.inks === 1 ? '' : 's') + ', same price.</div>' : '')
+              + (swapHex ? '<div><b>Got it: we\u2019ll print that part in ' + alt + '.</b> ' + (method() === 'silk' ? 'Still ' + O.inks + ' color' + (O.inks === 1 ? '' : 's') + ', same price.' : 'Same price.') + '</div>' : '')
               + '<div class="ww-pills" style="margin:0">' + (inLogo ? '' : '<button class="ww-pill' + (dc.fix === 'swap' ? ' on' : '') + '" data-fix="swap">Print it in ' + alt + ' instead</button>') + '<button class="ww-pill" data-fix="shirt">Change shirt color</button><label class="ww-pill" for="ww-file" style="cursor:pointer">Upload another version</label></div>' : '')
             + '</div></div>';
         }
