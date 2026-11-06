@@ -77,6 +77,7 @@ async function catalog() {
         .map((p: any) => ({ color: p.meta.color, side: p.meta.side, url: signed[p.key + ".img"], place: p.meta.place || {} })),
       sizeChart: d.sizeChart && signed[d.sizeChart] ? signed[d.sizeChart] : null,
       sizeTable: d.sizeTable || null,
+      bestFor: ["emb", "silk", "dtf"].includes(d.bestFor) ? d.bestFor : null,
       from,
     };
   }).filter(Boolean);

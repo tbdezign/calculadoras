@@ -42,6 +42,8 @@
   .ww-img img { width: 92%; height: 92%; object-fit: contain; display: block; }
   .ww-card .ww-img { border-bottom: 1px solid #f0f0f0; }
   .ww-img svg { width: 62%; height: 62%; }
+  .ww-best { position: absolute; top: 10px; left: 10px; z-index: 1; font-size: 10.5px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: #fff; background: #051024; border-radius: 4px; padding: 4px 9px; pointer-events: none; }
+  .ww-best.emb { background: #7a4b12; } .ww-best.silk { background: #1a7698; } .ww-best.dtf { background: #4f7a1f; }
   .ww-cbody { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
   .ww-badges { display: flex; flex-wrap: wrap; gap: 6px; }
   .ww-badge { font-size: 10.5px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; border-radius: 4px; padding: 3px 8px; }
@@ -342,7 +344,7 @@
       if (F.fam.length) { var m = s.colors.filter(function (c) { return F.fam.indexOf(fam(c.name)) >= 0; }); if (m.length) shown = m[0].name; }
       var mb = MAT[s.material], badges = (mb ? '<span class="ww-badge" style="color:' + mb[0] + ';background:' + mb[1] + '">' + esc(s.material) + '</span>' : '')
         + (s.fit === "Women's" || s.fit === 'Youth' ? '<span class="ww-badge" style="color:#51406f;background:#efeafa">' + esc(s.fit) + '</span>' : '');
-      return '<article class="ww-card"><a class="ww-img" href="#order/' + encodeURIComponent(s.code) + '" tabindex="-1">' + imgHtml(s, shown) + '</a><div class="ww-cbody">'
+      return '<article class="ww-card"><a class="ww-img" href="#order/' + encodeURIComponent(s.code) + '" tabindex="-1">' + bestHtml(s) + imgHtml(s, shown) + '</a><div class="ww-cbody">'
         + '<div class="ww-badges">' + badges + '</div><h2 class="ww-cname">' + esc(s.name) + '</h2>'
         + '<div class="ww-dots" aria-label="Available colors">' + s.colors.slice(0, 8).map(function (c) { return '<span class="d" title="' + esc(c.name) + '" style="background:' + esc(c.hex) + '"></span>'; }).join('')
         + (s.colors.length > 8 ? '<small>+' + (s.colors.length - 8) + '</small>' : '') + '</div>'
@@ -386,6 +388,14 @@
   function xl(key) { return O.xlogo[key] || (O.xlogo[key] = { diff: false, logo: null }); }
   function newLogos() { return extraSpots().filter(function (k) { return xl(k[0]).diff; }).length; }
   function logoFor(key) { var x = key && O.xlogo[key]; return x && x.diff ? x.logo : O.logo; }
+  // "Best with" label set per style in the calculator (Website catalog → Best with)
+  var BEST = { emb: 'Embroidery', silk: 'Silk Screen', dtf: 'DTF' };
+  function bestHtml(s) { return BEST[s.bestFor] ? '<span class="ww-best ' + s.bestFor + '">Best with ' + BEST[s.bestFor] + '</span>' : ''; }
+  // step 2: suggest printed/embroidered only when every shirt in the order agrees
+  function bestDeco() {
+    var d = O.lines.map(function (l) { var b = (byCode[l.code] || {}).bestFor; return b === 'emb' ? 'emb' : b ? 'print' : ''; });
+    return d.length && d[0] && d.every(function (x) { return x === d[0]; }) ? d[0] : '';
+  }
   function orderBody(overrides) {
     var o = { deco: O.deco === 'emb' ? 'emb' : 'print', logoType: O.logoType || 'unsure', colors: O.inks, mixedShades: mixedShades(), reorder: (method() === 'silk' || method() === 'emb') && O.reorder, reorderNo: O.reorder ? O.reorderNo : '', placement: O.placement, otherSpots: O.placement === 'other' ? O.otherSpots : [], sleeves: O.sleeves, newLogos: newLogos(),
       items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) {
@@ -479,15 +489,15 @@
       var pick = STYLES.filter(function (s) { return inOrder.indexOf(s.code) < 0; }).concat(STYLES.filter(function (s) { return inOrder.indexOf(s.code) >= 0; }));
       var shown = O.showAll ? pick : pick.slice(0, 4);
       h += '<div class="ww-mini' + (pick.length > 4 && !O.showAll ? ' few' : '') + '">' + shown.map(function (s) {
-        return '<div class="ww-mcard"><div class="ww-img">' + imgHtml(s) + '</div><b>' + esc(s.name) + '</b><small>' + esc([s.type, s.fit].filter(Boolean).join(' · ')) + ' · ' + s.colors.length + ' colors</small><button class="ww-add" data-add="' + esc(s.code) + '">+ Add to order</button></div>';
+        return '<div class="ww-mcard"><div class="ww-img">' + bestHtml(s) + imgHtml(s) + '</div><b>' + esc(s.name) + '</b><small>' + esc([s.type, s.fit].filter(Boolean).join(' · ')) + ' · ' + s.colors.length + ' colors</small><button class="ww-add" data-add="' + esc(s.code) + '">+ Add to order</button></div>';
       }).join('')
         + (pick.length > 4 ? '<div class="ww-mcard ww-more"><button class="ww-morebtn" data-more>' + (O.showAll ? 'Show fewer styles' : '<b>+' + (pick.length - 4) + '</b>See all ' + pick.length + ' styles') + '</button><a class="ww-link" href="#">or browse the catalog</a></div>' : '')
         + '</div>';
       }
     } else if (O.step === 2) {
       h += '<h2 class="ww-h2">2. Decoration: printed or embroidered?</h2><p class="ww-p">Pick the look you want. We take care of the technical part.</p><div class="ww-choice">'
-        + '<button class="ww-ch' + (O.deco === 'print' ? ' on' : '') + '" data-deco="print"><b>Printed</b><span>Smooth, flat print. Great for big logos, full color and the best price per shirt.</span></button>'
-        + '<button class="ww-ch' + (O.deco === 'emb' ? ' on' : '') + '" data-deco="emb"><b>Embroidered</b><span>Stitched thread for a premium look. Best for small logos on the chest. Min ' + DATA.minimums.emb + ' pieces.</span></button></div>';
+        + '<button class="ww-ch' + (O.deco === 'print' ? ' on' : '') + '" data-deco="print">' + (bestDeco() === 'print' ? '<span class="ww-pop">Best for your shirts</span>' : '') + '<b>Printed</b><span>Smooth, flat print. Great for big logos, full color and the best price per shirt.</span></button>'
+        + '<button class="ww-ch' + (O.deco === 'emb' ? ' on' : '') + '" data-deco="emb">' + (bestDeco() === 'emb' ? '<span class="ww-pop">Best for your shirts</span>' : '') + '<b>Embroidered</b><span>Stitched thread for a premium look. Best for small logos on the chest. Min ' + DATA.minimums.emb + ' pieces.</span></button></div>';
     } else if (O.step === 3) {
       h += '<h2 class="ww-h2">3. Your logo</h2><p class="ww-p">Upload your logo. PNG, JPG, PDF or AI.</p>'
         + '<label class="ww-upload' + (O.logo ? ' on' : '') + '" for="ww-file">' + (O.logo ? (O.logo.url ? '<img src="' + O.logo.url + '" alt="Your logo">' : '<b>LOGO</b>') + '<span><b>' + esc(O.logo.name) + '</b><br><small style="color:#4b5563">Tap to change the file</small></span>' : '<span><b>Upload your logo</b></span>') + '</label>'

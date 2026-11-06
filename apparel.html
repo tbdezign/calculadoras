@@ -660,7 +660,9 @@ function siteBoxHTML(code) {
     + '<label class="site-show"><input type="checkbox" id="pf_site_show"' + (sp.show ? ' checked' : '') + '> Show on site</label>'
     + '<div class="form-row"><div style="flex:1"><label class="lbl">Type</label>' + sel("pf_site_type", SITE_TYPES, sp.type) + '</div>'
     + '<div style="flex:1"><label class="lbl">Fit</label>' + sel("pf_site_fit", SITE_FITS, sp.fit) + '</div>'
-    + '<div style="flex:1"><label class="lbl">Material</label>' + sel("pf_site_mat", SITE_MATERIALS, sp.material) + '</div></div>'
+    + '<div style="flex:1"><label class="lbl">Material</label>' + sel("pf_site_mat", SITE_MATERIALS, sp.material) + '</div>'
+    + '<div style="flex:1"><label class="lbl">Best with (label on the site)</label><select id="pf_site_best"><option value="">—</option>'
+    + [["emb", "Embroidery"], ["silk", "Silk Screen"], ["dtf", "DTF"]].map(o => '<option value="' + o[0] + '"' + (sp.bestFor === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join("") + '</select></div></div>'
     + '<label class="lbl">Colors on the site (only high-stock ones · uncheck to hide one that is running low)</label>'
     + copyColorsHTML(code)
     + '<div id="siteColors">' + siteColorsHTML() + '</div>'
@@ -713,7 +715,7 @@ async function saveSiteForm(code) {
   if (!q("pf_site_show") || !siteDraft) return true;
   // keep fields this form doesn't edit (e.g. the size table)
   const { show: _s, ...kept } = siteProducts[code] || {};
-  const o = { ...kept, type: q("pf_site_type").value, fit: q("pf_site_fit").value, material: q("pf_site_mat").value,
+  const o = { ...kept, type: q("pf_site_type").value, fit: q("pf_site_fit").value, material: q("pf_site_mat").value, bestFor: q("pf_site_best").value,
     colors: siteDraft.colors.map(c => ({ name: c.name.trim(), hex: c.hex, on: !!c.on })).filter(c => c.name) };
   // size chart: stored next to the garment photos; only the path goes in the row
   const chartPath = "sizechart/" + catDocId(code) + ".img";
@@ -725,7 +727,8 @@ async function saveSiteForm(code) {
   else if ((siteProducts[code] || {}).sizeChart) { delete o.sizeChart; delete o.sizeChartAt; await TBDCloud.write(sb => sb.storage.from("photos").remove([siteProducts[code].sizeChart])); }
   const show = q("pf_site_show").checked;
   const old = siteProducts[code];
-  if (!old && !show && !o.type && !o.fit && !o.material && !o.colors.length && !o.sizeChart) return true;
+  if (!o.bestFor) delete o.bestFor;
+  if (!old && !show && !o.type && !o.fit && !o.material && !o.bestFor && !o.colors.length && !o.sizeChart) return true;
   const next = { show, ...o };
   if (old && JSON.stringify(old) === JSON.stringify(next)) return true;
   if (!await TBDCloud.write(sb => sb.from("site_products").upsert({ key: code, show, data: o }))) return false;
