@@ -67,12 +67,6 @@
   .catalog-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #1a7698; cursor: pointer; font-weight: 600; padding: 6px 12px; border-radius: 20px; border: 1px solid #cfe9f3; background: #e8f5fa; transition: all .15s; }
   .catalog-toggle:hover { background: #cfe9f3; }
   .catalog-panel { background: #F8F8F5; border: 1px solid #E8E8E8; border-radius: 10px; padding: 14px; margin-bottom: 16px; }
-  .so-item { display: flex; align-items: center; gap: 8px; padding: 7px 8px; background: #fff; border: 1px solid #E8E8E8; border-radius: 6px; margin-bottom: 5px; font-size: 13px; user-select: none; }
-  .so-item.dragging { box-shadow: 0 4px 14px rgba(0,0,0,.15); border-color: #41a9cc; position: relative; z-index: 2; }
-  .so-handle { cursor: grab; touch-action: none; font-size: 16px; padding: 2px 6px; color: #888; }
-  .so-n { min-width: 18px; color: #888; font-size: 12px; }
-  .so-arrows { margin-left: auto; display: flex; gap: 4px; flex: none; }
-  .so-arrows button { border: 1px solid #ddd; background: #fafafa; border-radius: 4px; font-size: 10px; padding: 3px 6px; cursor: pointer; }
   .catalog-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #fff; border-radius: 6px; cursor: pointer; border: 1px solid #E8E8E8; font-size: 13px; margin-bottom: 5px; transition: border-color .15s; }
   .catalog-item:hover, .catalog-item.active { border-color: #1a7698; }
   .cat-form { margin-top: 10px; padding: 12px; background: #fff; border-radius: 8px; border: 1px solid #E8E8E8; }
@@ -789,74 +783,19 @@ async function pullProduct(code, id) {
 }
 
 // ── Catalog panel ──
-let showCatalog = false, editProduct = null, showImport = false, showOrder = false;
+let showCatalog = false, editProduct = null, showImport = false;
 function toggleCatalog() { showCatalog = !showCatalog; editProduct = null; showImport = false; renderCatalog(); }
 function costSummary(p) {
   if (method === "v2") return ["t2","t4","t8","t16"].map(t => fmt(p[t]||0)).join(" / ");
   return CAT_FIELDS[method].map(f => fmt(p[f.k]||0)).join(" / ");
-}
-// ── Website order: the order styles appear on the site (and in this list). Drag the ☰ handle (mouse or finger). ──
-function siteRank(code) { const sp = siteProducts[code]; return sp && sp.show && sp.sort != null ? sp.sort : sp && sp.show ? 9000 : 99999; }
-function siteOrderCodes() { return Object.keys(siteProducts).filter(k => siteProducts[k].show).sort((a, b) => siteRank(a) - siteRank(b) || a.localeCompare(b)); }
-function siteOrderHTML() {
-  const codes = siteOrderCodes();
-  if (!codes.length) return '<div class="panel-note">No styles marked "Show on site" yet.</div>';
-  const nm = k => { const p = cats.silk[k] || cats.dtf[k] || cats.emb[k]; return p ? p.name : ""; };
-  return '<div class="cat-form" id="siteOrder"><div class="lbl" style="margin-bottom:6px">Drag to set the order on the website (first = top). Saves automatically.</div>'
-    + codes.map((k, i) => '<div class="so-item" data-code="' + esc(k) + '"><span class="so-handle" onpointerdown="soStart(event)">☰</span><span class="so-n">' + (i + 1) + '</span><b>' + esc(k) + '</b><span class="muted small" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(nm(k)) + '</span>'
-      + '<span class="so-arrows"><button onclick="soMove(\'' + esc(k) + '\',-1)" aria-label="Up">▲</button><button onclick="soMove(\'' + esc(k) + '\',1)" aria-label="Down">▼</button></span></div>').join("")
-    + '<div id="soMsg" class="muted small" style="margin-top:6px"></div></div>';
-}
-function soStart(e) {
-  e.preventDefault();
-  const item = e.target.closest(".so-item"), list = q("siteOrder");
-  item.classList.add("dragging");
-  // listen on the window: moving the row in the page would drop a pointer capture
-  const move = ev => {
-    const items = [...list.querySelectorAll(".so-item")];
-    for (const other of items) {
-      if (other === item) continue;
-      const r = other.getBoundingClientRect(), mid = r.top + r.height / 2;
-      const before = items.indexOf(other) < items.indexOf(item);
-      if (before && ev.clientY < mid) { list.insertBefore(item, other); break; }
-      if (!before && ev.clientY > mid) { list.insertBefore(item, other.nextSibling); break; }
-    }
-  };
-  const end = () => {
-    window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", end); window.removeEventListener("pointercancel", end);
-    item.classList.remove("dragging");
-    saveSiteOrder([...list.querySelectorAll(".so-item")].map(x => x.dataset.code));
-  };
-  window.addEventListener("pointermove", move); window.addEventListener("pointerup", end); window.addEventListener("pointercancel", end);
-}
-function soMove(code, d) {
-  const codes = siteOrderCodes(), i = codes.indexOf(code), j = i + d;
-  if (i < 0 || j < 0 || j >= codes.length) return;
-  [codes[i], codes[j]] = [codes[j], codes[i]];
-  saveSiteOrder(codes);
-}
-async function saveSiteOrder(codes) {
-  const changed = codes.filter((k, i) => siteProducts[k].sort !== i);
-  codes.forEach((k, i) => { siteProducts[k].sort = i; });
-  renderCatalog();
-  if (!changed.length) return;
-  const m = q("soMsg"); if (m) m.textContent = "Saving…";
-  for (const k of changed) {
-    const { show, ...data } = siteProducts[k];
-    if (!await TBDCloud.write(sb => sb.from("site_products").upsert({ key: k, show, data }))) { const e = q("soMsg"); if (e) e.textContent = "Couldn't save the order. Try again."; return; }
-  }
-  saveSiteLS();
-  const e2 = q("soMsg"); if (e2) e2.textContent = "Saved. The website shows the new order within 5 minutes.";
 }
 function renderCatalog() {
   q("catalogLabel").textContent = Object.keys(cat()).length + " products";
   const panel = q("catalogPanel");
   if (!showCatalog) { panel.hidden = true; return; }
   panel.hidden = false;
-  let h = '<div class="catalog-panel"><div class="panel-note" style="display:flex;justify-content:space-between;gap:8px;align-items:center"><span>' + METHODS[method].label + ' products · tap one to edit</span>'
-    + (method !== "v2" ? '<button class="mk-link" onclick="showOrder=!showOrder;renderCatalog()">' + (showOrder ? 'Close website order' : '↕ Website order') + '</button>' : '') + '</div>';
-  if (showOrder && method !== "v2") h += siteOrderHTML();
-  Object.values(cat()).sort((a,b) => siteRank(a.code) - siteRank(b.code) || a.code.localeCompare(b.code)).forEach(p => {
+  let h = '<div class="catalog-panel"><div class="panel-note">' + METHODS[method].label + ' products · tap one to edit</div>';
+  Object.values(cat()).sort((a,b) => a.code.localeCompare(b.code)).forEach(p => {
     h += '<div class="catalog-item' + (editProduct === p.code ? ' active' : '') + '" onclick="editProduct=editProduct===\'' + esc(p.code) + '\'?null:\'' + esc(p.code) + '\';renderCatalog()">'
       + '<span><b>' + esc(p.code) + '</b>' + (p.vendor ? '<span class="vend-tag">' + esc(p.vendor) + '</span>' : '') + (method !== "v2" && siteProducts[p.code] && siteProducts[p.code].show ? '<span class="site-tag">Site</span>' : '') + ' <span class="muted">— ' + esc(p.name) + '</span></span><span class="mono small">' + costSummary(p) + '</span></div>';
     if (editProduct === p.code) h += productFormHTML(p);

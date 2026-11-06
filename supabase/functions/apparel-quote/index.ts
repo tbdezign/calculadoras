@@ -38,9 +38,7 @@ const cleanName = (n: string) => String(n || "").replace(/\s*[®™]/g, "").repl
 // GET: the website catalog. Only styles marked "Show on site" in the calculator, only colors marked "On site".
 // Prices are the "from" price (25 pcs, 1-color left chest, Silk Screen) — no costs.
 async function catalog() {
-  // order set in the calculator (Website order); styles without one go last, by code
-  const site = (await rest("site_products?show=eq.true&select=key,data"))
-    .sort((a: any, b: any) => ((a.data && a.data.sort) ?? 9999) - ((b.data && b.data.sort) ?? 9999) || String(a.key).localeCompare(String(b.key)));
+  const site = await rest("site_products?show=eq.true&select=key,data");
   const codes = site.map((r: any) => r.key);
   if (!codes.length) return { styles: [] };
   const [prods, photos] = await Promise.all([
