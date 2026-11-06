@@ -42,8 +42,9 @@
   .ww-img img { width: 92%; height: 92%; object-fit: contain; display: block; }
   .ww-card .ww-img { border-bottom: 1px solid #f0f0f0; }
   .ww-img svg { width: 62%; height: 62%; }
-  .ww-best { position: absolute; top: 10px; left: 10px; z-index: 1; font-size: 10.5px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: #fff; background: #051024; border-radius: 4px; padding: 4px 9px; pointer-events: none; }
-  .ww-best.emb { background: #7a4b12; } .ww-best.silk { background: #1a7698; } .ww-best.dtf { background: #4f7a1f; }
+  .ww-best { position: absolute; top: 8px; left: 8px; z-index: 1; font-size: 11px; font-weight: 500; line-height: 1.3; color: #4b5563; background: rgba(255,255,255,.92); border: 1px solid #e5e7eb; border-radius: 999px; padding: 2px 8px; pointer-events: none; }
+  .ww-best b { font-weight: 600; color: #051024; }
+  .ww-mcard .ww-best { font-size: 10px; padding: 1px 7px; top: 6px; left: 6px; }
   .ww-cbody { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
   .ww-badges { display: flex; flex-wrap: wrap; gap: 6px; }
   .ww-badge { font-size: 10.5px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; border-radius: 4px; padding: 3px 8px; }
@@ -390,7 +391,7 @@
   function logoFor(key) { var x = key && O.xlogo[key]; return x && x.diff ? x.logo : O.logo; }
   // "Best with" label set per style in the calculator (Website catalog → Best with)
   var BEST = { emb: 'Embroidery', silk: 'Silk Screen', dtf: 'DTF' };
-  function bestHtml(s) { return BEST[s.bestFor] ? '<span class="ww-best ' + s.bestFor + '">Best with ' + BEST[s.bestFor] + '</span>' : ''; }
+  function bestHtml(s) { return BEST[s.bestFor] ? '<span class="ww-best">Best with <b>' + BEST[s.bestFor] + '</b></span>' : ''; }
   // step 2: suggest printed/embroidered only when every shirt in the order agrees
   function bestDeco() {
     var d = O.lines.map(function (l) { var b = (byCode[l.code] || {}).bestFor; return b === 'emb' ? 'emb' : b ? 'print' : ''; });
