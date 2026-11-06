@@ -343,8 +343,7 @@
     h += '<div class="ww-grid">' + list.map(function (s) {
       var shown = null;
       if (F.fam.length) { var m = s.colors.filter(function (c) { return F.fam.indexOf(fam(c.name)) >= 0; }); if (m.length) shown = m[0].name; }
-      var mb = MAT[s.material], badges = (mb ? '<span class="ww-badge" style="color:' + mb[0] + ';background:' + mb[1] + '">' + esc(s.material) + '</span>' : '')
-        + (s.fit === "Women's" || s.fit === 'Youth' ? '<span class="ww-badge" style="color:#51406f;background:#efeafa">' + esc(s.fit) + '</span>' : '');
+      var mb = MAT[s.material], badges = (mb ? '<span class="ww-badge" style="color:' + mb[0] + ';background:' + mb[1] + '">' + esc(s.material) + '</span>' : '');
       return '<article class="ww-card"><a class="ww-img" href="#order/' + encodeURIComponent(s.code) + '" tabindex="-1">' + bestHtml(s) + imgHtml(s, shown) + '</a><div class="ww-cbody">'
         + '<div class="ww-badges">' + badges + '</div><h2 class="ww-cname">' + esc(s.name) + '</h2>'
         + '<div class="ww-dots" aria-label="Available colors">' + s.colors.slice(0, 8).map(function (c) { return '<span class="d" title="' + esc(c.name) + '" style="background:' + esc(c.hex) + '"></span>'; }).join('')
