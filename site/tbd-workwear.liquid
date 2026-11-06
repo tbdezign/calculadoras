@@ -454,7 +454,31 @@
     var v = O.lines.map(function (l) { var f = (byCode[l.code] || {}).fromBy || {}; var x = kind === 'emb' ? f.emb : Math.min(f.silk == null ? 1e9 : f.silk, f.dtf == null ? 1e9 : f.dtf); return x != null && x < 1e9 ? x : null; }).filter(function (x) { return x != null; });
     return v.length ? Math.min.apply(null, v) : null;
   }
-  function fromLine(kind) { var f = fromPrice(kind); return f ? '<div class="ww-chfrom">From <strong>' + money(f) + '</strong> / shirt</div>' : ''; }
+  // Step 2: price per shirt for THIS order's shirts and quantity (1-color left chest logo, one-time fee not included)
+  function estItems() { return orderBody().items; }
+  function loadEst() {
+    var items = estItems(), t = total(); if (!t) return;
+    var key = JSON.stringify(items) + mixedShades(); if (O.est && O.est.key === key) return;
+    var est = O.est = { key: key, t: t, done: false };
+    var base = { logoType: 'solid', colors: 1, placement: 'lc', sleeves: 0, items: items };
+    var per = function (q) { return q && !q.errors.length && q.total ? q.subtotal / q.total : null; };
+    var mk = function (m) { var o = {}; for (var k in base) o[k] = base[k]; o.method = m; o.deco = m === 'emb' ? 'emb' : 'print'; return post(o); };
+    Promise.all([t >= DATA.minimums.silk && !mixedShades() ? mk('silk') : null, t >= DATA.minimums.dtf ? mk('dtf') : null, t >= DATA.minimums.emb ? mk('emb') : null]).then(function (r) {
+      if (O.est !== est) return;
+      var ps = [per(r[0]), per(r[1])].filter(function (x) { return x != null; });
+      est.print = ps.length ? Math.min.apply(null, ps) : null; est.emb = per(r[2]); est.done = true;
+      if (O.step === 2) renderPanel();
+    });
+  }
+  function fromLine(kind) {
+    var e = O.est;
+    if (e && e.done && e.key === JSON.stringify(estItems()) + mixedShades()) {
+      var v = kind === 'emb' ? e.emb : e.print;
+      if (v == null) return kind === 'emb' ? '<div class="ww-chfrom">Needs at least ' + DATA.minimums.emb + ' pieces</div>' : '';
+      return '<div class="ww-chfrom">About <strong>' + money(v) + '</strong> / shirt for your ' + pcs(e.t) + '</div>';
+    }
+    var f = fromPrice(kind); return f ? '<div class="ww-chfrom">From <strong>' + money(f) + '</strong> / shirt</div>' : '';
+  }
   function upNote(st, code) {
     var u = st.up || {}, has = function (z) { return sizesFor(code).some(function (s) { return s[0] === z; }); }, parts = [];
     if (u.x2 > 0 && has('2XL')) parts.push('+' + money(u.x2) + ' for 2XL');
@@ -586,6 +610,8 @@
       h += '<h2 class="ww-h2">2. Decoration: printed or embroidered?</h2><p class="ww-p">Pick the look you want. We take care of the technical part.</p><div class="ww-choice">'
         + '<button class="ww-ch' + (O.deco === 'print' ? ' on' : '') + '" data-deco="print">' + (bestDeco() === 'print' ? '<span class="ww-pop">Best for your shirts</span>' : '') + '<b>Printed</b><span>Smooth, flat print. Great for big logos, full color and the best price per shirt.</span>' + fromLine('print') + '</button>'
         + '<button class="ww-ch' + (O.deco === 'emb' ? ' on' : '') + '" data-deco="emb">' + (bestDeco() === 'emb' ? '<span class="ww-pop">Best for your shirts</span>' : '') + '<b>Embroidered</b><span>Stitched thread for a premium look. Best for small logos on the chest. Min ' + DATA.minimums.emb + ' pieces.</span>' + fromLine('emb') + '</button></div>';
+      h += '<div class="ww-fine" style="margin-top:10px">Estimate with a 1-color left chest logo. Your exact price shows once you add your logo.</div>';
+      loadEst();
     } else if (O.step === 3) {
       h += '<h2 class="ww-h2">3. Your logo</h2><p class="ww-p">Upload your logo. PNG, JPG, PDF or AI.</p>'
         + '<label class="ww-upload' + (O.logo ? ' on' : '') + '" for="ww-file">' + (O.logo ? (O.logo.url ? '<img src="' + O.logo.url + '" alt="Your logo">' : '<b>LOGO</b>') + '<span><b>' + esc(O.logo.name) + '</b><br><small style="color:#4b5563">Tap to change the file</small></span>' : '<span><b>Upload your logo</b></span>') + '</label>'
