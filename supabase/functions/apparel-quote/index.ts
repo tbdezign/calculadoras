@@ -61,12 +61,10 @@ async function catalog() {
     const m = by[s.key] || {};
     const base = m.silk || m.dtf || m.emb;
     if (!base) return null;
-    let from = null;
     const meth = m.silk ? "silk" : m.dtf ? "dtf" : "emb";
-    try {
-      const q = P.quoteOrder({ method: meth, colors: 1, placement: "lc", items: [{ code: s.key, qty: { std: 25 } }] }, { [meth]: { [s.key]: base } });
-      from = q.lines[0] ? q.lines[0].unit : null;
-    } catch { /* leave empty */ }
+    let sp: any = { from: {}, up: { x2: 0, x3: 0 } };
+    try { sp = P.stylePrices(s.key, m); } catch { /* leave empty */ }
+    const from = sp.from[meth] ?? null;
     const d = s.data || {};
     return {
       code: s.key, name: cleanName(base.name), type: d.type || "", fit: d.fit || "", material: d.material || "",
@@ -78,7 +76,7 @@ async function catalog() {
       sizeChart: d.sizeChart && signed[d.sizeChart] ? signed[d.sizeChart] : null,
       sizeTable: d.sizeTable || null,
       bestFor: ["emb", "silk", "dtf"].includes(d.bestFor) ? d.bestFor : null,
-      from,
+      from, fromBy: sp.from, up: sp.up,
     };
   }).filter(Boolean);
   return { styles, minimums: { silk: P.CONFIG.silk.minPieces, dtf: P.CONFIG.dtf.minPieces, emb: P.CONFIG.emb.minPieces },

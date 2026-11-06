@@ -186,7 +186,19 @@
     return out;
   }
 
-  const api = { CONFIG, ceil10, round10, silk, silkSetup, dtf, emb, v2Tier, v2Fees, v2Base, v2Price, chooseMethod, quoteOrder, blankCost, supplierKey };
+  // Website catalog: "from" price per method (25 pcs, 1-color left chest) and the extra per piece for 2XL / 3XL+.
+  // prods = { silk?: product, dtf?: product, emb?: product } for one style.
+  function stylePrices(code, prods, cfg) {
+    const one = (m, qty) => { try { const q = quoteOrder({ method: m, colors: 1, placement: "lc", items: [{ code, qty }] }, { [m]: { [String(code).toUpperCase()]: prods[m] } }, cfg); return q.lines[0] ? q.lines[0].unit : null; } catch (e) { return null; } };
+    const from = {};
+    ["silk", "dtf", "emb"].forEach(m => { if (prods[m]) from[m] = one(m, { std: 25 }); });
+    const base = prods.silk ? "silk" : prods.dtf ? "dtf" : "emb", b = from[base];
+    const up = { x2: 0, x3: 0 };
+    if (b != null && base !== "dtf") { const u2 = one(base, { x2: 25 }), u3 = one(base, { x3: 25 }); up.x2 = u2 != null ? Math.max(0, Math.round((u2 - b) * 100) / 100) : 0; up.x3 = u3 != null ? Math.max(0, Math.round((u3 - b) * 100) / 100) : 0; }
+    return { from, up };
+  }
+
+  const api = { CONFIG, stylePrices, ceil10, round10, silk, silkSetup, dtf, emb, v2Tier, v2Fees, v2Base, v2Price, chooseMethod, quoteOrder, blankCost, supplierKey };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.TBDPricing = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
