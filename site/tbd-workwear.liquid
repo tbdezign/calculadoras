@@ -579,7 +579,10 @@
       if (O.logo && O.deco === 'emb') h += '<div class="ww-fine">We turn your logo into a stitch file (digitizing) and send you a proof before stitching.</div>';
       if (O.logo && O.deco !== 'emb') {
         h += '<div class="ww-q">What does your logo look like?</div>';
-        if (O.logo.guess) h += '<div class="ww-hint">' + esc(O.logo.guess) + (O.logoType === 'solid' ? ' ' + O.logo.colors.map(function (c) { return '<span class="ww-dotc" style="background:' + c + '"></span>'; }).join('') : '') + ' Change it below if that\'s not right.</div>';
+        var dots = (O.logo.colors || []).map(function (c) { return '<span class="ww-dotc" style="background:' + c + '"></span>'; }).join('');
+        if (O.logo.detected) h += '<div class="ww-hint">We found ' + O.logo.colors.length + ' solid color' + (O.logo.colors.length === 1 ? '' : 's') + ' in your file: ' + dots
+          + (O.logoType === 'full' ? ' If that\'s right, Solid colors may cost less on bigger orders.' : ' Change it below if that\'s not right.') + '</div>';
+        else if (O.logo.guess) h += '<div class="ww-hint">' + esc(O.logo.guess) + ' Change it below if that\'s not right.</div>';
         h += '<div class="ww-choice">' + [
           ['solid', 'Solid colors (up to 3)', 'Flat colors, no shading. Like most company logos.', 'linear-gradient(90deg,#051024 0 34%,#fff 34% 38%,#41a9cc 38% 72%,#fff 72% 76%,#91bc4d 76%)'],
           ['full', 'Full color / effects', 'Gradients, shadows, photos or many colors.', 'linear-gradient(90deg,#91bc4d,#41a9cc,#b5b5f7,#f2a65a)'],
@@ -591,18 +594,21 @@
           var cn = lum(dc.c) < 60 ? 'black' : lum(dc.c) > 225 ? 'white' : String(dc.shirt.name).toLowerCase();
           // swap only to a color the logo doesn't already have (black text turned black on a black logo = a blob)
           var alt = lum(dc.shirt.hex) < 128 ? 'white' : 'black', inLogo = (O.logo.colors || []).some(function (x) { return alt === 'white' ? lum(x) > 225 : lum(x) < 60; });
-          var pv = logoOnShirt(dc.c, dc.shirt.hex);
-          h += '<div class="ww-msg ' + (dc.on ? 'green' : 'amber') + ' ww-drop" style="margin-top:16px">'
+          var swapHex = !dc.on && dc.fix === 'swap' && !inLogo ? (alt === 'white' ? '#ffffff' : '#111111') : '';
+          var pv = logoOnShirt(dc.c, dc.shirt.hex, swapHex);
+          h += '<div class="ww-msg ' + (dc.on || swapHex ? 'green' : 'amber') + ' ww-drop" style="margin-top:16px">'
             + (pv ? '<div class="ww-dropimg" style="background:' + esc(dc.shirt.hex) + '"><img src="' + pv + '" alt="Your logo on a ' + esc(dc.shirt.name) + ' shirt"></div>' : '')
-            + '<div class="ww-save"><div>Your logo has ' + esc(cn) + ' and your shirts are ' + esc(cn) + '. Here\u2019s how it\u2019ll look: the shirt shows through where the ' + esc(cn) + ' is.'
-            + (dc.on ? ' <b>One less color, lower price.</b> You\u2019ll see it on the proof before anything prints.' : '') + '</div>'
+            + '<div class="ww-save"><div>' + (dc.on ? 'Your logo has ' + esc(cn) + ' and your shirts are ' + esc(cn) + '. Here\u2019s how it\u2019ll look: the shirt shows through where the ' + esc(cn) + ' is. <b>One less color, lower price.</b> You\u2019ll see it on the proof before anything prints.'
+              : swapHex ? 'Here\u2019s your logo with the ' + esc(cn) + ' printed in ' + alt + '.' : '<b>Part of your logo disappears on ' + esc(cn) + ' shirts.</b> See the preview.') + '</div>'
             + '<div class="ww-pills" style="margin:0"><button class="ww-pill' + (dc.on ? ' on' : '') + '" data-drop="ok">Looks good</button><button class="ww-pill' + (!dc.on ? ' on' : '') + '" data-drop="fix">Fix it</button></div>'
-            + (!dc.on ? '<div style="font-size:14px">How do you want to fix it?</div>'
-              + (dc.fix === 'swap' ? '<div><b>Got it: we\u2019ll print that part in ' + alt + '.</b> Same price. You\u2019ll see it on the proof.</div>' : '')
+            + (!dc.on && !swapHex ? '<div style="font-size:14px">How do you want to fix it?</div>' : '') + (!dc.on ? ''
+              + (swapHex ? '<div><b>Got it: we\u2019ll print that part in ' + alt + '.</b> Still ' + O.inks + ' color' + (O.inks === 1 ? '' : 's') + ', same price.</div>' : '')
               + '<div class="ww-pills" style="margin:0">' + (inLogo ? '' : '<button class="ww-pill' + (dc.fix === 'swap' ? ' on' : '') + '" data-fix="swap">Print it in ' + alt + ' instead</button>') + '<button class="ww-pill" data-fix="shirt">Change shirt color</button><label class="ww-pill" for="ww-file" style="cursor:pointer">Upload another version</label></div>' : '')
             + '</div></div>';
         }
-        if (O.logoType === 'solid' || O.logoType === 'full') h += '<div class="ww-fine" style="margin-top:12px">Colors set the price. If your file doesn\u2019t match, we\u2019ll message you before printing.</div>';
+        if (O.logoType === 'full') h += '<div class="ww-fine" style="margin-top:12px;color:#051024">Full color logos print with DTF, so the number of colors doesn\u2019t change your price.</div>';
+        if (O.logoType === 'unsure') h += '<div class="ww-fine" style="margin-top:12px;color:#051024">No problem. We\u2019ll check your file and confirm the price before anything prints.</div>';
+        if (O.logoType) h += '<div class="ww-fine" style="margin-top:12px">Our team checks every file before printing. If anything doesn\u2019t match, we\u2019ll message you first.</div>';
       }
     } else if (O.step === 4) {
       var both = ruleMethod() === 'silk' && O.qSilk && O.qDtf, save = both ? printSave() : 0;
@@ -669,7 +675,8 @@
       if (O.checkout) h += '<div class="ww-msg green" style="margin-top:16px">Almost there! Secure checkout is being connected. For now, send us a message on WhatsApp and we\'ll finish your order.</div>';
     }
     h += '<div class="ww-nav"><button class="ww-btn ghost" data-back' + (O.step === 1 ? ' disabled' : '') + '>Back</button>'
-      + (O.step < 5 ? '<button class="ww-btn" data-next' + (stepOk(O.step) ? '' : ' disabled') + '>Continue</button>' : '<button class="ww-btn pay" data-pay' + (O.quote ? '' : ' disabled') + '>Continue to secure checkout</button>') + '</div>';
+      + (O.step < 5 ? '<button class="ww-btn" data-next' + (stepOk(O.step) ? '' : ' disabled') + '>Continue</button>' : '<button class="ww-btn pay" data-pay' + (O.quote ? '' : ' disabled') + '>Continue to secure checkout</button>') + '</div>'
+      + (O.step === 5 ? '<div class="ww-fine" style="text-align:right;margin-top:8px">You\u2019ll approve a proof before anything prints.</div>' : '');
     p.innerHTML = h;
     if (O.step === 5) fitLogos(p);
   }
@@ -792,17 +799,18 @@
   }
   // the logo as it will print on that shirt: background removed, the matching color left out (the shirt shows through)
   var prevCache = {};
-  function logoOnShirt(c, shirtHex) {
-    var key = c + shirtHex + (O.logo && O.logo.url || '').length; if (prevCache[key]) return prevCache[key];
+  function logoOnShirt(c, shirtHex, swapHex) {
+    var key = c + shirtHex + (swapHex || '') + (O.logo && O.logo.url || '').length; if (prevCache[key]) return prevCache[key];
     var img = O.logo && O.logo.img; if (!img) return '';
     var W = 260, H = Math.max(1, Math.round(W * img.height / img.width)), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
     var x = cv.getContext('2d'); x.drawImage(img, 0, 0, W, H);
-    var im = x.getImageData(0, 0, W, H), d = im.data, cr = rgb(c);
+    var im = x.getImageData(0, 0, W, H), d = im.data, cr = rgb(c), sw = swapHex ? rgb(swapHex) : null;
     var corners = [0, W - 1, (H - 1) * W, H * W - 1].map(function (j) { return [d[j * 4], d[j * 4 + 1], d[j * 4 + 2], d[j * 4 + 3]]; });
     var bg = corners.filter(function (p) { return p[3] < 128; }).length >= 2 ? null : corners.reduce(function (a, p) { return [a[0] + p[0] / 4, a[1] + p[1] / 4, a[2] + p[2] / 4]; }, [0, 0, 0]);
     var out = outsideMask(d, W, H, bg);
     for (var j = 0; j < W * H; j++) { var i = j * 4;
-      if (out[j] || Math.abs(d[i] - cr[0]) + Math.abs(d[i + 1] - cr[1]) + Math.abs(d[i + 2] - cr[2]) < 110) d[i + 3] = 0; }
+      if (out[j]) { d[i + 3] = 0; continue; }
+      if (Math.abs(d[i] - cr[0]) + Math.abs(d[i + 1] - cr[1]) + Math.abs(d[i + 2] - cr[2]) < 110) { if (sw) { d[i] = sw[0]; d[i + 1] = sw[1]; d[i + 2] = sw[2]; } else d[i + 3] = 0; } }
     x.putImageData(im, 0, 0);
     return (prevCache[key] = cv.toDataURL());
   }
