@@ -477,8 +477,17 @@
       }
       // simple logo under 10 pieces: show what Silk Screen would cost at 10
       if (m === 'dtf' && O.logoType === 'solid' && inks() <= 3 && t < DATA.minimums.silk && body.items.length) {
+        // price the bigger order both ways: only offer it when Silk Screen is really the cheaper one at that quantity
+        // (otherwise adding pieces would flip the order straight back to DTF)
         var up = JSON.parse(JSON.stringify(body)); up.method = 'silk'; up.items[0].qty.std += DATA.minimums.silk - t;
-        post(up).then(function (q) { if (seq !== qSeq) return; O.upsell = q && !q.errors.length ? q : null; if (O.step === 4) renderPanel(); });
+        var upD = JSON.parse(JSON.stringify(up)); upD.method = 'dtf'; upD.reorder = false;
+        Promise.all([post(up), post(upD)]).then(function (r) {
+          if (seq !== qSeq) return; var sq = r[0], dq = r[1];
+          var okS = sq && !sq.errors.length && sq.total, okD = dq && !dq.errors.length && dq.total;
+          // only when Silk Screen is the cheaper one at the bigger quantity; otherwise the next screen would say "Save $X with DTF"
+          O.upsell = okS && (!okD || sq.total$ / sq.total <= dq.total$ / dq.total) ? (sq.silk = true, sq) : null;
+          if (O.step === 4) renderPanel();
+        });
       } else O.upsell = null;
     }, 250);
   }
@@ -607,7 +616,7 @@
       }
       // only when Silk Screen at the minimum is actually cheaper per piece (setup included)
       if (O.upsell && m === 'dtf' && !mixedShades() && O.quote && O.quote.total) { var add = DATA.minimums.silk - t, save = O.quote.total$ / O.quote.total - O.upsell.total$ / O.upsell.total;
-        if (save >= 0.5) h += '<div class="ww-msg green ww-up"><span>Add ' + add + ' more piece' + (add === 1 ? '' : 's') + ' and your order switches to Silk Screen: save ' + money(save) + ' per piece.</span>' + (O.quick ? '' : '<button class="ww-pill on" data-quick="1">+ Add pieces</button>') + '</div>'; }
+        if (save >= 0.5) h += '<div class="ww-msg green ww-up"><span>Add ' + add + ' more piece' + (add === 1 ? '' : 's') + (O.upsell.silk ? ' and your order switches to Silk Screen: save ' : ' and save ') + money(save) + ' per piece.</span>' + (O.quick ? '' : '<button class="ww-pill on" data-quick="1">+ Add pieces</button>') + '</div>'; }
       if (O.quick) h += quickAddHtml();
       else h += '<div style="margin:-4px 0 14px"><button class="ww-link" style="padding:0;font-size:13px" data-quick="1">Need to change quantities? Edit here</button></div>';
       if (m === 'dtf' && O.logoType === 'unsure') h += '<div class="ww-msg grey">Not sure about your logo? No problem. We check every file before printing. If it can be screen printed, we refund the difference.</div>';
