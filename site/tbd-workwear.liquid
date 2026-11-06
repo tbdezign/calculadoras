@@ -387,9 +387,13 @@
   function dropColor() {
     if (!O.logo || !O.logo.detected || O.manualInks || O.logoType !== 'solid' || O.inks < 2 || O.deco !== 'print') return null;
     var sh = shirtTone(); if (!sh) return null;
-    var c = (O.logo.colors || []).filter(function (x) { return cdist(x, sh.hex) < 70; })[0]; if (!c) return null;
+    var cols = O.logo.colors || [], i = -1;
+    for (var j = 0; j < cols.length; j++) if (cdist(cols[j], sh.hex) < 70) { i = j; break; }
+    if (i < 0) return null;
+    var c = cols[i], share = (O.logo.share || [])[i] || 0, key = c + '|' + sh.hex;
+    // a big part of the logo (text, main icon) would disappear: don't drop it, ask how to fix it
+    if (share >= 0.2) return { c: c, shirt: sh, kind: 'major', key: key, on: false, fix: (O.majorFix || {})[key] || '' };
     var kind = lum(c) < 60 && lum(sh.hex) < 60 ? 'black' : lum(c) > 225 && lum(sh.hex) > 225 ? 'white' : 'ask';
-    var key = c + '|' + sh.hex;
     return { c: c, shirt: sh, kind: kind, key: key, on: kind !== 'ask' || (O.dropAns || {})[key] === true, asked: (O.dropAns || {})[key] != null };
   }
   function inks() { var d = dropColor(); return d && d.on ? O.inks - 1 : O.inks; }
@@ -570,8 +574,12 @@
         if (O.logoType === 'solid') h += '<div class="ww-pills" style="margin-top:14px"><span style="font-size:14px">How many colors?</span>' + [1, 2, 3].map(function (n) { return '<button class="ww-pill' + (O.inks === n ? ' on' : '') + '" data-inks="' + n + '">' + n + '</button>'; }).join('') + '<span style="font-size:12px;color:#6b7280">White counts as a color when it\'s part of the logo.</span></div>';
         var dc = dropColor();
         if (dc) {
-          var cn = dc.kind === 'ask' ? String(dc.shirt.name).toLowerCase() : dc.kind;
-          if (dc.kind !== 'ask') h += '<div class="ww-msg green" style="margin-top:16px">Your logo has ' + esc(cn) + ' and your shirts are ' + esc(cn) + ', so we\u2019ll let the shirt show through instead of printing it. One less color, lower price. You\u2019ll see it on the proof before anything prints.</div>';
+          var cn = dc.kind === 'ask' || dc.kind === 'major' ? (lum(dc.c) < 60 ? 'black' : lum(dc.c) > 225 ? 'white' : String(dc.shirt.name).toLowerCase()) : dc.kind;
+          var alt = lum(dc.shirt.hex) < 128 ? 'white' : 'black';
+          if (dc.kind === 'major') h += '<div class="ww-msg amber ww-save" style="margin-top:16px"><div>Part of your logo is ' + esc(cn) + ', the same color as your shirts, so it won\u2019t show up. How do you want to fix it?</div>'
+            + (dc.fix === 'swap' ? '<div><b>Got it: we\u2019ll print that part in ' + alt + '.</b> Same price. You\u2019ll see it on the proof.</div>' : '')
+            + '<div class="ww-pills" style="margin:0"><button class="ww-pill' + (dc.fix === 'swap' ? ' on' : '') + '" data-fix="swap">Print it in ' + alt + ' instead</button><button class="ww-pill" data-fix="shirt">Change shirt color</button><label class="ww-pill" for="ww-file" style="cursor:pointer">Upload another version</label></div></div>';
+          else if (dc.kind !== 'ask') h += '<div class="ww-msg green" style="margin-top:16px">Your logo has ' + esc(cn) + ' and your shirts are ' + esc(cn) + ', so we\u2019ll let the shirt show through instead of printing it. One less color, lower price. You\u2019ll see it on the proof before anything prints.</div>';
           else h += '<div class="ww-msg grey ww-save" style="margin-top:16px"><div>Your logo has ' + esc(cn) + ' and your shirts are ' + esc(cn) + '. Want the shirt to show through there? One less color, lower price.</div><div class="ww-pills" style="margin:0"><button class="ww-pill' + (dc.asked && dc.on ? ' on' : '') + '" data-drop="1">Yes, drop it</button><button class="ww-pill' + (dc.asked && !dc.on ? ' on' : '') + '" data-drop="0">No, print it</button></div></div>';
         }
         if (O.logoType === 'solid' || O.logoType === 'full') h += '<div class="ww-msg grey" style="margin-top:12px">Colors set the price. If your file doesn\u2019t match, we\u2019ll message you before printing.</div>';
@@ -748,7 +756,7 @@
     var main = groups.filter(function (g) { return g.n > n * 0.04; }).sort(function (a, b) { return b.n - a.n; });
     var covered = main.reduce(function (t, g) { return t + g.n; }, 0) / (n || 1);
     var hex = function (c) { return '#' + c.map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join(''); };
-    return { list: main.map(function (g) { return hex(g.c); }), covered: covered };
+    return { list: main.map(function (g) { return hex(g.c); }), share: main.map(function (g) { return g.n / (n || 1); }), covered: covered };
   }
   function readLogo(file) {
     O.logo = { name: file.name, url: null, guess: '', colors: [] }; O.confirmed = false;
@@ -760,7 +768,7 @@
       img.onload = function () {
         try {
           var cols = logoColors(img);
-          O.logo.colors = cols.list;
+          O.logo.colors = cols.list; O.logo.share = cols.share;
           if (cols.list.length && cols.list.length <= 3 && cols.covered > 0.85) { O.logoType = 'solid'; O.inks = cols.list.length; O.logo.detected = true; O.manualInks = false; O.logo.guess = 'We found ' + O.inks + ' solid color' + (O.inks === 1 ? '' : 's') + ' in your file:'; }
           else if (cols.list.length) { O.logoType = 'full'; O.logo.guess = 'Your file looks like it has many colors or effects.'; }
         } catch (e) {}
@@ -796,6 +804,7 @@
     if (ds.deco) { O.deco = ds.deco; O.decoPicked = true; if (ds.deco === 'emb' && /^(ff|bk|fb|lcb)$/.test(O.placement)) O.placement = 'lc'; renderPanel(); requote(); return; }
     if (ds.lt) { O.logoType = ds.lt; renderPanel(); requote(); return; }
     if (ds.inks) { O.inks = +ds.inks; O.manualInks = true; renderPanel(); requote(); return; }
+    if (ds.fix) { var fc = dropColor(); if (ds.fix === 'shirt') { go(1); return; } if (fc) { O.majorFix = O.majorFix || {}; O.majorFix[fc.key] = ds.fix; } renderPanel(); return; }
     if (ds.drop != null) { var dc = dropColor(); if (dc) { O.dropAns = O.dropAns || {}; O.dropAns[dc.key] = ds.drop === '1'; } renderPanel(); requote(); return; }
     if (ds.place) { O.placement = ds.place; renderPanel(); requote(); return; }
     if (ds.sleeves != null) { O.sleeves = +ds.sleeves; renderPanel(); requote(); return; }
