@@ -434,6 +434,12 @@
     var d = O.lines.map(function (l) { var b = (byCode[l.code] || {}).bestFor; return b === 'emb' ? 'emb' : b ? 'print' : ''; });
     return d.length && d[0] && d.every(function (x) { return x === d[0]; }) ? d[0] : '';
   }
+  // rough stitch estimate for a left chest logo (up to 4 in wide/tall): filled area × ~1,800 stitches per sq in. Only used for a heads-up.
+  function embStitchEst() {
+    if (!O.logo || !O.logo.fill) return 0;
+    var a = O.logo.aspect || 1, w = a >= 1 ? 4 : 4 * a, h = a >= 1 ? 4 / a : 4;
+    return w * h * O.logo.fill * 1800;
+  }
   function minPcs() { var mn = DATA.minimums; return Math.min(mn.silk, mn.dtf, mn.emb); }
   // "from" price of the order's styles (25 pcs, 1-color left chest): print = cheapest of Silk Screen / DTF
   function fromPrice(kind) {
@@ -453,7 +459,7 @@
     return polo || m === 'emb' ? 'lc' : 'lcb';
   }
   function orderBody(overrides) {
-    var o = { deco: O.deco === 'emb' ? 'emb' : 'print', logoType: O.logoType || 'unsure', colors: inks(), mixedShades: mixedShades(), reorder: (method() === 'silk' || method() === 'emb') && O.reorder, reorderNo: O.reorder ? O.reorderNo : '', placement: O.placement, otherSpots: O.placement === 'other' ? O.otherSpots : [], sleeves: O.sleeves, sleeveSide: O.sleeves === 1 ? O.sleeveSide : '', newLogos: newLogos(),
+    var o = { deco: O.deco === 'emb' ? 'emb' : 'print', logoType: O.logoType || 'unsure', colors: inks(), mixedShades: mixedShades(), reorder: method() === 'silk' && O.reorder, reorderNo: O.reorder ? O.reorderNo : '', placement: O.placement, otherSpots: O.placement === 'other' ? O.otherSpots : [], sleeves: O.sleeves, sleeveSide: O.sleeves === 1 ? O.sleeveSide : '', newLogos: newLogos(),
       items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) {
         var q = { std: 0, x2: 0, x3: 0 }; SIZES.forEach(function (s) { q[s[1]] += +l.sizes[s[0]] || 0; });
         return { code: l.code, color: l.color, qty: q };
@@ -576,7 +582,11 @@
       h += '<h2 class="ww-h2">3. Your logo</h2><p class="ww-p">Upload your logo. PNG, JPG, PDF or AI.</p>'
         + '<label class="ww-upload' + (O.logo ? ' on' : '') + '" for="ww-file">' + (O.logo ? (O.logo.url ? '<img src="' + O.logo.url + '" alt="Your logo">' : '<b>LOGO</b>') + '<span><b>' + esc(O.logo.name) + '</b><br><small style="color:#4b5563">Tap to change the file</small></span>' : '<span><b>Upload your logo</b></span>') + '</label>'
         + '<input type="file" id="ww-file" accept=".png,.jpg,.jpeg,.pdf,.ai,.svg,.eps,image/*,application/pdf" style="position:absolute;left:-9999px">';
-      if (O.logo && O.deco === 'emb') h += '<div class="ww-fine">We turn your logo into a stitch file (digitizing) and send you a proof before stitching.</div>';
+      if (O.logo && O.deco === 'emb') {
+        if (O.logo.effects && !O.keepEmb) h += '<div class="ww-msg amber ww-save" style="margin-top:16px"><div>Your logo has gradients or shading. Embroidery simplifies those. Want it exactly like your file? Printed keeps every detail.</div><div class="ww-pills" style="margin:0"><button class="ww-pill on" data-deco="print">Switch to printed</button><button class="ww-pill" data-keepemb>Keep embroidery</button></div></div>';
+        if (embStitchEst() > 9000) h += '<div class="ww-msg grey" style="margin-top:12px">Your logo has a lot of solid fill, so it may need extra stitches. Our team checks every file and we\u2019ll confirm any difference before stitching.</div>';
+        h += '<div class="ww-fine">We turn your logo into a stitch file (digitizing) and send you a proof before stitching.</div>';
+      }
       if (O.logo && O.deco !== 'emb') {
         h += '<div class="ww-q">What does your logo look like?</div>';
         var dots = (O.logo.colors || []).map(function (c) { return '<span class="ww-dotc" style="background:' + c + '"></span>'; }).join('');
@@ -621,6 +631,7 @@
         : 'For orders under ' + DATA.minimums.silk + ' pieces, DTF is the best option for your logo.';
       var d = DATA.days[m];
       h += '<h2 class="ww-h2" style="margin-bottom:14px">4. Logo placement</h2><div class="ww-method"><small>' + (O.pick && ruleMethod() === 'silk' ? 'Your choice' : 'Best for your order') + '</small><b>' + NAMES[m] + '</b>' + (why ? '<p>' + why + '</p>' : '') + '<em>Production: ' + d[0] + '–' + d[1] + ' business days after artwork approval</em></div>';
+      if (m === 'emb') h += '<div class="ww-fine" style="margin:-4px 0 12px">Price includes up to 9,000 stitches, which fits most left-chest logos. If yours needs more, we\u2019ll confirm the difference before stitching.</div>';
       // Silk Screen vs DTF: the client decides (save now with DTF, or Silk Screen: lasts longer, no screens on reorders)
       if (both) {
         var tot = Math.abs(O.qSilk.total$ - O.qDtf.total$), ds = DATA.days.dtf, dsk = DATA.days.silk;
@@ -638,9 +649,10 @@
       else h += '<div style="margin:-4px 0 14px"><button class="ww-link" style="padding:0;font-size:13px" data-quick="1">Need to change quantities? Edit here</button></div>';
       if (m === 'dtf' && O.logoType === 'unsure') h += '<div class="ww-msg grey">Not sure about your logo? No problem. We check every file before printing. If it can be screen printed, we refund the difference.</div>';
       if (t < DATA.minimums[m]) h += '<div class="ww-msg red">' + NAMES[m] + ' needs at least ' + DATA.minimums[m] + ' pieces in the order. You have ' + t + '.</div>';
-      h += '<div class="ww-q">Where should the logo go?</div><div class="ww-choice" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">' + PLACES.filter(function (x) { return !(m === 'emb' && /^(ff|bk|fb|lcb)$/.test(x[0])); }).map(function (x) {
-        return '<button class="ww-ch' + (O.placement === x[0] ? ' on' : '') + '" data-place="' + x[0] + '" style="text-align:center">' + (x[0] === popularPlace(m) ? '<span class="ww-pop">Most popular</span>' : '') + '<b style="margin:0">' + x[1] + '</b></button>';
+      h += '<div class="ww-q">Where should the logo go?</div><div class="ww-choice" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">' + PLACES.filter(function (x) { return !(m === 'emb' && /^(ff|bk|fb|lcb|other)$/.test(x[0])); }).map(function (x) {
+        return '<button class="ww-ch' + (O.placement === x[0] ? ' on' : '') + '" data-place="' + x[0] + '" style="text-align:center">' + (x[0] === popularPlace(m) && m !== 'emb' ? '<span class="ww-pop">Most popular</span>' : '') + '<b style="margin:0">' + x[1] + '</b></button>';
       }).join('') + '</div>';
+      if (m === 'emb') h += '<div class="ww-fine" style="margin-top:8px">Left chest: up to 4\u2033 wide. Sleeve: up to 3\u2033 wide.</div>';
       if (O.placement === 'other') {
         h += '<label for="ww-other" class="ww-q" style="display:block;font-size:14px">Tell us where the logo goes</label><textarea id="ww-other" class="ww-ta" rows="3" placeholder="E.g. small logo on the back of the neck, name on the right chest…">' + esc(O.otherText) + '</textarea>'
           + '<div class="ww-q" style="font-size:14px">How many spots will the logo go on?</div>'
@@ -658,12 +670,11 @@
           return '<div class="ww-spot"><b>' + k[1] + '</b><button class="ww-pill' + (!x.diff ? ' on' : '') + '" data-xl="' + k[0] + '" data-v="0">Same logo</button><button class="ww-pill' + (x.diff ? ' on' : '') + '" data-xl="' + k[0] + '" data-v="1">A different logo</button>'
             + (x.diff ? '<label class="ww-xup' + (x.logo ? ' on' : '') + '" for="ww-x-' + k[0] + '">' + (x.logo && x.logo.url ? '<img src="' + x.logo.url + '" alt="">' : '') + '<span>' + (x.logo ? esc(x.logo.name) : 'Upload this logo') + '</span></label><input type="file" id="ww-x-' + k[0] + '" data-xfile="' + k[0] + '" accept="image/*,.pdf,.ai,.eps,.svg" hidden>' : '') + '</div>';
         }).join('');
-        if (m === 'emb') h += '<div class="ww-fine">The same logo in more spots is digitized only once. Each different logo has its own one-time digitizing fee.</div>';
-        else if (newLogos()) h += '<div class="ww-fine">Your price uses the color count of your main logo. If another logo needs more colors, we\'ll confirm before printing.</div>';
+        if (m !== 'emb' && newLogos()) h += '<div class="ww-fine">Your price uses the color count of your main logo. If another logo needs more colors, we\'ll confirm before printing.</div>';
         if (xs.some(function (k) { var x = xl(k[0]); return x.diff && !x.logo; })) h += '<div class="ww-fine" style="color:#b45309">Upload each different logo to continue.</div>';
       }
-      if (m === 'silk' || m === 'emb') {
-        var setupWord = m === 'silk' ? 'screen setup' : 'digitizing';
+      if (m === 'silk') {
+        var setupWord = 'screen setup';
         h += '<div class="ww-q">Is this a reorder?</div><div class="ww-pills"><button class="ww-pill' + (!O.reorder ? ' on' : '') + '" data-reorder="0">No, new order</button><button class="ww-pill' + (O.reorder ? ' on' : '') + '" data-reorder="1">Yes, same artwork as before</button></div>';
         if (O.reorder) {
           h += '<div style="margin-top:12px;display:grid;gap:10px"><label style="font-size:14px">Previous order number <span style="color:#6b7280">(optional)</span><input id="ww-reno" class="ww-ta" style="margin-top:6px;resize:none" value="' + esc(O.reorderNo) + '" placeholder="e.g. #1234"></label>'
@@ -771,7 +782,7 @@
     var transparentBg = corners.filter(function (p) { return p[3] < 128; }).length >= 2;
     var bg = transparentBg ? null : corners.reduce(function (a, p) { return [a[0] + p[0] / 4, a[1] + p[1] / 4, a[2] + p[2] / 4]; }, [0, 0, 0]);
     var dist = function (p, q) { return Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) + Math.abs(p[2] - q[2]); };
-    var groups = [], n = 0, out = outsideMask(d, W, H, bg), gi = new Int16Array(W * H).fill(-1);
+    var groups = [], n = 0, out = outsideMask(d, W, H, bg), gi = new Int16Array(W * H).fill(-1), bx0 = W, bx1 = -1, by0 = H, by1 = -1;
     for (var i = 0; i < d.length; i += 4) {
       if (d[i + 3] < 200) continue;                         // transparent + soft edges
       var p = [d[i], d[i + 1], d[i + 2]];
@@ -780,6 +791,7 @@
       var g = null, k; for (k = 0; k < groups.length; k++) if (dist(p, groups[k].c) < 90) { g = groups[k]; break; }
       if (g) { g.n++; } else { groups.push({ c: p, n: 1, edge: 0 }); k = groups.length - 1; }
       gi[i / 4] = k;
+      var px0 = (i / 4) % W, py0 = Math.floor(i / 4 / W); if (px0 < bx0) bx0 = px0; if (px0 > bx1) bx1 = px0; if (py0 < by0) by0 = py0; if (py0 > by1) by1 = py0;
     }
     // how much of each color touches the outside (the background around the logo): those parts vanish on a same-color shirt
     for (var y = 0; y < H; y++) for (var xx = 0; xx < W; xx++) { var j = y * W + xx; if (gi[j] < 0) continue;
@@ -787,7 +799,8 @@
     var main = groups.filter(function (g) { return g.n > n * 0.04; }).sort(function (a, b) { return b.n - a.n; });
     var covered = main.reduce(function (t, g) { return t + g.n; }, 0) / (n || 1);
     var hex = function (c) { return '#' + c.map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join(''); };
-    return { list: main.map(function (g) { return hex(g.c); }), share: main.map(function (g) { return g.n / (n || 1); }), edge: main.map(function (g) { return g.edge / (g.n || 1); }), covered: covered };
+    return { list: main.map(function (g) { return hex(g.c); }), share: main.map(function (g) { return g.n / (n || 1); }), edge: main.map(function (g) { return g.edge / (g.n || 1); }), covered: covered,
+      fill: bx1 >= bx0 ? n / ((bx1 - bx0 + 1) * (by1 - by0 + 1)) : 0, aspect: bx1 >= bx0 ? (bx1 - bx0 + 1) / (by1 - by0 + 1) : 1 };
   }
   // background connected to the image border (transparent, or the corner color for a JPG/white-background file)
   function outsideMask(d, W, H, bg) {
@@ -826,7 +839,8 @@
           var cols = logoColors(img);
           O.logo.colors = cols.list; O.logo.share = cols.share; O.logo.edge = cols.edge; O.logo.img = img;
           if (cols.list.length && cols.list.length <= 3 && cols.covered > 0.85) { O.logoType = 'solid'; O.inks = cols.list.length; O.logo.detected = true; O.manualInks = false; O.logo.guess = 'We found ' + O.inks + ' solid color' + (O.inks === 1 ? '' : 's') + ' in your file:'; }
-          else if (cols.list.length) { O.logoType = 'full'; O.logo.guess = 'Your file looks like it has many colors or effects.'; }
+          else if (cols.list.length) { O.logoType = 'full'; O.logo.effects = true; O.logo.guess = 'Your file looks like it has many colors or effects.'; }
+          O.logo.fill = cols.fill; O.logo.aspect = cols.aspect; O.keepEmb = false;
         } catch (e) {}
         renderPanel(); requote();
       };
@@ -857,7 +871,8 @@
     if (ds.rm) { O.lines = O.lines.filter(function (l) { return String(l.id) !== ds.rm; }); renderPanel(); requote(); return; }
     if (ds.color) { lineById(ds.line).color = ds.color; renderPanel(); requote(); return; }
     if (ds.inc || ds.dec) { var l = lineById(ds.line), s = ds.inc || ds.dec; l.sizes[s] = Math.max(0, (+l.sizes[s] || 0) + (ds.inc ? 1 : -1)); renderPanel(); requote(); return; }
-    if (ds.deco) { O.deco = ds.deco; O.decoPicked = true; if (ds.deco === 'emb' && /^(ff|bk|fb|lcb)$/.test(O.placement)) O.placement = 'lc'; renderPanel(); requote(); return; }
+    if ('keepemb' in ds) { O.keepEmb = true; renderPanel(); return; }
+    if (ds.deco) { O.deco = ds.deco; O.decoPicked = true; if (ds.deco === 'emb' && /^(ff|bk|fb|lcb|other)$/.test(O.placement)) O.placement = 'lc'; renderPanel(); requote(); return; }
     if (ds.lt) { O.logoType = ds.lt; renderPanel(); requote(); return; }
     if (ds.inks) { O.inks = +ds.inks; O.manualInks = true; renderPanel(); requote(); return; }
     if (ds.fix) { var fc = dropColor(); if (ds.fix === 'shirt') { go(1); return; } if (fc) { O.majorFix = O.majorFix || {}; O.majorFix[fc.key] = ds.fix; } renderPanel(); return; }

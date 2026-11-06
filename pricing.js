@@ -30,7 +30,12 @@
       minPieces: 4, tiers: [4, 8, 16, 32], days: [7, 12],
     },
     emb: {
-      rate: 4, digCost: 5, digRetail: 20, suppShip: 30, clientShip: 25,
+      // Embroidery per piece per spot, by the order's total pieces:
+      // [from qty, retail up to 9,000 stitches, retail per extra 1,000, vendor up to 7,000 stitches, vendor per extra 1,000]
+      table: [[1, 7.90, 1.70, 3.95, 0.85], [25, 7.40, 1.50, 3.70, 0.75], [73, 6.90, 1.40, 3.45, 0.70], [145, 6.40, 1.30, 3.20, 0.65],
+              [251, 5.90, 1.20, 2.95, 0.60], [500, 5.40, 1.10, 2.70, 0.55], [1000, 3.70, 0.60, 1.85, 0.30]],
+      stitchesIncluded: 9000, vendorStitchesIncluded: 7000,
+      digCost: 5, digRetail: 20, suppShip: 30, clientShip: 25,
       minPieces: 6, tiers: [6, 12, 24, 48], days: [7, 10],
     },
     v2: { blindShip: 10, shipping: 16, shipThreshold: 59, tiers: [2, 4, 8, 16] },
@@ -68,15 +73,25 @@
   }
 
   // ── Embroidery: blank × 2 + rate × 2 per spot + (supplier + client shipping) ÷ pieces; shipping is pass-through
+  // ── Embroidery: blank × 2 + table price per spot (by order qty) + stitches over 9,000 on the main logo + shipping
+  // Extra stitches are rounded UP to the next 1,000 (11,200 stitches = 3 × 1,000 extra). Unknown stitch count = up to 9,000.
+  function embDeco(tq, stitches, cfg) {
+    const E = (cfg || CONFIG).emb; let row = E.table[0];
+    E.table.forEach(r => { if (tq >= r[0]) row = r; });
+    const st = +stitches || 0, extraK = Math.max(0, Math.ceil((st - E.stitchesIncluded) / 1000));
+    const vExtraK = Math.max(0, Math.ceil((st - E.vendorStitchesIncluded) / 1000));   // the vendor charges from 7,000
+    return { base: row[1], per1k: row[2], extraK, main: Math.round((row[1] + extraK * row[2]) * 100) / 100,
+      costBase: row[3], costMain: Math.round((row[3] + vExtraK * row[4]) * 100) / 100 };
+  }
   function emb(a, cfg) {
     const E = (cfg || CONFIG).emb;
-    const spots = 1 + (a.extra || 0);
-    const rate = a.rate == null ? E.rate : a.rate;
+    const spots = 1 + (a.extra || 0), d = embDeco(a.tq, a.stitches, cfg);
+    const deco = d.main + d.base * (spots - 1), decoCost = d.costMain + d.costBase * (spots - 1);
     const suppShip = a.suppShip == null ? E.suppShip : a.suppShip, clientShip = a.clientShip == null ? E.clientShip : a.clientShip;
     const ship = (suppShip + clientShip) / a.tq;
-    const rp = ceil10((a.blank * 2) + (rate * 2 * spots) + ship);
-    const cp = a.blank + rate * spots + ship;
-    return { perPiece: rp, unitCost: cp };
+    const rp = ceil10((a.blank * 2) + deco + ship);
+    const cp = a.blank + decoCost + ship;
+    return { perPiece: rp, unitCost: cp, deco };
   }
 
   // ── DTF / Embroidery Vendor 2 (tier price from the vendor; fees split across pieces)
@@ -169,7 +184,7 @@
           const extra = (other ? otherSpots.length - 1 : 0) + sleeves;
           // Digitizing is per different logo: the same logo in more spots is digitized once (newLogos = extra spots with a different logo).
           spotsForSetup = 1 + (order.newLogos != null ? Math.max(0, Math.min(+order.newLogos || 0, extra)) : extra);
-          r = emb({ blank: blankCost("emb", p, size), tq: total, extra, suppShip: g.blanks >= C.freeShipMin ? 0 : C.emb.suppShip }, C);
+          r = emb({ blank: blankCost("emb", p, size), tq: total, extra, stitches: order.stitches, suppShip: g.blanks >= C.freeShipMin ? 0 : C.emb.suppShip }, C);
         }
         out.lines.push({ code: p.code, name: p.name, color: it.color || "", size, q, unit: Math.round(r.perPiece * 100) / 100, amount: Math.round(r.perPiece * q * 100) / 100 });
         out.subtotal += r.perPiece * q; out.cost += r.unitCost * q;
@@ -177,7 +192,8 @@
     });
     const newSpots = order.reorder ? 0 : spotsForSetup;
     if (method === "silk") { const colors = Math.max(1, Math.min(3, +order.colors || 1)); out.setup = silkSetup(colors, newSpots, C); out.setupLabel = "Screen setup"; }
-    if (method === "emb") { out.setup = newSpots * C.emb.digRetail; out.cost += newSpots * C.emb.digCost; out.setupLabel = "Digitizing"; }
+    // Digitizing is charged separately (not on the website); pass chargeDigitizing: true to include it.
+    if (method === "emb" && order.chargeDigitizing) { out.setup = newSpots * C.emb.digRetail; out.cost += newSpots * C.emb.digCost; out.setupLabel = "Digitizing"; }
     if (order.reorder) out.reorder = true;
     out.subtotal = Math.round(out.subtotal * 100) / 100;
     out.total$ = Math.round((out.subtotal + out.setup) * 100) / 100;
@@ -198,7 +214,7 @@
     return { from, up };
   }
 
-  const api = { CONFIG, stylePrices, ceil10, round10, silk, silkSetup, dtf, emb, v2Tier, v2Fees, v2Base, v2Price, chooseMethod, quoteOrder, blankCost, supplierKey };
+  const api = { CONFIG, stylePrices, embDeco, ceil10, round10, silk, silkSetup, dtf, emb, v2Tier, v2Fees, v2Base, v2Price, chooseMethod, quoteOrder, blankCost, supplierKey };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.TBDPricing = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
