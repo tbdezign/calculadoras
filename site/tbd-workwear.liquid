@@ -389,8 +389,8 @@
   function newLogos() { return extraSpots().filter(function (k) { return xl(k[0]).diff; }).length; }
   function logoFor(key) { var x = key && O.xlogo[key]; return x && x.diff ? x.logo : O.logo; }
   // "Best with" label set per style in the calculator (Website catalog → Best with)
-  var BEST = { emb: 'Embroidery', silk: 'Silk Screen', dtf: 'DTF' };
-  function bestHtml(s) { return BEST[s.bestFor] ? '<span class="ww-best">Best with <b>' + BEST[s.bestFor] + '</b></span>' : ''; }
+  // card label only where it changes the decision (polos, scrubs…): "Great for embroidery". Silk Screen styles get no label.
+  function bestHtml(s) { return s.bestFor === 'emb' ? '<span class="ww-best">Great for <b>embroidery</b></span>' : ''; }
   // step 2: suggest printed/embroidered only when every shirt in the order agrees
   function bestDeco() {
     var d = O.lines.map(function (l) { var b = (byCode[l.code] || {}).bestFor; return b === 'emb' ? 'emb' : b ? 'print' : ''; });
