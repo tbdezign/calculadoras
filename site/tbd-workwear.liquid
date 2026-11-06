@@ -371,11 +371,13 @@
     return used.indexOf(true) >= 0 && used.indexOf(false) >= 0;
   }
   function silkFits() { return O.deco === 'print' && O.logoType === 'solid' && O.inks <= 3 && total() >= DATA.minimums.silk; }
-  function method() {
+  // the method our rule picks; the client can still choose DTF over Silk Screen when DTF costs less on this order
+  function ruleMethod() {
     if (O.deco === 'emb') return 'emb';
     if (O.deco === 'print' && O.logoType) return silkFits() && !mixedShades() ? 'silk' : 'dtf';
     return null;
   }
+  function method() { var m = ruleMethod(); return m === 'silk' && O.pickDtf ? 'dtf' : m; }
   // Extra spots (sleeves, more spots) can carry the same logo or a different one.
   // Embroidery: each different logo has its own digitizing; the same logo in more spots is digitized once.
   function extraSpots() {
@@ -402,6 +404,7 @@
         var q = { std: 0, x2: 0, x3: 0 }; SIZES.forEach(function (s) { q[s[1]] += +l.sizes[s[0]] || 0; });
         return { code: l.code, color: l.color, qty: q };
       }) };
+    if (ruleMethod() === 'silk' && O.pickDtf) o.method = 'dtf';
     for (var k in overrides || {}) o[k] = overrides[k];
     return o;
   }
@@ -409,7 +412,7 @@
   function requote() {
     clearTimeout(qTimer);
     var m = method(), t = total();
-    if (!m || !t || t < DATA.minimums[m]) { O.quote = null; O.upsell = null; renderAside(); return; }
+    if (!m || !t || t < DATA.minimums[m]) { O.quote = null; O.upsell = null; O.alt = null; renderAside(); return; }
     qTimer = setTimeout(function () {
       var seq = ++qSeq, body = orderBody();
       post(body).then(function (q) {
@@ -421,6 +424,12 @@
         var up = JSON.parse(JSON.stringify(body)); up.method = 'silk'; up.items[0].qty.std += DATA.minimums.silk - t;
         post(up).then(function (q) { if (seq !== qSeq) return; O.upsell = q && !q.errors.length ? q : null; if (O.step === 4) renderPanel(); });
       } else O.upsell = null;
+      // Silk Screen order: also price it as DTF (or back as Silk Screen when the client picked DTF), so they can compare
+      if (ruleMethod() === 'silk' && body.items.length) {
+        var alt = m === 'silk' ? { method: 'dtf' } : { method: 'silk', reorder: O.reorder, reorderNo: O.reorder ? O.reorderNo : '' };
+        post(orderBody(alt)).then(function (q) { if (seq !== qSeq) return; O.alt = q && !q.errors.length && q.total ? q : null;
+          if (O.step === 4) { var ae = document.activeElement; if (ae && ae.dataset && ae.dataset.size && app.contains(ae)) O.dirty = true; else renderPanel(); } });
+      } else O.alt = null;
     }, 250);
   }
   function post(body) {
@@ -519,14 +528,23 @@
         }
       }
     } else if (O.step === 4) {
-      var why = m === 'silk' ? 'Your logo has ' + O.inks + (O.inks === 1 ? ' color' : ' colors') + ' and your order has ' + t + ' pieces: screen printing gives the most durable print and the best price.'
+      var altSave = O.alt && O.quote && O.quote.total ? O.quote.total$ / O.quote.total - O.alt.total$ / O.alt.total : 0;
+      var why = m === 'silk' ? 'Your logo has ' + O.inks + (O.inks === 1 ? ' color' : ' colors') + ' and your order has ' + t + ' pieces: screen printing gives the most durable print' + (altSave >= 0.5 ? '.' : ' and the best price.')
+        : m === 'dtf' && O.pickDtf && ruleMethod() === 'silk' ? 'You picked DTF to save on this order. It prints your logo in full color with sharp detail.'
         : m === 'emb' ? 'Stitched directly into the shirt for a premium, long-lasting look.'
         : O.logoType === 'full' ? 'Your logo has gradients or many colors. DTF prints it in full color with sharp detail.'
         : O.logoType === 'unsure' ? 'DTF works with any logo, so your order is safe either way.'
         : 'For orders under ' + DATA.minimums.silk + ' pieces, DTF is the best option for your logo.';
       var d = DATA.days[m];
-      h += '<h2 class="ww-h2" style="margin-bottom:14px">4. Logo placement</h2><div class="ww-method"><small>Best for your order</small><b>' + NAMES[m] + '</b><p>' + why + '</p><em>Production: ' + d[0] + '–' + d[1] + ' business days after artwork approval</em></div>';
-      if (m === 'dtf' && silkFits() && mixedShades()) h += '<div class="ww-msg green">Your order mixes light and dark shirts. Silk Screen can\'t print both in the same order, so we\'re using DTF. Make all shirts light or all dark to switch to Silk Screen and a lower price.</div>';
+      h += '<h2 class="ww-h2" style="margin-bottom:14px">4. Logo placement</h2><div class="ww-method"><small>' + (O.pickDtf && ruleMethod() === 'silk' ? 'Your choice' : 'Best for your order') + '</small><b>' + NAMES[m] + '</b><p>' + why + '</p><em>Production: ' + d[0] + '–' + d[1] + ' business days after artwork approval</em></div>';
+      if (m === 'dtf' && silkFits() && mixedShades()) h += '<div class="ww-msg green">Your order mixes light and dark shirts. Silk Screen can\'t print both in the same order, so we\'re using DTF. Make all shirts light or all dark to switch to Silk Screen.</div>';
+      // Silk Screen vs DTF: the client decides (save now with DTF, or Silk Screen: lasts longer, no screens on reorders)
+      if (ruleMethod() === 'silk' && O.alt && O.quote && O.quote.total) {
+        var diff = Math.abs(altSave), tot = Math.abs(O.quote.total$ - O.alt.total$);
+        if (m === 'silk' && altSave >= 0.5) h += '<div class="ww-msg green ww-up"><span><b>Save ' + money(diff) + ' per piece with DTF</b> (' + money(tot) + ' on this order). Silk Screen costs more on a first order because of the screens, but it lasts longer and reorders with the same artwork have no screen charge. Your choice.</span><button class="ww-pill on" data-pickdtf="1">Switch to DTF</button></div>';
+        else if (m === 'dtf' && O.pickDtf && altSave > -0.01) h += '<div class="ww-msg green ww-up"><span>With your changes, <b>Silk Screen is now the better price</b> for this order.</span><button class="ww-pill on" data-pickdtf="0">Back to Silk Screen</button></div>';
+        else if (m === 'dtf' && O.pickDtf) h += '<div class="ww-msg grey ww-up"><span>You\'re saving ' + money(-altSave) + ' per piece with DTF. Silk Screen lasts longer and reorders with the same artwork have no screen charge.</span><button class="ww-pill" data-pickdtf="0">Back to Silk Screen</button></div>';
+      }
       // only when Silk Screen at the minimum is actually cheaper per piece (setup included)
       if (O.upsell && m === 'dtf' && !mixedShades() && O.quote && O.quote.total) { var add = DATA.minimums.silk - t, save = O.quote.total$ / O.quote.total - O.upsell.total$ / O.upsell.total;
         if (save >= 0.5) h += '<div class="ww-msg green ww-up"><span>Add ' + add + ' more piece' + (add === 1 ? '' : 's') + ' and your order switches to Silk Screen: save ' + money(save) + ' per piece.</span>' + (O.quick ? '' : '<button class="ww-pill on" data-quick="1">+ Add pieces</button>') + '</div>'; }
@@ -731,6 +749,7 @@
     if (ds.spot != null) { O.otherSpots[+ds.spot] = ds.z; renderPanel(); requote(); return; }
     if (ds.rmspot != null) { O.otherSpots.splice(+ds.rmspot, 1); renderPanel(); requote(); return; }
     if ('addspot' in ds) { O.otherSpots.push('small'); renderPanel(); requote(); return; }
+    if (ds.pickdtf != null) { O.pickDtf = ds.pickdtf === '1'; O.quote = null; O.alt = null; renderPanel(); requote(); return; }
     if (ds.quick != null) { O.quick = ds.quick === '1'; renderPanel(); var qb = app.querySelector('.ww-quick input'); if (qb && O.quick) qb.closest('.ww-quick').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
     if (ds.reorder != null) { O.reorder = ds.reorder === '1'; renderPanel(); requote(); return; }
     if (ds.go) { go(+ds.go); return; }
