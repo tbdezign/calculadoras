@@ -107,7 +107,8 @@ async function ensureStyle(code: string, name: string, orderColors: string[]) {
   const photoOf = (c: string) => photos.find((p: any) => String(p.meta.color || "").toLowerCase() === c.toLowerCase());
   const sig = JSON.stringify(colors.map(c => [c, (photoOf(c) || {}).key || "", (photoOf(c) || {}).updated_at || ""]));
   const [row] = await rest(`shopify_styles?code=eq.${encodeURIComponent(code)}&select=sig,variants`);
-  if (row && row.sig === sig && orderColors.every(c => row.variants[c])) return row.variants;
+  // only colors with their own photo get a product variant (others would borrow another color's picture)
+  if (row && row.sig === sig) return row.variants;
   // photos: download from storage, upload to Shopify (staged upload), then attach by the staged URL
   const staged: Record<string, string> = {};
   for (const c of colors.filter(c => photoOf(c))) {
@@ -132,7 +133,7 @@ async function ensureStyle(code: string, name: string, orderColors: string[]) {
   const ps = d.productSet;
   if (ps.userErrors && ps.userErrors.length) throw new Error("productSet " + JSON.stringify(ps.userErrors).slice(0, 300));
   const variants: Record<string, string> = {};
-  for (const v of ps.product.variants.nodes) { const o = v.selectedOptions.find((x: any) => x.name === "Color"); if (o) variants[o.value] = v.id; }
+  for (const v of ps.product.variants.nodes) { const o = v.selectedOptions.find((x: any) => x.name === "Color"); if (o && staged[o.value]) variants[o.value] = v.id; }
   await rest(`shopify_styles?on_conflict=code`, { method: "POST", headers: { Prefer: "resolution=merge-duplicates" },
     body: JSON.stringify({ code, sig, product_id: ps.product.id, variants, updated_at: new Date().toISOString() }) });
   return variants;
@@ -181,6 +182,7 @@ Deno.serve(async (req) => {
       ["Sizes", sz || SIZE_LABEL[l.size] || ""],
       ["Decoration", NAMES[method]],
       ["Logo", clip(d.placement, 120)],
+      ...((d.colorNotes && Array.isArray(d.colorNotes[l.color])) ? d.colorNotes[l.color].slice(0, 2).filter((x: any) => Array.isArray(x) && x[0] && x[1]).map((x: any) => [clip(x[0], 30), clip(x[1], 120)]) : []),
       ...(Array.isArray(d.lineNotes) ? d.lineNotes.slice(0, 3).filter((x: any) => Array.isArray(x) && x[0] && x[1]).map((x: any) => [clip(x[0], 30), clip(x[1], 120)]) : []),
       ["Price per piece", "$" + money(l.unit)],
     ].filter(([, v]) => v).map(([key, value]) => ({ key, value }));
