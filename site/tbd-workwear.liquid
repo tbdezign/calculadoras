@@ -440,6 +440,14 @@
     var a = O.logo.aspect || 1, w = a >= 1 ? 4 : 4 * a, h = a >= 1 ? 4 / a : 4;
     return w * h * O.logo.fill * 1800;
   }
+  // Embroidery: a logo color with little contrast against the shirts (black on black, navy on black…) is stitched in white (dark shirts) or black (light shirts). Same price.
+  function threadSwap() {
+    if (O.deco !== 'emb' || !O.logo || !(O.logo.colors || []).length) return null;
+    var sh = shirtTone(); if (!sh) return null;
+    var c = O.logo.colors.filter(function (x) { return cdist(x, sh.hex) < 100; })[0]; if (!c) return null;
+    var alt = lum(sh.hex) < 128 ? 'white' : 'black';
+    return { c: c, shirt: sh, alt: alt, altHex: alt === 'white' ? '#ffffff' : '#111111', same: cdist(c, sh.hex) < 40 || (lum(c) < 60 && lum(sh.hex) < 60) || (lum(c) > 225 && lum(sh.hex) > 225) };
+  }
   function minPcs() { var mn = DATA.minimums; return Math.min(mn.silk, mn.dtf, mn.emb); }
   // "from" price of the order's styles (25 pcs, 1-color left chest): print = cheapest of Silk Screen / DTF
   function fromPrice(kind) {
@@ -459,7 +467,7 @@
     return polo || m === 'emb' ? 'lc' : 'lcb';
   }
   function orderBody(overrides) {
-    var o = { deco: O.deco === 'emb' ? 'emb' : 'print', logoType: O.logoType || 'unsure', colors: inks(), mixedShades: mixedShades(), reorder: method() === 'silk' && O.reorder, reorderNo: O.reorder ? O.reorderNo : '', placement: O.placement, otherSpots: O.placement === 'other' ? O.otherSpots : [], sleeves: O.sleeves, sleeveSide: O.sleeves === 1 ? O.sleeveSide : '', newLogos: newLogos(),
+    var o = { deco: O.deco === 'emb' ? 'emb' : 'print', logoType: O.logoType || 'unsure', colors: inks(), mixedShades: mixedShades(), reorder: (method() === 'silk' || method() === 'emb') && O.reorder, chargeDigitizing: method() === 'emb', reorderNo: O.reorder ? O.reorderNo : '', placement: O.placement, otherSpots: O.placement === 'other' ? O.otherSpots : [], sleeves: O.sleeves, sleeveSide: O.sleeves === 1 ? O.sleeveSide : '', newLogos: newLogos(),
       items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) {
         var q = { std: 0, x2: 0, x3: 0 }; SIZES.forEach(function (s) { q[s[1]] += +l.sizes[s[0]] || 0; });
         return { code: l.code, color: l.color, qty: q };
@@ -584,6 +592,14 @@
         + '<input type="file" id="ww-file" accept=".png,.jpg,.jpeg,.pdf,.ai,.svg,.eps,image/*,application/pdf" style="position:absolute;left:-9999px">';
       if (O.logo && O.deco === 'emb') {
         if (O.logo.effects && !O.keepEmb) h += '<div class="ww-msg amber ww-save" style="margin-top:16px"><div>Your logo has gradients or shading. Embroidery simplifies those. Want it exactly like your file? Printed keeps every detail.</div><div class="ww-pills" style="margin:0"><button class="ww-pill on" data-deco="print">Switch to printed</button><button class="ww-pill" data-keepemb>Keep embroidery</button></div></div>';
+        var ts = threadSwap();
+        if (ts) {
+          var tpv = logoOnShirt(ts.c, ts.shirt.hex, ts.altHex), tn = lum(ts.c) < 60 ? 'black' : lum(ts.c) > 225 ? 'white' : String(ts.shirt.name).toLowerCase();
+          h += '<div class="ww-msg green ww-drop" style="margin-top:16px">' + (tpv ? '<div class="ww-dropimg" style="background:' + esc(ts.shirt.hex) + '"><img src="' + tpv + '" alt="Your logo on a ' + esc(ts.shirt.name) + ' shirt"></div>' : '')
+            + '<div class="ww-save"><div>' + (ts.same ? 'Part of your logo is ' + esc(tn) + ', same as your shirts' : 'Part of your logo is too close to your shirt color') + ', so we\u2019ll stitch it in ' + ts.alt + ' thread to make it stand out. Same price. You\u2019ll see it on the proof.</div>'
+            + (O.threadOpen ? '<label style="font-size:14px;display:block">Which thread color would you like?<input id="ww-thread" class="ww-ta" style="margin-top:6px;resize:none" value="' + esc(O.threadNote || '') + '" placeholder="e.g. gold, light gray"></label>'
+              : '<button class="ww-link" style="padding:0;font-size:13px" data-thread>Use a different thread color</button>') + '</div></div>';
+        }
         if (embStitchEst() > 9000) h += '<div class="ww-msg grey" style="margin-top:12px">Your logo has a lot of solid fill, so it may need extra stitches. Our team checks every file and we\u2019ll confirm any difference before stitching.</div>';
         h += '<div class="ww-fine">We turn your logo into a stitch file (digitizing) and send you a proof before stitching.</div>';
       }
@@ -670,11 +686,12 @@
           return '<div class="ww-spot"><b>' + k[1] + '</b><button class="ww-pill' + (!x.diff ? ' on' : '') + '" data-xl="' + k[0] + '" data-v="0">Same logo</button><button class="ww-pill' + (x.diff ? ' on' : '') + '" data-xl="' + k[0] + '" data-v="1">A different logo</button>'
             + (x.diff ? '<label class="ww-xup' + (x.logo ? ' on' : '') + '" for="ww-x-' + k[0] + '">' + (x.logo && x.logo.url ? '<img src="' + x.logo.url + '" alt="">' : '') + '<span>' + (x.logo ? esc(x.logo.name) : 'Upload this logo') + '</span></label><input type="file" id="ww-x-' + k[0] + '" data-xfile="' + k[0] + '" accept="image/*,.pdf,.ai,.eps,.svg" hidden>' : '') + '</div>';
         }).join('');
-        if (m !== 'emb' && newLogos()) h += '<div class="ww-fine">Your price uses the color count of your main logo. If another logo needs more colors, we\'ll confirm before printing.</div>';
+        if (m === 'emb') h += '<div class="ww-fine">The same logo in more spots is digitized only once. Each different logo has its own one-time digitizing fee.</div>';
+        else if (newLogos()) h += '<div class="ww-fine">Your price uses the color count of your main logo. If another logo needs more colors, we\'ll confirm before printing.</div>';
         if (xs.some(function (k) { var x = xl(k[0]); return x.diff && !x.logo; })) h += '<div class="ww-fine" style="color:#b45309">Upload each different logo to continue.</div>';
       }
-      if (m === 'silk') {
-        var setupWord = 'screen setup';
+      if (m === 'silk' || m === 'emb') {
+        var setupWord = m === 'silk' ? 'screen setup' : 'digitizing';
         h += '<div class="ww-q">Is this a reorder?</div><div class="ww-pills"><button class="ww-pill' + (!O.reorder ? ' on' : '') + '" data-reorder="0">No, new order</button><button class="ww-pill' + (O.reorder ? ' on' : '') + '" data-reorder="1">Yes, same artwork as before</button></div>';
         if (O.reorder) {
           h += '<div style="margin-top:12px;display:grid;gap:10px"><label style="font-size:14px">Previous order number <span style="color:#6b7280">(optional)</span><input id="ww-reno" class="ww-ta" style="margin-top:6px;resize:none" value="' + esc(O.reorderNo) + '" placeholder="e.g. #1234"></label>'
@@ -687,7 +704,7 @@
     }
     h += '<div class="ww-nav"><button class="ww-btn ghost" data-back' + (O.step === 1 ? ' disabled' : '') + '>Back</button>'
       + (O.step < 5 ? '<button class="ww-btn" data-next' + (stepOk(O.step) ? '' : ' disabled') + '>Continue</button>' : '<button class="ww-btn pay" data-pay' + (O.quote ? '' : ' disabled') + '>Continue to secure checkout</button>') + '</div>'
-      + (O.step === 5 ? '<div class="ww-fine" style="text-align:right;margin-top:8px">You\u2019ll approve a proof before anything prints.</div>' : '');
+      + (O.step === 5 ? '<div class="ww-fine" style="text-align:right;margin-top:8px">' + (O.quote ? '<span style="font-size:15px;color:#051024">Total <b>' + money(O.quote.total$) + '</b>' + (O.quote.setup ? ' (incl. ' + money(O.quote.setup) + ' ' + (method() === 'emb' ? 'digitizing' : 'screen setup') + ')' : '') + ' · free shipping</span><br>' : '') + 'You\u2019ll approve a proof before anything prints.</div>' : '');
     p.innerHTML = h;
     if (O.step === 5) fitLogos(p);
   }
@@ -698,7 +715,9 @@
     var ph = photoFor(st, color, side), pl = (ph && ph.place && ph.place[spot]) || DEF[spot], hex = hexOf(st, color);
     var dark = !/white|natural|silver|grey|gray|light|ceil|sand|oatmeal|yellow|pink/i.test(color);
     lg = lg || O.logo;
-    var logo = lg && lg.url ? '<img src="' + lg.url + '" alt="">' : '<span style="background:' + (dark ? '#fff' : '#051024') + ';color:' + (dark ? '#051024' : '#fff') + '">LOGO</span>';
+    var ts = lg === O.logo ? threadSwap() : null, lurl = lg && lg.url ? (ts && !O.threadNote ? logoOnShirt(ts.c, ts.shirt.hex, ts.altHex) || lg.url : lg.url) : '';
+    label += ' · ' + ({ emb: 'Embroidered', silk: 'Screen printed', dtf: 'DTF printed' })[method()] ;
+    var logo = lurl ? '<img src="' + lurl + '" alt="">' : '<span style="background:' + (dark ? '#fff' : '#051024') + ';color:' + (dark ? '#051024' : '#fff') + '">LOGO</span>';
     var box = 'left:' + (pl.cx - pl.maxW / 2) * 100 + '%;top:' + (pl.cy - pl.maxH / 2) * 100 + '%;width:' + pl.maxW * 100 + '%;height:' + pl.maxH * 100 + '%';
     var base = ph ? '<img src="' + esc(ph.url) + '" alt="" crossorigin="anonymous">' : (side === 'front' ? shapeSvg(st.type, hex) : '');
     if (!base) return '';
@@ -871,6 +890,7 @@
     if (ds.rm) { O.lines = O.lines.filter(function (l) { return String(l.id) !== ds.rm; }); renderPanel(); requote(); return; }
     if (ds.color) { lineById(ds.line).color = ds.color; renderPanel(); requote(); return; }
     if (ds.inc || ds.dec) { var l = lineById(ds.line), s = ds.inc || ds.dec; l.sizes[s] = Math.max(0, (+l.sizes[s] || 0) + (ds.inc ? 1 : -1)); renderPanel(); requote(); return; }
+    if ('thread' in ds) { O.threadOpen = true; renderPanel(); var ti = document.getElementById('ww-thread'); if (ti) ti.focus(); return; }
     if ('keepemb' in ds) { O.keepEmb = true; renderPanel(); return; }
     if (ds.deco) { O.deco = ds.deco; O.decoPicked = true; if (ds.deco === 'emb' && /^(ff|bk|fb|lcb|other)$/.test(O.placement)) O.placement = 'lc'; renderPanel(); requote(); return; }
     if (ds.lt) { O.logoType = ds.lt; renderPanel(); requote(); return; }
@@ -920,6 +940,7 @@
       var qt = document.getElementById('ww-qtotal'); if (qt) qt.textContent = pcs(total());
       var nb = app.querySelector('[data-next]'); if (nb) nb.disabled = !stepOk(O.step); }
     if (t.id === 'ww-reno') { O.reorderNo = t.value; return; }
+    if (t.id === 'ww-thread') { O.threadNote = t.value; return; }
     if (t.id === 'ww-other') { O.otherText = t.value; var nb2 = app.querySelector('[data-next]'); if (nb2) nb2.disabled = !stepOk(O.step); renderSteps(); }
   });
   document.addEventListener('click', function (e) { if (F.open && e.composedPath().indexOf(root) < 0) { F.open = null; renderCatalog(); } });
