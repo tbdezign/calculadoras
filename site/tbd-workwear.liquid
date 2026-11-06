@@ -275,7 +275,7 @@
 
   var DATA = null, STYLES = [], byCode = {};
   var F = { type: [], fit: [], mat: [], fam: [], open: null };
-  var O = { reorder: false, reorderNo: '', step: 1, lines: [], deco: null, logo: null, logoType: null, inks: 1, placement: 'lc', sleeves: 0, otherText: '', otherSpots: ['small'], xlogo: {}, nextId: 1, quote: null, upsell: null, checkout: false };
+  var O = { reorder: false, reorderNo: '', step: 1, lines: [], deco: null, logo: null, logoType: null, inks: 1, placement: 'lc', sleeves: 0, otherText: '', otherSpots: ['small'], sleeveSide: '', xlogo: {}, nextId: 1, quote: null, upsell: null, checkout: false };
   var SIZES = [['2XS', 'std'], ['XS', 'std'], ['S', 'std'], ['M', 'std'], ['L', 'std'], ['XL', 'std'], ['2XL', 'x2'], ['3XL', 'x3']];
   var NAMES = { silk: 'Silk Screen', dtf: 'DTF Full-Color Print', emb: 'Embroidery' };
   var PLACES = [['lc', 'Left chest'], ['lcb', 'Left chest + Full back'], ['ff', 'Full front'], ['bk', 'Full back'], ['fb', 'Front + back'], ['other', 'Other']];
@@ -381,7 +381,7 @@
   function extraSpots() {
     var k = [];
     if (O.placement === 'other') for (var i = 1; i < O.otherSpots.length; i++) k.push(['o' + i, 'Spot ' + (i + 1)]);
-    if (O.sleeves === 1) k.push(['sl', 'Sleeve']);
+    if (O.sleeves === 1) k.push(['sl', O.sleeveSide === 'r' ? 'Right sleeve' : O.sleeveSide === 'l' ? 'Left sleeve' : 'Sleeve']);
     if (O.sleeves === 2) { k.push(['sr', 'Right sleeve']); k.push(['sl', 'Left sleeve']); }
     return k;
   }
@@ -397,7 +397,7 @@
     return d.length && d[0] && d.every(function (x) { return x === d[0]; }) ? d[0] : '';
   }
   function orderBody(overrides) {
-    var o = { deco: O.deco === 'emb' ? 'emb' : 'print', logoType: O.logoType || 'unsure', colors: O.inks, mixedShades: mixedShades(), reorder: (method() === 'silk' || method() === 'emb') && O.reorder, reorderNo: O.reorder ? O.reorderNo : '', placement: O.placement, otherSpots: O.placement === 'other' ? O.otherSpots : [], sleeves: O.sleeves, newLogos: newLogos(),
+    var o = { deco: O.deco === 'emb' ? 'emb' : 'print', logoType: O.logoType || 'unsure', colors: O.inks, mixedShades: mixedShades(), reorder: (method() === 'silk' || method() === 'emb') && O.reorder, reorderNo: O.reorder ? O.reorderNo : '', placement: O.placement, otherSpots: O.placement === 'other' ? O.otherSpots : [], sleeves: O.sleeves, sleeveSide: O.sleeves === 1 ? O.sleeveSide : '', newLogos: newLogos(),
       items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) {
         var q = { std: 0, x2: 0, x3: 0 }; SIZES.forEach(function (s) { q[s[1]] += +l.sizes[s[0]] || 0; });
         return { code: l.code, color: l.color, qty: q };
@@ -433,7 +433,7 @@
     if (n === 1) return t > 0;
     if (n === 2) return !!O.deco;
     if (n === 3) return !!O.logo && (O.deco === 'emb' || O.logoType === 'unsure' || (!!O.logoType && O.confirmed));
-    if (n === 4) return !!m && t >= DATA.minimums[m] && (O.placement !== 'other' || O.otherText.trim().length > 2) && extraSpots().every(function (k) { var x = xl(k[0]); return !x.diff || !!x.logo; });
+    if (n === 4) return !!m && t >= DATA.minimums[m] && (O.placement !== 'other' || O.otherText.trim().length > 2) && (O.sleeves !== 1 || !!O.sleeveSide) && extraSpots().every(function (k) { var x = xl(k[0]); return !x.diff || !!x.logo; });
     return true;
   }
   function maxStep() { var n = 1; while (n < 5 && stepOk(n)) n++; return n; }
@@ -545,6 +545,8 @@
           + '<div class="ww-fine">We\'ll check your request and confirm any price difference on WhatsApp before printing.</div>';
       }
       h += '<div class="ww-q">Add a logo on the sleeves?</div><div class="ww-pills">' + [[0, 'None'], [1, '1 sleeve'], [2, '2 sleeves']].map(function (x) { return '<button class="ww-pill' + (O.sleeves === x[0] ? ' on' : '') + '" data-sleeves="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>';
+      if (O.sleeves === 1) h += '<div class="ww-q" style="font-size:14px">Which sleeve?</div><div class="ww-pills">' + [['r', 'Right sleeve'], ['l', 'Left sleeve']].map(function (x) { return '<button class="ww-pill' + (O.sleeveSide === x[0] ? ' on' : '') + '" data-sside="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>'
+        + (O.sleeveSide ? '' : '<div class="ww-fine" style="color:#b45309">Pick a sleeve to continue.</div>');
       var xs = extraSpots();
       if (xs.length) {
         h += '<div class="ww-q" style="font-size:14px">Which logo goes there?</div>' + xs.map(function (k) {
@@ -625,7 +627,7 @@
       var back = pl === 'bk' || pl === 'fb' || pl === 'lcb';
       if (front) out += view(st, l.color, 'front', front, 'Front' + (pl === 'other' ? ' (placement you described)' : ''));
       if (back) out += view(st, l.color, 'back', 'fb', 'Back') || (front ? '' : view(st, l.color, 'front', 'ff', 'Back (shown on front)'));
-      if (O.sleeves === 1) out += view(st, l.color, 'side', 'sl', 'Sleeve', logoFor('sl'));
+      if (O.sleeves === 1) out += view(st, l.color, 'side', 'sl', O.sleeveSide === 'r' ? 'Right sleeve' : 'Left sleeve', logoFor('sl'));
       if (O.sleeves === 2) {
         if (logoFor('sr') === logoFor('sl')) out += view(st, l.color, 'side', 'sl', 'Sleeves (both)', logoFor('sl'));
         else out += view(st, l.color, 'side', 'sl', 'Right sleeve', logoFor('sr')) + view(st, l.color, 'side', 'sl', 'Left sleeve', logoFor('sl'));
@@ -640,7 +642,7 @@
     var h = '<h3>Your order</h3>';
     if (!O.lines.length) h += '<div style="font-size:13px;color:#4b5563">No shirts yet.</div>';
     O.lines.forEach(function (l) { h += '<div class="ww-sline"><span>' + esc(byCode[l.code].name) + ' · ' + esc(l.color) + '</span><b style="white-space:nowrap">' + pcs(qtyOf(l)) + '</b></div>'; });
-    var place = (PLACES.filter(function (x) { return x[0] === O.placement; })[0] || [])[1] + (O.placement === 'other' ? ' · ' + O.otherSpots.length + (O.otherSpots.length === 1 ? ' spot' : ' spots') : '') + (O.sleeves ? ' + ' + O.sleeves + (O.sleeves === 1 ? ' sleeve' : ' sleeves') : '') + (newLogos() ? ' · ' + (1 + newLogos()) + ' logos' : '');
+    var place = (PLACES.filter(function (x) { return x[0] === O.placement; })[0] || [])[1] + (O.placement === 'other' ? ' · ' + O.otherSpots.length + (O.otherSpots.length === 1 ? ' spot' : ' spots') : '') + (O.sleeves === 1 ? ' + ' + (O.sleeveSide === 'r' ? 'right' : O.sleeveSide === 'l' ? 'left' : '1') + ' sleeve' : O.sleeves ? ' + 2 sleeves' : '') + (newLogos() ? ' · ' + (1 + newLogos()) + ' logos' : '');
     h += '<div class="ww-row" style="margin-top:10px"><span>Total pieces</span><b>' + t + '</b></div>'
       + '<div class="ww-row"><span>Method</span><b>' + (m ? NAMES[m] : '—') + '</b></div>'
       + (O.step >= 4 ? '<div class="ww-row"><span>Logo</span><b>' + esc(place) + '</b></div>' : '')
@@ -724,6 +726,7 @@
     if (ds.inks) { O.inks = +ds.inks; O.confirmed = false; renderPanel(); requote(); return; }
     if (ds.place) { O.placement = ds.place; renderPanel(); requote(); return; }
     if (ds.sleeves != null) { O.sleeves = +ds.sleeves; renderPanel(); requote(); return; }
+    if (ds.sside != null) { O.sleeveSide = ds.sside; renderPanel(); return; }
     if (ds.xl != null) { xl(ds.xl).diff = ds.v === '1'; renderPanel(); requote(); return; }
     if (ds.spot != null) { O.otherSpots[+ds.spot] = ds.z; renderPanel(); requote(); return; }
     if (ds.rmspot != null) { O.otherSpots.splice(+ds.rmspot, 1); renderPanel(); requote(); return; }
