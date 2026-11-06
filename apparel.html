@@ -138,6 +138,11 @@
   .order-item .oi-info { flex-wrap: wrap; }
   .order-item .oi-info .vend-line { flex-basis: 100%; }
   .order-item .oi-info .notfound { color: #dc2626; }
+  .order-item .oi-move { display: flex; align-items: center; gap: 4px; margin: -6px 0 8px; }
+  .order-item .oi-move button { border: 1px solid #ddd; background: #fff; border-radius: 4px; font-size: 10px; padding: 2px 6px; cursor: pointer; color: #555; }
+  .order-item .oi-move button:disabled { opacity: .35; cursor: default; }
+  .order-item .oi-handle { cursor: grab; touch-action: none; user-select: none; font-size: 15px; color: #999; padding: 0 6px 0 0; }
+  .order-item.dragging { box-shadow: 0 6px 18px rgba(0,0,0,.15); border-color: #41a9cc; z-index: 2; }
   .order-item .oi-remove { background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer; padding: 0 4px; }
   .order-item .oi-result { display: flex; justify-content: space-between; align-items: baseline; padding-top: 8px; border-top: 1px solid #E8E8E8; }
   .order-item .oi-result .price { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -1376,6 +1381,36 @@ function renderYmqTable() {
 // ORDER BUILDER
 // ════════════════════════════════════════════
 function addOrderItem() { orderItems.push(newItem()); renderOrderItems(); }
+// Order of the styles: the quote message and the mockup follow this order (drag ☰ or use ▲▼)
+function reorderDone() { mk.sig = ""; renderOrderItems(); renderMockRows(true); renderQuote(); }
+function moveOrderItem(id, d) {
+  const i = orderItems.findIndex(x => String(x.id) === String(id)), j = i + d;
+  if (i < 0 || j < 0 || j >= orderItems.length) return;
+  [orderItems[i], orderItems[j]] = [orderItems[j], orderItems[i]];
+  reorderDone();
+}
+function oiDragStart(e) {
+  e.preventDefault();
+  const item = e.target.closest(".order-item"), list = q("orderItems");
+  item.classList.add("dragging");
+  const move = ev => {
+    const items = [...list.querySelectorAll(":scope > .order-item")];
+    for (const other of items) {
+      if (other === item) continue;
+      const r = other.getBoundingClientRect(), mid = r.top + r.height / 2, before = items.indexOf(other) < items.indexOf(item);
+      if (before && ev.clientY < mid) { list.insertBefore(item, other); break; }
+      if (!before && ev.clientY > mid) { list.insertBefore(item, other.nextSibling); break; }
+    }
+  };
+  const end = () => {
+    window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", end); window.removeEventListener("pointercancel", end);
+    item.classList.remove("dragging");
+    const ids = [...list.querySelectorAll(":scope > .order-item")].map(x => x.dataset.id);
+    const next = ids.map(id => orderItems.find(x => String(x.id) === id)).filter(Boolean);
+    if (next.length === orderItems.length && next.some((x, i) => x !== orderItems[i])) { orderItems = next; reorderDone(); }
+  };
+  window.addEventListener("pointermove", move); window.addEventListener("pointerup", end); window.addEventListener("pointercancel", end);
+}
 function removeOrderItem(id) { orderItems = orderItems.filter(i => String(i.id) !== String(id)); if (!orderItems.length) orderItems.push(newItem()); renderOrderItems(); }
 function onOrderCode(id, el) { el.value = el.value.toUpperCase(); const it = itemById(id); if (!it) return; it.code = el.value; updateItemInfo(it); updateOrderResults(); }
 // Colors this style already has in the calculator: photo library + the site's color list.
@@ -1514,8 +1549,10 @@ function renderOrderItems() {
   q("splitWrap").hidden = !M.split;
   q("splitToggle").checked = splitOn();
   q("splitAuto").hidden = !(splitOn() && splitSuppliers !== true);
-  q("orderItems").innerHTML = orderItems.map(it =>
-    '<div class="order-item">'
+  q("orderItems").innerHTML = orderItems.map((it, idx) =>
+    '<div class="order-item" data-id="' + it.id + '">'
+    + (orderItems.length > 1 ? '<div class="oi-move"><span class="oi-handle" onpointerdown="oiDragStart(event)" title="Drag to reorder">☰</span>'
+      + '<button onclick="moveOrderItem(\'' + it.id + '\',-1)"' + (idx ? '' : ' disabled') + ' aria-label="Move up">▲</button><button onclick="moveOrderItem(\'' + it.id + '\',1)"' + (idx < orderItems.length - 1 ? '' : ' disabled') + ' aria-label="Move down">▼</button></div>' : '')
     + '<div class="oi-top">'
     + '<div class="oi-code"><input id="oic-' + it.id + '" value="' + esc(it.code) + '" placeholder="Code" autocomplete="off" oninput="onOrderCode(\'' + it.id + '\',this);showCodeSuggest(\'' + it.id + '\')" onfocus="showCodeSuggest(\'' + it.id + '\')" onblur="setTimeout(()=>hideCodeSuggest(\'' + it.id + '\'),150)" onkeydown="codeSuggestKey(event,\'' + it.id + '\')"></div>'
     + '<div class="oi-qty"><input id="oiq-' + it.id + '" type="number" min="1" value="' + esc(it.qty) + '" placeholder="Qty" oninput="onOrderQty(\'' + it.id + '\',this)"></div>'
