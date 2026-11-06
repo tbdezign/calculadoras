@@ -771,6 +771,19 @@
     return out || '<div class="ww-dash">Add shirts to see the preview.</div>';
   }
 
+  // Per piece WITHOUT the one-time fee, the math closing in front of the client: N × $X, the fee on its own line, then the total.
+  function priceRows(q, m) {
+    if (!(q && q.total)) return fromPrice('print') ? '<div class="ww-row"><span>Per piece</span><b>from ' + money(Math.min(fromPrice('print'), fromPrice('emb') || 1e9)) + '</b></div>' : '<div class="ww-row"><span>Per piece</span><b>—</b></div>';
+    var units = q.lines.map(function (l) { return l.unit; }), lo = Math.min.apply(null, units), hi = Math.max.apply(null, units), same = hi - lo < 0.005;
+    var h = '<div class="ww-row" style="margin-top:6px;border-top:1px solid #eef0f3;padding-top:10px"><span>Per piece</span><b>' + (same ? money(lo) : money(lo) + '–' + money(hi)) + '</b></div>'
+      + '<div class="ww-row"><span>' + (same ? q.total + ' × ' + money(lo) : q.total + ' pieces') + '</span><b>' + money(q.subtotal) + '</b></div>';
+    if (q.setup || q.reorder) {
+      var fee = m === 'emb' ? 'Digitizing (one-time)' : 'Screen setup (one-time)';
+      h += '<div class="ww-row"><span>' + fee + '</span><b>' + (q.setup ? money(q.setup) : 'No charge') + '</b></div>'
+        + '<div class="ww-fine" style="margin:-4px 0 6px">' + (q.reorder && !q.setup ? 'Reorder with the same ' + (m === 'emb' ? 'logo' : 'artwork') + '.' : 'Reorders with the same ' + (m === 'emb' ? 'logo' : 'artwork') + ' skip this fee.') + '</div>';
+    }
+    return h;
+  }
   function renderAside() {
     var a = document.getElementById('ww-aside'); if (!a) return;
     var m = method(), t = total(), q = O.quote;
@@ -781,10 +794,8 @@
     h += '<div class="ww-row" style="margin-top:10px"><span>Total pieces</span><b>' + t + '</b></div>'
       + '<div class="ww-row"><span>Method</span><b>' + (m ? NAMES[m] : '—') + '</b></div>'
       + (O.step >= 4 ? '<div class="ww-row"><span>Logo</span><b>' + esc(place) + '</b></div>' : '')
-      + (q && q.total ? '<div class="ww-row"><span>Per piece' + (q.setup ? ' <small style="color:#6b7280">(setup incl.)</small>' : '') + '</span><b>' + money(q.total$ / q.total) + ' avg</b></div>'
-        : fromPrice('print') ? '<div class="ww-row"><span>Per piece</span><b>from ' + money(Math.min(fromPrice('print'), fromPrice('emb') || 1e9)) + '</b></div>' : '<div class="ww-row"><span>Per piece</span><b>—</b></div>')
       + (m ? '<div class="ww-row"><span>Production</span><b>' + DATA.days[m][0] + '–' + DATA.days[m][1] + ' business days</b></div>' : '')
-      + (q && (q.setup || q.reorder) ? '<div class="ww-row"><span>' + (m === 'emb' ? 'Digitizing (one-time)' : 'Screen setup (one-time)') + (q.reorder ? ' · reorder' : '') + '</span><b>' + (q.setup ? money(q.setup) : 'No charge') + '</b></div>' : '')
+      + priceRows(q, m)
       + '<div class="ww-total"><span>Total</span><b>' + (q ? money(q.total$) : '—') + '</b></div>'
       + '<div class="ww-fine">Free shipping.' + (!m ? ' Estimated price. Your final price shows after you tell us about your logo.' : '') + '</div>';
     a.innerHTML = h;
