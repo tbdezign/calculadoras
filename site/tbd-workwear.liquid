@@ -149,6 +149,10 @@
   .ww-spot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border: 1px solid #e3e3e3; border-radius: 10px; margin-bottom: 8px; }
   .ww-spot > b { font-size: 14px; min-width: 96px; }
   .ww-spot .ww-pill { padding: 7px 12px; font-size: 13px; }
+  .ww-drop { display: flex; gap: 14px; align-items: flex-start; }
+  .ww-dropimg { flex: none; width: 120px; height: 120px; border-radius: 10px; border: 1px solid #e3e3e3; display: flex; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box; }
+  .ww-dropimg img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  @media (max-width: 560px) { .ww-drop { flex-direction: column; } }
   .ww-chfrom { margin-top: 10px; font-size: 13px; color: #4b5563; }
   .ww-chfrom strong { color: #051024; font-size: 15px; }
   .ww-save { display: grid; gap: 10px; justify-items: start; }
@@ -390,11 +394,12 @@
     var cols = O.logo.colors || [], i = -1;
     for (var j = 0; j < cols.length; j++) if (cdist(cols[j], sh.hex) < 70) { i = j; break; }
     if (i < 0) return null;
-    var c = cols[i], share = (O.logo.share || [])[i] || 0, key = c + '|' + sh.hex;
-    // a big part of the logo (text, main icon) would disappear: don't drop it, ask how to fix it
-    if (share >= 0.2) return { c: c, shirt: sh, kind: 'major', key: key, on: false, fix: (O.majorFix || {})[key] || '' };
-    var kind = lum(c) < 60 && lum(sh.hex) < 60 ? 'black' : lum(c) > 225 && lum(sh.hex) > 225 ? 'white' : 'ask';
-    return { c: c, shirt: sh, kind: kind, key: key, on: kind !== 'ask' || (O.dropAns || {})[key] === true, asked: (O.dropAns || {})[key] != null };
+    var c = cols[i], share = (O.logo.share || [])[i] || 0, edge = (O.logo.edge || [])[i] || 0, key = c + '|' + sh.hex;
+    // inside the logo (white inside a black shield) or a small detail: the shirt can show through.
+    // On the outer edge and a big part (black text on a transparent logo): it would vanish, so start with "Fix it".
+    var inner = edge < 0.25 || share < 0.15, ans = (O.dropAns || {})[key];
+    var state = ans || (inner ? 'ok' : 'fix');
+    return { c: c, shirt: sh, key: key, state: state, on: state === 'ok', fix: (O.majorFix || {})[key] || '' };
   }
   function inks() { var d = dropColor(); return d && d.on ? O.inks - 1 : O.inks; }
   function silkFits() { return O.deco === 'print' && O.logoType === 'solid' && inks() <= 3 && total() >= DATA.minimums.silk; }
@@ -583,13 +588,19 @@
         if (O.logoType === 'solid') h += '<div class="ww-pills" style="margin-top:14px"><span style="font-size:14px">How many colors?</span>' + [1, 2, 3].map(function (n) { return '<button class="ww-pill' + (O.inks === n ? ' on' : '') + '" data-inks="' + n + '">' + n + '</button>'; }).join('') + '<span style="font-size:12px;color:#6b7280">White counts as a color when it\'s part of the logo.</span></div>';
         var dc = dropColor();
         if (dc) {
-          var cn = dc.kind === 'ask' || dc.kind === 'major' ? (lum(dc.c) < 60 ? 'black' : lum(dc.c) > 225 ? 'white' : String(dc.shirt.name).toLowerCase()) : dc.kind;
-          var alt = lum(dc.shirt.hex) < 128 ? 'white' : 'black';
-          if (dc.kind === 'major') h += '<div class="ww-msg amber ww-save" style="margin-top:16px"><div>Part of your logo is ' + esc(cn) + ', the same color as your shirts, so it won\u2019t show up. How do you want to fix it?</div>'
-            + (dc.fix === 'swap' ? '<div><b>Got it: we\u2019ll print that part in ' + alt + '.</b> Same price. You\u2019ll see it on the proof.</div>' : '')
-            + '<div class="ww-pills" style="margin:0"><button class="ww-pill' + (dc.fix === 'swap' ? ' on' : '') + '" data-fix="swap">Print it in ' + alt + ' instead</button><button class="ww-pill" data-fix="shirt">Change shirt color</button><label class="ww-pill" for="ww-file" style="cursor:pointer">Upload another version</label></div></div>';
-          else if (dc.kind !== 'ask') h += '<div class="ww-msg green" style="margin-top:16px">Your logo has ' + esc(cn) + ' and your shirts are ' + esc(cn) + ', so we\u2019ll let the shirt show through instead of printing it. One less color, lower price. You\u2019ll see it on the proof before anything prints.</div>';
-          else h += '<div class="ww-msg grey ww-save" style="margin-top:16px"><div>Your logo has ' + esc(cn) + ' and your shirts are ' + esc(cn) + '. Want the shirt to show through there? One less color, lower price.</div><div class="ww-pills" style="margin:0"><button class="ww-pill' + (dc.asked && dc.on ? ' on' : '') + '" data-drop="1">Yes, drop it</button><button class="ww-pill' + (dc.asked && !dc.on ? ' on' : '') + '" data-drop="0">No, print it</button></div></div>';
+          var cn = lum(dc.c) < 60 ? 'black' : lum(dc.c) > 225 ? 'white' : String(dc.shirt.name).toLowerCase();
+          // swap only to a color the logo doesn't already have (black text turned black on a black logo = a blob)
+          var alt = lum(dc.shirt.hex) < 128 ? 'white' : 'black', inLogo = (O.logo.colors || []).some(function (x) { return alt === 'white' ? lum(x) > 225 : lum(x) < 60; });
+          var pv = logoOnShirt(dc.c, dc.shirt.hex);
+          h += '<div class="ww-msg ' + (dc.on ? 'green' : 'amber') + ' ww-drop" style="margin-top:16px">'
+            + (pv ? '<div class="ww-dropimg" style="background:' + esc(dc.shirt.hex) + '"><img src="' + pv + '" alt="Your logo on a ' + esc(dc.shirt.name) + ' shirt"></div>' : '')
+            + '<div class="ww-save"><div>Your logo has ' + esc(cn) + ' and your shirts are ' + esc(cn) + '. Here\u2019s how it\u2019ll look: the shirt shows through where the ' + esc(cn) + ' is.'
+            + (dc.on ? ' <b>One less color, lower price.</b> You\u2019ll see it on the proof before anything prints.' : '') + '</div>'
+            + '<div class="ww-pills" style="margin:0"><button class="ww-pill' + (dc.on ? ' on' : '') + '" data-drop="ok">Looks good</button><button class="ww-pill' + (!dc.on ? ' on' : '') + '" data-drop="fix">Fix it</button></div>'
+            + (!dc.on ? '<div style="font-size:14px">How do you want to fix it?</div>'
+              + (dc.fix === 'swap' ? '<div><b>Got it: we\u2019ll print that part in ' + alt + '.</b> Same price. You\u2019ll see it on the proof.</div>' : '')
+              + '<div class="ww-pills" style="margin:0">' + (inLogo ? '' : '<button class="ww-pill' + (dc.fix === 'swap' ? ' on' : '') + '" data-fix="swap">Print it in ' + alt + ' instead</button>') + '<button class="ww-pill" data-fix="shirt">Change shirt color</button><label class="ww-pill" for="ww-file" style="cursor:pointer">Upload another version</label></div>' : '')
+            + '</div></div>';
         }
         if (O.logoType === 'solid' || O.logoType === 'full') h += '<div class="ww-fine" style="margin-top:12px">Colors set the price. If your file doesn\u2019t match, we\u2019ll message you before printing.</div>';
       }
@@ -753,19 +764,47 @@
     var transparentBg = corners.filter(function (p) { return p[3] < 128; }).length >= 2;
     var bg = transparentBg ? null : corners.reduce(function (a, p) { return [a[0] + p[0] / 4, a[1] + p[1] / 4, a[2] + p[2] / 4]; }, [0, 0, 0]);
     var dist = function (p, q) { return Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]) + Math.abs(p[2] - q[2]); };
-    var groups = [], n = 0;
+    var groups = [], n = 0, out = outsideMask(d, W, H, bg), gi = new Int16Array(W * H).fill(-1);
     for (var i = 0; i < d.length; i += 4) {
       if (d[i + 3] < 200) continue;                         // transparent + soft edges
       var p = [d[i], d[i + 1], d[i + 2]];
       if (bg && dist(p, bg) < 60) continue;                 // background
       n++;
-      var g = null; for (var k = 0; k < groups.length; k++) if (dist(p, groups[k].c) < 90) { g = groups[k]; break; }
-      if (g) { g.n++; } else groups.push({ c: p, n: 1 });
+      var g = null, k; for (k = 0; k < groups.length; k++) if (dist(p, groups[k].c) < 90) { g = groups[k]; break; }
+      if (g) { g.n++; } else { groups.push({ c: p, n: 1, edge: 0 }); k = groups.length - 1; }
+      gi[i / 4] = k;
     }
+    // how much of each color touches the outside (the background around the logo): those parts vanish on a same-color shirt
+    for (var y = 0; y < H; y++) for (var xx = 0; xx < W; xx++) { var j = y * W + xx; if (gi[j] < 0) continue;
+      if ((xx > 0 && out[j - 1]) || (xx < W - 1 && out[j + 1]) || (y > 0 && out[j - W]) || (y < H - 1 && out[j + W]) || xx === 0 || y === 0 || xx === W - 1 || y === H - 1) groups[gi[j]].edge++; }
     var main = groups.filter(function (g) { return g.n > n * 0.04; }).sort(function (a, b) { return b.n - a.n; });
     var covered = main.reduce(function (t, g) { return t + g.n; }, 0) / (n || 1);
     var hex = function (c) { return '#' + c.map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join(''); };
-    return { list: main.map(function (g) { return hex(g.c); }), share: main.map(function (g) { return g.n / (n || 1); }), covered: covered };
+    return { list: main.map(function (g) { return hex(g.c); }), share: main.map(function (g) { return g.n / (n || 1); }), edge: main.map(function (g) { return g.edge / (g.n || 1); }), covered: covered };
+  }
+  // background connected to the image border (transparent, or the corner color for a JPG/white-background file)
+  function outsideMask(d, W, H, bg) {
+    var out = new Uint8Array(W * H), st = [], isBg = function (j) { var i = j * 4; return d[i + 3] < 200 || (bg && Math.abs(d[i] - bg[0]) + Math.abs(d[i + 1] - bg[1]) + Math.abs(d[i + 2] - bg[2]) < 60); };
+    for (var x = 0; x < W; x++) { st.push(x, (H - 1) * W + x); } for (var y = 0; y < H; y++) { st.push(y * W, y * W + W - 1); }
+    while (st.length) { var j = st.pop(); if (out[j] || !isBg(j)) continue; out[j] = 1; var x2 = j % W;
+      if (x2 > 0) st.push(j - 1); if (x2 < W - 1) st.push(j + 1); if (j >= W) st.push(j - W); if (j < (H - 1) * W) st.push(j + W); }
+    return out;
+  }
+  // the logo as it will print on that shirt: background removed, the matching color left out (the shirt shows through)
+  var prevCache = {};
+  function logoOnShirt(c, shirtHex) {
+    var key = c + shirtHex + (O.logo && O.logo.url || '').length; if (prevCache[key]) return prevCache[key];
+    var img = O.logo && O.logo.img; if (!img) return '';
+    var W = 260, H = Math.max(1, Math.round(W * img.height / img.width)), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    var x = cv.getContext('2d'); x.drawImage(img, 0, 0, W, H);
+    var im = x.getImageData(0, 0, W, H), d = im.data, cr = rgb(c);
+    var corners = [0, W - 1, (H - 1) * W, H * W - 1].map(function (j) { return [d[j * 4], d[j * 4 + 1], d[j * 4 + 2], d[j * 4 + 3]]; });
+    var bg = corners.filter(function (p) { return p[3] < 128; }).length >= 2 ? null : corners.reduce(function (a, p) { return [a[0] + p[0] / 4, a[1] + p[1] / 4, a[2] + p[2] / 4]; }, [0, 0, 0]);
+    var out = outsideMask(d, W, H, bg);
+    for (var j = 0; j < W * H; j++) { var i = j * 4;
+      if (out[j] || Math.abs(d[i] - cr[0]) + Math.abs(d[i + 1] - cr[1]) + Math.abs(d[i + 2] - cr[2]) < 110) d[i + 3] = 0; }
+    x.putImageData(im, 0, 0);
+    return (prevCache[key] = cv.toDataURL());
   }
   function readLogo(file) {
     O.logo = { name: file.name, url: null, guess: '', colors: [] }; O.confirmed = false;
@@ -777,7 +816,7 @@
       img.onload = function () {
         try {
           var cols = logoColors(img);
-          O.logo.colors = cols.list; O.logo.share = cols.share;
+          O.logo.colors = cols.list; O.logo.share = cols.share; O.logo.edge = cols.edge; O.logo.img = img;
           if (cols.list.length && cols.list.length <= 3 && cols.covered > 0.85) { O.logoType = 'solid'; O.inks = cols.list.length; O.logo.detected = true; O.manualInks = false; O.logo.guess = 'We found ' + O.inks + ' solid color' + (O.inks === 1 ? '' : 's') + ' in your file:'; }
           else if (cols.list.length) { O.logoType = 'full'; O.logo.guess = 'Your file looks like it has many colors or effects.'; }
         } catch (e) {}
@@ -814,7 +853,7 @@
     if (ds.lt) { O.logoType = ds.lt; renderPanel(); requote(); return; }
     if (ds.inks) { O.inks = +ds.inks; O.manualInks = true; renderPanel(); requote(); return; }
     if (ds.fix) { var fc = dropColor(); if (ds.fix === 'shirt') { go(1); return; } if (fc) { O.majorFix = O.majorFix || {}; O.majorFix[fc.key] = ds.fix; } renderPanel(); return; }
-    if (ds.drop != null) { var dc = dropColor(); if (dc) { O.dropAns = O.dropAns || {}; O.dropAns[dc.key] = ds.drop === '1'; } renderPanel(); requote(); return; }
+    if (ds.drop) { var dc = dropColor(); if (dc) { O.dropAns = O.dropAns || {}; O.dropAns[dc.key] = ds.drop; } renderPanel(); requote(); return; }
     if (ds.place) { O.placement = ds.place; renderPanel(); requote(); return; }
     if (ds.sleeves != null) { O.sleeves = +ds.sleeves; renderPanel(); requote(); return; }
     if (ds.sside != null) { O.sleeveSide = ds.sside; renderPanel(); return; }
