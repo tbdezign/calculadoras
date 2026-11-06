@@ -582,7 +582,7 @@
           else if (dc.kind !== 'ask') h += '<div class="ww-msg green" style="margin-top:16px">Your logo has ' + esc(cn) + ' and your shirts are ' + esc(cn) + ', so we\u2019ll let the shirt show through instead of printing it. One less color, lower price. You\u2019ll see it on the proof before anything prints.</div>';
           else h += '<div class="ww-msg grey ww-save" style="margin-top:16px"><div>Your logo has ' + esc(cn) + ' and your shirts are ' + esc(cn) + '. Want the shirt to show through there? One less color, lower price.</div><div class="ww-pills" style="margin:0"><button class="ww-pill' + (dc.asked && dc.on ? ' on' : '') + '" data-drop="1">Yes, drop it</button><button class="ww-pill' + (dc.asked && !dc.on ? ' on' : '') + '" data-drop="0">No, print it</button></div></div>';
         }
-        if (O.logoType === 'solid' || O.logoType === 'full') h += '<div class="ww-msg grey" style="margin-top:12px">Colors set the price. If your file doesn\u2019t match, we\u2019ll message you before printing.</div>';
+        if (O.logoType === 'solid' || O.logoType === 'full') h += '<div class="ww-fine" style="margin-top:12px">Colors set the price. If your file doesn\u2019t match, we\u2019ll message you before printing.</div>';
       }
     } else if (O.step === 4) {
       var both = ruleMethod() === 'silk' && O.qSilk && O.qDtf, save = both ? printSave() : 0;
