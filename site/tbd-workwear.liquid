@@ -733,7 +733,39 @@
       + (O.step === 5 ? '<div class="ww-fine" style="text-align:right;margin-top:8px">' + (O.quote ? '<span style="font-size:15px;color:#051024">Total <b>' + money(O.quote.total$) + '</b>' + (O.quote.setup ? ' (incl. ' + money(O.quote.setup) + ' ' + (method() === 'emb' ? 'digitizing' : 'screen setup') + ')' : '') + ' · free shipping</span><br>' : '') + 'You\u2019ll approve a proof before anything prints.</div>' : '');
     p.innerHTML = h;
     if (O.step === 5) fitLogos(p);
+    saveState();
   }
+  // ── keep the order if the page is refreshed (this browser only, 7 days). Cleared when the checkout opens. ──
+  var SAVE_KEY = 'tbd-workwear-order', SAVE_FIELDS = ['reorder', 'reorderNo', 'step', 'lines', 'deco', 'decoPicked', 'logoType', 'inks', 'manualInks', 'placement', 'sleeves', 'sleeveSide', 'otherText', 'otherSpots', 'nextId', 'pick', 'dropAns', 'majorFix', 'threadNote', 'threadOpen', 'keepEmb'];
+  function keepData(lg, file) { if (!file || file.size > 4 * 1024 * 1024) return; var r = new FileReader(); r.onload = function () { lg.data = r.result; saveState(); }; r.readAsDataURL(file); }
+  function slimLogo(lg, withData) { if (!lg) return null; var o = {}; for (var k in lg) if (k !== 'img' && k !== 'file' && (withData || (k !== 'data' && k !== 'url'))) o[k] = lg[k]; return o; }
+  var saveTimer = null;
+  function saveState() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      if (!O.lines.length) { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} return; }
+      var snap = function (withData) {
+        var o = { at: Date.now() }; SAVE_FIELDS.forEach(function (k) { o[k] = O[k]; });
+        o.logo = slimLogo(O.logo, withData); o.xlogo = {};
+        for (var k in O.xlogo) o.xlogo[k] = { diff: O.xlogo[k].diff, logo: slimLogo(O.xlogo[k].logo, withData) };
+        return JSON.stringify(o);
+      };
+      try { localStorage.setItem(SAVE_KEY, snap(true)); }
+      catch (e) { try { localStorage.setItem(SAVE_KEY, snap(false)); } catch (e2) {} }   // too big for storage: keep everything but the files
+    }, 300);
+  }
+  function loadState() {
+    var s; try { s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { s = null; }
+    if (!s || !s.at || Date.now() - s.at > 7 * 864e5) return;
+    SAVE_FIELDS.forEach(function (k) { if (s[k] !== undefined) O[k] = s[k]; });
+    O.lines = (O.lines || []).filter(function (l) { return byCode[l.code]; });
+    O.xlogo = s.xlogo || {};
+    if (s.logo) {
+      O.logo = s.logo;
+      if (O.logo.url) { var im = new Image(); im.onload = function () { O.logo.img = im; if (O.step >= 3) renderPanel(); }; im.src = O.logo.url; }
+    }
+  }
+  function clearState() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
 
   // logo on the real photo, at the spot saved in the calculator (or a standard spot)
   var DEF = { lc: { cx: .63, cy: .34, maxW: .15, maxH: .12 }, ff: { cx: .5, cy: .47, maxW: .36, maxH: .38 }, fb: { cx: .5, cy: .42, maxW: .38, maxH: .40 }, sl: { cx: .5, cy: .33, maxW: .14, maxH: .10 } };
@@ -831,13 +863,13 @@
   function startCheckout() {
     if (O.checkout === 'busy' || !O.quote) return;
     O.checkout = 'busy'; renderPanel();
-    var fl = [{ f: O.logo && O.logo.file, role: 'main logo', name: O.logo && O.logo.name }];
-    extraSpots().forEach(function (k) { var x = xl(k[0]); if (x.diff && x.logo) fl.push({ f: x.logo.file, role: k[1], name: x.logo.name }); });
-    Promise.all(fl.map(function (x) { return fileData(x.f); })).then(function (datas) {
+    var fl = [{ f: O.logo && O.logo.file, d: O.logo && O.logo.data, role: 'main logo', name: O.logo && O.logo.name }];
+    extraSpots().forEach(function (k) { var x = xl(k[0]); if (x.diff && x.logo) fl.push({ f: x.logo.file, d: x.logo.data, role: k[1], name: x.logo.name }); });
+    Promise.all(fl.map(function (x) { return x.f ? fileData(x.f) : Promise.resolve(x.d || null); })).then(function (datas) {
       var files = fl.map(function (x, i) { return datas[i] ? { role: x.role, name: x.name, data: datas[i] } : null; }).filter(Boolean);
       return fetch(API.replace('apparel-quote', 'apparel-checkout'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: orderBody(), details: checkoutDetails(), files: files }) });
     }).then(function (r) { return r.json(); }).then(function (j) {
-      if (j && j.invoiceUrl) { window.location.href = j.invoiceUrl; return; }
+      if (j && j.invoiceUrl) { clearState(); window.location.href = j.invoiceUrl; return; }
       O.checkout = 'error'; renderPanel();
     }).catch(function () { O.checkout = 'error'; renderPanel(); });
   }
@@ -916,10 +948,10 @@
   }
   function readLogo(file) {
     O.logo = { name: file.name, url: null, guess: '', colors: [], file: file }; O.confirmed = false;
-    if (!/^image\/(png|jpe?g|svg\+xml|webp|gif)$/.test(file.type)) { O.logoType = O.logoType || 'unsure'; renderPanel(); return; }
+    if (!/^image\/(png|jpe?g|svg\+xml|webp|gif)$/.test(file.type)) { O.logoType = O.logoType || 'unsure'; keepData(O.logo, file); renderPanel(); return; }
     var fr = new FileReader();
     fr.onload = function () {
-      O.logo.url = fr.result;
+      O.logo.url = fr.result; O.logo.data = fr.result;
       var img = new Image();
       img.onload = function () {
         try {
@@ -998,12 +1030,12 @@
     if (e.target.id === 'ww-file' && e.target.files[0]) readLogo(e.target.files[0]);
     if (e.target.dataset && e.target.dataset.xfile && e.target.files[0]) {
       var xf = e.target.files[0], xk = e.target.dataset.xfile; xl(xk).logo = { name: xf.name, url: null, file: xf };
-      if (/^image\//.test(xf.type)) { var xr = new FileReader(); xr.onload = function () { xl(xk).logo.url = xr.result; renderPanel(); }; xr.readAsDataURL(xf); } else renderPanel();
+      if (/^image\//.test(xf.type)) { var xr = new FileReader(); xr.onload = function () { xl(xk).logo.url = xr.result; xl(xk).logo.data = xr.result; renderPanel(); }; xr.readAsDataURL(xf); } else { keepData(xl(xk).logo, xf); renderPanel(); }
     }
   });
   app.addEventListener('input', function (e) {
     var t = e.target;
-    if (t.dataset.size) { var ln = lineById(t.dataset.line); ln.sizes[t.dataset.size] = Math.max(0, parseInt(t.value, 10) || 0); requote(); renderSteps();
+    if (t.dataset.size) { var ln = lineById(t.dataset.line); ln.sizes[t.dataset.size] = Math.max(0, parseInt(t.value, 10) || 0); requote(); renderSteps(); saveState();
       var pc = document.getElementById('pcs' + ln.id); if (pc) pc.textContent = ln.color + ' · ' + pcs(qtyOf(ln));
       var qt = document.getElementById('ww-qtotal'); if (qt) qt.textContent = pcs(total());
       var nb = app.querySelector('[data-next]'); if (nb) nb.disabled = !stepOk(O.step); }
@@ -1016,7 +1048,9 @@
   fetch(API).then(function (r) { return r.json(); }).then(function (d) {
     DATA = d; STYLES = d.styles || [];
     STYLES.forEach(function (s) { s.name = s.name.split(' ').filter(function (w) { return w.toUpperCase() !== s.code.toUpperCase(); }).join(' '); byCode[s.code] = s; });
+    loadState();
     route();
+    if (O.lines.length && location.hash.indexOf('order') === 0) { O.step = Math.max(1, Math.min(O.step || 1, maxStep())); renderOrder(); }
   }).catch(function () { app.innerHTML = '<div class="ww-empty">We couldn\'t load the styles right now. Please refresh the page or message us on WhatsApp.</div>'; });
 })();
 </script>

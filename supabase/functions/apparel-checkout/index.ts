@@ -73,6 +73,55 @@ async function saveFile(folder: string, f: any, i: number) {
   return { role: f.role || "logo", name: f.name || "logo", url: s.signedURL ? `${SB_URL}/storage/v1${s.signedURL}` : path };
 }
 
+// ── Hidden products (one per style, one variant per color with its photo) so the checkout shows pictures.
+// Rebuilt only when the style's colors or photos change (signature kept in shopify_styles). Any failure → plain line items.
+async function rest(path: string, init: RequestInit = {}) {
+  const r = await fetch(`${SB_URL}/rest/v1/${path}`, { ...init, headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json", ...(init.headers || {}) } });
+  if (!r.ok) throw new Error(path.split("?")[0] + " " + r.status);
+  return r.status === 204 ? null : r.json();
+}
+async function ensureStyle(code: string, name: string, orderColors: string[]) {
+  const [site] = await rest(`site_products?key=eq.${encodeURIComponent(code)}&select=data`);
+  const colors = [...new Set([...((site && site.data && site.data.colors) || []).filter((c: any) => c && c.on && c.name).map((c: any) => c.name), ...orderColors])];
+  const photos = (await rest(`garment_photos?select=key,meta,updated_at`)).filter((p: any) => p.meta && p.meta.code === code && (p.meta.side || "front") === "front");
+  const photoOf = (c: string) => photos.find((p: any) => String(p.meta.color || "").toLowerCase() === c.toLowerCase());
+  const sig = JSON.stringify(colors.map(c => [c, (photoOf(c) || {}).key || "", (photoOf(c) || {}).updated_at || ""]));
+  const [row] = await rest(`shopify_styles?code=eq.${encodeURIComponent(code)}&select=sig,variants`);
+  if (row && row.sig === sig && orderColors.every(c => row.variants[c])) return row.variants;
+  // signed links for the photos (Shopify copies them)
+  const withPhoto = colors.filter(c => photoOf(c));
+  let urls: Record<string, string> = {};
+  if (withPhoto.length) {
+    const r = await fetch(`${SB_URL}/storage/v1/object/sign/photos`, {
+      method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ expiresIn: 3600, paths: withPhoto.map(c => photoOf(c).key + ".img") }),
+    });
+    if (r.ok) for (const x of await r.json()) if (x.signedURL) urls[x.path] = `${SB_URL}/storage/v1${x.signedURL}`;
+  }
+  const fileOf = (c: string) => { const p = photoOf(c), u = p && urls[p.key + ".img"]; return u ? { originalSource: u, contentType: "IMAGE", alt: `${name} — ${c}`, filename: `${code}-${c}`.replace(/[^\w\-]+/g, "_") + ".jpg" } : null; };
+  const files = colors.map(fileOf).filter(Boolean);
+  const d = await gql(`mutation($identifier: ProductSetIdentifiers, $input: ProductSetInput!) { productSet(synchronous: true, identifier: $identifier, input: $input) {
+      product { id variants(first: 250) { nodes { id selectedOptions { name value } } } } userErrors { field message } } }`, {
+    identifier: { handle: "ww-" + code.toLowerCase() },
+    input: {
+      handle: "ww-" + code.toLowerCase(), title: name, status: "ACTIVE", vendor: "TBDezign", productType: "Custom workwear (checkout only)",
+      tags: ["workwear-checkout"], files,
+      productOptions: [{ name: "Color", values: colors.map(c => ({ name: c })) }],
+      variants: colors.map(c => {
+        const f = fileOf(c);
+        return { optionValues: [{ optionName: "Color", name: c }], price: "0.00", sku: code, taxable: true, inventoryPolicy: "CONTINUE", inventoryItem: { tracked: false }, ...(f ? { file: f } : {}) };
+      }),
+    },
+  });
+  const ps = d.productSet;
+  if (ps.userErrors && ps.userErrors.length) throw new Error("productSet " + JSON.stringify(ps.userErrors).slice(0, 300));
+  const variants: Record<string, string> = {};
+  for (const v of ps.product.variants.nodes) { const o = v.selectedOptions.find((x: any) => x.name === "Color"); if (o) variants[o.value] = v.id; }
+  await rest(`shopify_styles?on_conflict=code`, { method: "POST", headers: { Prefer: "resolution=merge-duplicates" },
+    body: JSON.stringify({ code, sig, product_id: ps.product.id, variants, updated_at: new Date().toISOString() }) });
+  return variants;
+}
+
 const cleanName = (n: string) => String(n || "").replace(/\s*[®™]/g, "").replace(/\s+/g, " ").trim();
 const SIZE_LABEL: Record<string, string> = { std: "", x2: "2XL", x3: "3XL" };
 const money = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
@@ -111,8 +160,20 @@ Deno.serve(async (req) => {
       return pick.map(([k, v]) => k + " × " + v).join(", ");
     };
     const NAMES: Record<string, string> = { silk: "Silk Screen", dtf: "DTF print", emb: "Embroidery" };
+    // hidden products for the photos (best effort)
+    const vmap: Record<string, Record<string, string>> = {};
+    for (const code of [...new Set(q.lines.map((l: any) => l.code))] as string[]) {
+      const ls = q.lines.filter((l: any) => l.code === code);
+      try { vmap[code] = await ensureStyle(code, cleanName(ls[0].name), [...new Set(ls.map((l: any) => l.color).filter(Boolean))] as string[]); }
+      catch (e) { console.log("no photo product for", code, String((e as Error).message || e)); }
+    }
     const lineItems: any[] = q.lines.map((l: any) => {
-      const sz = sizesOf(l.code, l.color, l.size);
+      const sz = sizesOf(l.code, l.color, l.size), vid = vmap[l.code] && vmap[l.code][l.color];
+      if (vid) return {
+        variantId: vid, quantity: l.q,
+        priceOverride: { amount: money(l.unit), currencyCode: "USD" },
+        customAttributes: [{ key: "Decoration", value: NAMES[method] }, ...(SIZE_LABEL[l.size] ? [{ key: "Size", value: SIZE_LABEL[l.size] }] : []), ...(sz ? [{ key: "Sizes", value: sz }] : [])],
+      };
       return {
         title: `${cleanName(l.name)} — ${l.color || ""}${SIZE_LABEL[l.size] ? " (" + SIZE_LABEL[l.size] + ")" : ""} · ${NAMES[method]}`,
         sku: l.code, quantity: l.q, requiresShipping: true, taxable: true,
