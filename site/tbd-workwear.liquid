@@ -726,11 +726,10 @@
       }
     } else {
       h += '<h2 class="ww-h2">5. Preview and pay</h2><p class="ww-p">This is a quick preview. We send a final proof for your approval before printing.</p><div class="ww-prevs">' + previews() + '</div>';
-      if (O.checkout === 'busy') h += '<div class="ww-msg grey" style="margin-top:16px">Creating your secure checkout… this takes a few seconds.</div>';
-      if (O.checkout === 'error') h += '<div class="ww-msg red" style="margin-top:16px">We couldn\u2019t open the checkout right now. Please try again, or send us a message on WhatsApp and we\u2019ll finish your order.</div>';
+      if (O.checkout === 'error') h += '<div class="ww-msg red" style="margin-top:16px">Something went wrong on our side. Please try again, or send us a message on WhatsApp and we\u2019ll finish your order.</div>';
     }
     h += '<div class="ww-nav"><button class="ww-btn ghost" data-back' + (O.step === 1 ? ' disabled' : '') + '>Back</button>'
-      + (O.step < 5 ? '<button class="ww-btn" data-next' + (stepOk(O.step) ? '' : ' disabled') + '>Continue</button>' : '<button class="ww-btn pay" data-pay' + (O.quote && O.checkout !== 'busy' ? '' : ' disabled') + '>' + (O.checkout === 'busy' ? 'Opening checkout…' : 'Continue to secure checkout') + '</button>') + '</div>'
+      + (O.step < 5 ? '<button class="ww-btn" data-next' + (stepOk(O.step) ? '' : ' disabled') + '>Continue</button>' : '<button class="ww-btn pay" data-pay' + (O.quote && O.checkout !== 'busy' ? '' : ' disabled') + '>' + (O.checkout === 'busy' ? 'One moment…' : 'Continue to checkout') + '</button>') + '</div>'
       + (O.step === 5 ? '<div class="ww-fine" style="text-align:right;margin-top:8px">' + (O.quote ? '<span style="font-size:15px;color:#051024">Total <b>' + money(O.quote.total$) + '</b>' + (O.quote.setup ? ' (incl. ' + money(O.quote.setup) + ' ' + (method() === 'emb' ? 'digitizing' : 'screen setup') + ')' : '') + ' · free shipping</span><br>' : '') + 'You\u2019ll approve a proof before anything prints.</div>' : '');
     p.innerHTML = h;
     if (O.step === 5) fitLogos(p);
