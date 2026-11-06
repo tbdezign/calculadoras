@@ -33,12 +33,14 @@ async function token() {
   tok = { v: j.access_token, exp: Date.now() + (+j.expires_in || 86000) * 1000 };
   return tok.v;
 }
-async function gql(query: string, variables?: unknown) {
+async function gql(query: string, variables?: unknown, retry = true): Promise<any> {
   const r = await fetch(`https://${SHOP}/admin/api/${API_VERSION}/graphql.json`, {
     method: "POST", headers: { "Content-Type": "application/json", "X-Shopify-Access-Token": await token() },
     body: JSON.stringify({ query, variables }),
   });
   const j = await r.json();
+  // a permission added later only shows up in a NEW token: drop the cached one and try once more
+  if (j.errors && retry && JSON.stringify(j.errors).includes("ACCESS_DENIED")) { tok = { v: "", exp: 0 }; return gql(query, variables, false); }
   if (j.errors) throw new Error("shopify " + JSON.stringify(j.errors).slice(0, 300));
   return j.data;
 }
