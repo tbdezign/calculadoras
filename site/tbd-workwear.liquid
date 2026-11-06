@@ -496,7 +496,7 @@
         var q = { std: 0, x2: 0, x3: 0 }; SIZES.forEach(function (s) { q[s[1]] += +l.sizes[s[0]] || 0; });
         return { code: l.code, color: l.color, qty: q };
       }) };
-    if (ruleMethod() === 'silk') o.method = method();
+    if (method()) o.method = method();
     for (var k in overrides || {}) o[k] = overrides[k];
     return o;
   }
@@ -726,10 +726,11 @@
       }
     } else {
       h += '<h2 class="ww-h2">5. Preview and pay</h2><p class="ww-p">This is a quick preview. We send a final proof for your approval before printing.</p><div class="ww-prevs">' + previews() + '</div>';
-      if (O.checkout) h += '<div class="ww-msg green" style="margin-top:16px">Almost there! Secure checkout is being connected. For now, send us a message on WhatsApp and we\'ll finish your order.</div>';
+      if (O.checkout === 'busy') h += '<div class="ww-msg grey" style="margin-top:16px">Creating your secure checkout… this takes a few seconds.</div>';
+      if (O.checkout === 'error') h += '<div class="ww-msg red" style="margin-top:16px">We couldn\u2019t open the checkout right now. Please try again, or send us a message on WhatsApp and we\u2019ll finish your order.</div>';
     }
     h += '<div class="ww-nav"><button class="ww-btn ghost" data-back' + (O.step === 1 ? ' disabled' : '') + '>Back</button>'
-      + (O.step < 5 ? '<button class="ww-btn" data-next' + (stepOk(O.step) ? '' : ' disabled') + '>Continue</button>' : '<button class="ww-btn pay" data-pay' + (O.quote ? '' : ' disabled') + '>Continue to secure checkout</button>') + '</div>'
+      + (O.step < 5 ? '<button class="ww-btn" data-next' + (stepOk(O.step) ? '' : ' disabled') + '>Continue</button>' : '<button class="ww-btn pay" data-pay' + (O.quote && O.checkout !== 'busy' ? '' : ' disabled') + '>' + (O.checkout === 'busy' ? 'Opening checkout…' : 'Continue to secure checkout') + '</button>') + '</div>'
       + (O.step === 5 ? '<div class="ww-fine" style="text-align:right;margin-top:8px">' + (O.quote ? '<span style="font-size:15px;color:#051024">Total <b>' + money(O.quote.total$) + '</b>' + (O.quote.setup ? ' (incl. ' + money(O.quote.setup) + ' ' + (method() === 'emb' ? 'digitizing' : 'screen setup') + ')' : '') + ' · free shipping</span><br>' : '') + 'You\u2019ll approve a proof before anything prints.</div>' : '');
     p.innerHTML = h;
     if (O.step === 5) fitLogos(p);
@@ -810,13 +811,44 @@
     }
     return h;
   }
+  function placeText() {
+    return (PLACES.filter(function (x) { return x[0] === O.placement; })[0] || [])[1] + (O.placement === 'other' ? ' · ' + O.otherSpots.length + (O.otherSpots.length === 1 ? ' spot' : ' spots') : '') + (O.sleeves === 1 ? ' + ' + (O.sleeveSide === 'r' ? 'right' : O.sleeveSide === 'l' ? 'left' : '1') + ' sleeve' : O.sleeves ? ' + 2 sleeves' : '') + (newLogos() ? ' · ' + (1 + newLogos()) + ' logos' : '');
+  }
+  // ── checkout: the server prices the order again, saves the logo files and opens a Shopify draft order checkout ──
+  function fileData(f) { return new Promise(function (res) { if (!f) return res(null); var r = new FileReader(); r.onload = function () { res(r.result); }; r.onerror = function () { res(null); }; r.readAsDataURL(f); }); }
+  function checkoutDetails() {
+    var m = method(), notes = [], logo;
+    if (O.deco === 'emb') logo = 'Embroidery';
+    else logo = O.logoType === 'solid' ? O.inks + ' solid color' + (O.inks === 1 ? '' : 's') + (inks() !== O.inks ? ' (' + inks() + ' printed: shirt shows through)' : '') : O.logoType === 'full' ? 'Full color / effects' : 'Not sure';
+    if (O.logo && O.logo.colors && O.logo.colors.length) logo += ' · detected ' + O.logo.colors.join(' ');
+    var dc = dropColor(); if (dc) notes.push(dc.on ? 'Same-color part: shirt shows through (customer: looks good)' : dc.fix === 'swap' ? 'Same-color part: print it in ' + (lum(dc.shirt.hex) < 128 ? 'white' : 'black') : 'Same-color part: customer chose Fix it');
+    var ts = threadSwap(); if (ts) notes.push(O.threadNote ? 'Thread color requested: ' + O.threadNote : 'Low-contrast color stitched in ' + ts.alt + ' thread');
+    if (O.pick && ruleMethod() === 'silk') notes.push('Customer picked ' + (O.pick === 'dtf' ? 'DTF' : 'Silk Screen'));
+    if (O.placement === 'other' && O.otherText) notes.push('Placement described: ' + O.otherText);
+    extraSpots().forEach(function (k) { var x = xl(k[0]); notes.push(k[1] + ': ' + (x.diff ? 'different logo' + (x.logo ? ' (' + x.logo.name + ')' : '') : 'same logo')); });
+    if (O.logo && O.logo.effects && O.deco === 'emb') notes.push('Logo has gradients/shading — customer kept embroidery');
+    return { placement: placeText(), logo: logo, notes: notes.join(' | '), items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) { return { code: l.code, color: l.color, sizes: l.sizes }; }) };
+  }
+  function startCheckout() {
+    if (O.checkout === 'busy' || !O.quote) return;
+    O.checkout = 'busy'; renderPanel();
+    var fl = [{ f: O.logo && O.logo.file, role: 'main logo', name: O.logo && O.logo.name }];
+    extraSpots().forEach(function (k) { var x = xl(k[0]); if (x.diff && x.logo) fl.push({ f: x.logo.file, role: k[1], name: x.logo.name }); });
+    Promise.all(fl.map(function (x) { return fileData(x.f); })).then(function (datas) {
+      var files = fl.map(function (x, i) { return datas[i] ? { role: x.role, name: x.name, data: datas[i] } : null; }).filter(Boolean);
+      return fetch(API.replace('apparel-quote', 'apparel-checkout'), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ order: orderBody(), details: checkoutDetails(), files: files }) });
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j && j.invoiceUrl) { window.location.href = j.invoiceUrl; return; }
+      O.checkout = 'error'; renderPanel();
+    }).catch(function () { O.checkout = 'error'; renderPanel(); });
+  }
   function renderAside() {
     var a = document.getElementById('ww-aside'); if (!a) return;
     var m = method(), t = total(), q = O.quote;
     var h = '<h3>Your order</h3>';
     if (!O.lines.length) h += '<div style="font-size:13px;color:#4b5563">No shirts yet.</div>';
     O.lines.forEach(function (l) { h += '<div class="ww-sline"><span>' + esc(byCode[l.code].name) + ' · ' + esc(l.color) + '</span><b style="white-space:nowrap">' + pcs(qtyOf(l)) + '</b></div>'; });
-    var place = (PLACES.filter(function (x) { return x[0] === O.placement; })[0] || [])[1] + (O.placement === 'other' ? ' · ' + O.otherSpots.length + (O.otherSpots.length === 1 ? ' spot' : ' spots') : '') + (O.sleeves === 1 ? ' + ' + (O.sleeveSide === 'r' ? 'right' : O.sleeveSide === 'l' ? 'left' : '1') + ' sleeve' : O.sleeves ? ' + 2 sleeves' : '') + (newLogos() ? ' · ' + (1 + newLogos()) + ' logos' : '');
+    var place = placeText();
     h += '<div class="ww-row" style="margin-top:10px"><span>Total pieces</span><b>' + t + '</b></div>'
       + '<div class="ww-row"><span>Method</span><b>' + (m ? NAMES[m] : '—') + '</b></div>'
       + (O.step >= 4 ? '<div class="ww-row"><span>Logo</span><b>' + esc(place) + '</b></div>' : '')
@@ -884,7 +916,7 @@
     return (prevCache[key] = cv.toDataURL());
   }
   function readLogo(file) {
-    O.logo = { name: file.name, url: null, guess: '', colors: [] }; O.confirmed = false;
+    O.logo = { name: file.name, url: null, guess: '', colors: [], file: file }; O.confirmed = false;
     if (!/^image\/(png|jpe?g|svg\+xml|webp|gif)$/.test(file.type)) { O.logoType = O.logoType || 'unsure'; renderPanel(); return; }
     var fr = new FileReader();
     fr.onload = function () {
@@ -946,7 +978,7 @@
     if (ds.go) { go(+ds.go); return; }
     if ('next' in ds) { go(O.step + 1); return; }
     if ('back' in ds) { go(O.step - 1); return; }
-    if ('pay' in ds) { O.checkout = true; renderPanel(); return; }
+    if ('pay' in ds) { startCheckout(); return; }
   });
   // tap a preview to see it big
   function closeZoom() { var z = document.querySelector('.ww-zoom'); if (z) z.remove(); document.removeEventListener('keydown', zoomKey); }
@@ -966,7 +998,7 @@
     if (e.target.id === 'ww-conf') { O.confirmed = e.target.checked; renderSteps(); var nb = app.querySelector('[data-next]'); if (nb) nb.disabled = !stepOk(O.step); }
     if (e.target.id === 'ww-file' && e.target.files[0]) readLogo(e.target.files[0]);
     if (e.target.dataset && e.target.dataset.xfile && e.target.files[0]) {
-      var xf = e.target.files[0], xk = e.target.dataset.xfile; xl(xk).logo = { name: xf.name, url: null };
+      var xf = e.target.files[0], xk = e.target.dataset.xfile; xl(xk).logo = { name: xf.name, url: null, file: xf };
       if (/^image\//.test(xf.type)) { var xr = new FileReader(); xr.onload = function () { xl(xk).logo.url = xr.result; renderPanel(); }; xr.readAsDataURL(xf); } else renderPanel();
     }
   });
