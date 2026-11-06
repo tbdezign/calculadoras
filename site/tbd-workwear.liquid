@@ -858,7 +858,12 @@
     if (O.placement === 'other' && O.otherText) notes.push('Placement described: ' + O.otherText);
     extraSpots().forEach(function (k) { var x = xl(k[0]); notes.push(k[1] + ': ' + (x.diff ? 'different logo' + (x.logo ? ' (' + x.logo.name + ')' : '') : 'same logo')); });
     if (O.logo && O.logo.effects && O.deco === 'emb') notes.push('Logo has gradients/shading — customer kept embroidery');
-    return { placement: placeText(), logo: logo, notes: notes.join(' | '), items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) { return { code: l.code, color: l.color, sizes: l.sizes }; }) };
+    // short notes shown under each shirt in the checkout
+    var lineNotes = [], cname = function (c, sh) { return lum(c) < 60 ? 'black' : lum(c) > 225 ? 'white' : String(sh.name).toLowerCase(); };
+    if (ts) lineNotes.push(['Thread', O.threadNote ? O.threadNote : ts.alt + ' instead of ' + cname(ts.c, ts.shirt)]);
+    if (dc && dc.on) lineNotes.push(['Print', 'shirt shows through the ' + cname(dc.c, dc.shirt)]);
+    else if (dc && dc.fix === 'swap') lineNotes.push(['Print', cname(dc.c, dc.shirt) + ' printed in ' + (lum(dc.shirt.hex) < 128 ? 'white' : 'black')]);
+    return { placement: placeText(), logo: logo, notes: notes.join(' | '), lineNotes: lineNotes, items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) { return { code: l.code, color: l.color, sizes: l.sizes }; }) };
   }
   function startCheckout() {
     if (O.checkout === 'busy' || !O.quote) return;

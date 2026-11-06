@@ -82,6 +82,23 @@ async function rest(path: string, init: RequestInit = {}) {
   if (!r.ok) throw new Error(path.split("?")[0] + " " + r.status);
   return r.status === 204 ? null : r.json();
 }
+async function stagePhoto(path: string, base: string) {
+  const r = await fetch(`${SB_URL}/storage/v1/object/photos/${path}`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } });
+  if (!r.ok) return null;
+  const bytes = new Uint8Array(await r.arrayBuffer());
+  const png = bytes[0] === 0x89 && bytes[1] === 0x50, webp = bytes[8] === 0x57 && bytes[9] === 0x45;
+  const mime = png ? "image/png" : webp ? "image/webp" : "image/jpeg", filename = base + (png ? ".png" : webp ? ".webp" : ".jpg");
+  const d = await gql(`mutation($input: [StagedUploadInput!]!) { stagedUploadsCreate(input: $input) { stagedTargets { url resourceUrl parameters { name value } } userErrors { field message } } }`,
+    { input: [{ filename, mimeType: mime, resource: "IMAGE", httpMethod: "POST", fileSize: String(bytes.length) }] });
+  const t = d.stagedUploadsCreate.stagedTargets && d.stagedUploadsCreate.stagedTargets[0];
+  if (!t) throw new Error("staged " + JSON.stringify(d.stagedUploadsCreate.userErrors).slice(0, 200));
+  const form = new FormData();
+  for (const p of t.parameters) form.append(p.name, p.value);
+  form.append("file", new Blob([bytes], { type: mime }), filename);
+  const up = await fetch(t.url, { method: "POST", body: form });
+  if (!up.ok) throw new Error("staged upload " + up.status);
+  return t.resourceUrl;
+}
 async function ensureStyle(code: string, name: string, orderColors: string[]) {
   const [site] = await rest(`site_products?key=eq.${encodeURIComponent(code)}&select=data`);
   const colors = [...new Set([...((site && site.data && site.data.colors) || []).filter((c: any) => c && c.on && c.name).map((c: any) => c.name), ...orderColors])];
@@ -90,17 +107,13 @@ async function ensureStyle(code: string, name: string, orderColors: string[]) {
   const sig = JSON.stringify(colors.map(c => [c, (photoOf(c) || {}).key || "", (photoOf(c) || {}).updated_at || ""]));
   const [row] = await rest(`shopify_styles?code=eq.${encodeURIComponent(code)}&select=sig,variants`);
   if (row && row.sig === sig && orderColors.every(c => row.variants[c])) return row.variants;
-  // signed links for the photos (Shopify copies them)
-  const withPhoto = colors.filter(c => photoOf(c));
-  let urls: Record<string, string> = {};
-  if (withPhoto.length) {
-    const r = await fetch(`${SB_URL}/storage/v1/object/sign/photos`, {
-      method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ expiresIn: 3600, paths: withPhoto.map(c => photoOf(c).key + ".img") }),
-    });
-    if (r.ok) for (const x of await r.json()) if (x.signedURL) urls[x.path] = `${SB_URL}/storage/v1${x.signedURL}`;
+  // photos: download from storage, upload to Shopify (staged upload), then attach by the staged URL
+  const staged: Record<string, string> = {};
+  for (const c of colors.filter(c => photoOf(c))) {
+    try { const u = await stagePhoto(photoOf(c).key + ".img", `${code}-${c}`.replace(/[^\w\-]+/g, "_")); if (u) staged[c] = u; }
+    catch (e) { console.log("photo upload failed", code, c, String((e as Error).message || e)); }
   }
-  const fileOf = (c: string) => { const p = photoOf(c), u = p && urls[p.key + ".img"]; return u ? { originalSource: u, contentType: "IMAGE", alt: `${name} — ${c}`, filename: `${code}-${c}`.replace(/[^\w\-]+/g, "_") + ".jpg" } : null; };
+  const fileOf = (c: string) => staged[c] ? { originalSource: staged[c], contentType: "IMAGE", alt: `${name} — ${c}` } : null;
   const files = colors.map(fileOf).filter(Boolean);
   const d = await gql(`mutation($identifier: ProductSetIdentifiers, $input: ProductSetInput!) { productSet(synchronous: true, identifier: $identifier, input: $input) {
       product { id variants(first: 250) { nodes { id selectedOptions { name value } } } } userErrors { field message } } }`, {
@@ -162,6 +175,14 @@ Deno.serve(async (req) => {
       return pick.map(([k, v]) => k + " × " + v).join(", ");
     };
     const NAMES: Record<string, string> = { silk: "Silk Screen", dtf: "DTF print", emb: "Embroidery" };
+    // what the customer (and the supplier order) needs to see under each shirt
+    const lineProps = (l: any, sz: string) => [
+      ["Sizes", sz || SIZE_LABEL[l.size] || ""],
+      ["Decoration", NAMES[method]],
+      ["Logo", clip(d.placement, 120)],
+      ...(Array.isArray(d.lineNotes) ? d.lineNotes.slice(0, 3).filter((x: any) => Array.isArray(x) && x[0] && x[1]).map((x: any) => [clip(x[0], 30), clip(x[1], 120)]) : []),
+      ["Price per piece", "$" + money(l.unit)],
+    ].filter(([, v]) => v).map(([key, value]) => ({ key, value }));
     // hidden products for the photos (best effort)
     const vmap: Record<string, Record<string, string>> = {};
     for (const code of [...new Set(q.lines.map((l: any) => l.code))] as string[]) {
@@ -174,13 +195,13 @@ Deno.serve(async (req) => {
       if (vid) return {
         variantId: vid, quantity: l.q,
         priceOverride: { amount: money(l.unit), currencyCode: "USD" },
-        customAttributes: [{ key: "Decoration", value: NAMES[method] }, ...(SIZE_LABEL[l.size] ? [{ key: "Size", value: SIZE_LABEL[l.size] }] : []), ...(sz ? [{ key: "Sizes", value: sz }] : [])],
+        customAttributes: lineProps(l, sz),
       };
       return {
         title: `${cleanName(l.name)} — ${l.color || ""}${SIZE_LABEL[l.size] ? " (" + SIZE_LABEL[l.size] + ")" : ""} · ${NAMES[method]}`,
         sku: l.code, quantity: l.q, requiresShipping: true, taxable: true,
         originalUnitPriceWithCurrency: { amount: money(l.unit), currencyCode: "USD" },
-        customAttributes: sz ? [{ key: "Sizes", value: sz }] : [],
+        customAttributes: lineProps(l, sz),
       };
     });
     if (q.setup > 0) lineItems.push({
