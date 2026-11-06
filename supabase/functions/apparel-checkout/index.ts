@@ -80,7 +80,8 @@ async function saveFile(folder: string, f: any, i: number) {
 async function rest(path: string, init: RequestInit = {}) {
   const r = await fetch(`${SB_URL}/rest/v1/${path}`, { ...init, headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json", ...(init.headers || {}) } });
   if (!r.ok) throw new Error(path.split("?")[0] + " " + r.status);
-  return r.status === 204 ? null : r.json();
+  const t = await r.text();
+  return t ? JSON.parse(t) : null;
 }
 async function stagePhoto(path: string, base: string) {
   const r = await fetch(`${SB_URL}/storage/v1/object/photos/${path}`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } });
