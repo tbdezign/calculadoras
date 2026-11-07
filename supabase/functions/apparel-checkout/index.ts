@@ -87,7 +87,52 @@ async function rest(path: string, init: RequestInit = {}) {
 async function stagePhoto(path: string, base: string) {
   const r = await fetch(`${SB_URL}/storage/v1/object/photos/${path}`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` } });
   if (!r.ok) return null;
-  const bytes = new Uint8Array(await r.arrayBuffer());
+  return stageBytes(new Uint8Array(await r.arrayBuffer()), base);
+}
+// A color with no photo yet gets a plain shirt drawn in that color (so the cart never shows another color's picture).
+const CRC = new Uint32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+const crc32 = (b: Uint8Array) => { let c = 0xffffffff; for (const x of b) c = CRC[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+async function shirtPng(hex: string) {
+  const W = 480, H = 480, S = 8;
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || "").trim());
+  const rgb = m ? [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16)) : [200, 205, 214];
+  const light = rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114 > 200;
+  const edge = rgb.map(v => Math.round(v * (light ? 0.78 : 0.8)));
+  const bg = [243, 244, 246];
+  // the cart's shirt outline (60×60 units), collar curve flattened
+  const poly = [[20, 6], [6, 14], [11, 25], [17, 22], [17, 54], [43, 54], [43, 22], [49, 25], [54, 14], [40, 6], [38.5, 9], [35, 11.3], [30, 12], [25, 11.3], [21.5, 9]].map(([x, y]) => [x * S, y * S + 2 * S]);
+  const inside = new Uint8Array(W * H);
+  for (let y = 0; y < H; y++) {
+    const xs: number[] = [];
+    for (let i = 0; i < poly.length; i++) {
+      const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % poly.length];
+      if ((y1 <= y + 0.5 && y2 > y + 0.5) || (y2 <= y + 0.5 && y1 > y + 0.5)) xs.push(x1 + (y + 0.5 - y1) * (x2 - x1) / (y2 - y1));
+    }
+    xs.sort((a, b) => a - b);
+    for (let k = 0; k + 1 < xs.length; k += 2) for (let x = Math.max(0, Math.ceil(xs[k] - 0.5)); x < Math.min(W, xs[k + 1]); x++) inside[y * W + x] = 1;
+  }
+  const raw = new Uint8Array(H * (1 + W * 3)), T = 4;
+  const at = (x: number, y: number) => x >= 0 && y >= 0 && x < W && y < H && inside[y * W + x] === 1;
+  for (let y = 0; y < H; y++) {
+    raw[y * (1 + W * 3)] = 0;
+    for (let x = 0; x < W; x++) {
+      const isIn = inside[y * W + x] === 1, rim = isIn && !(at(x - T, y) && at(x + T, y) && at(x, y - T) && at(x, y + T));
+      const c = !isIn ? bg : rim ? edge : rgb, o = y * (1 + W * 3) + 1 + x * 3;
+      raw[o] = c[0]; raw[o + 1] = c[1]; raw[o + 2] = c[2];
+    }
+  }
+  const z = new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new CompressionStream("deflate"))).arrayBuffer());
+  const chunk = (type: string, data: Uint8Array) => {
+    const out = new Uint8Array(12 + data.length), dv = new DataView(out.buffer);
+    dv.setUint32(0, data.length); out.set(new TextEncoder().encode(type), 4); out.set(data, 8);
+    dv.setUint32(8 + data.length, crc32(out.subarray(4, 8 + data.length))); return out;
+  };
+  const ihdr = new Uint8Array(13), dv = new DataView(ihdr.buffer); dv.setUint32(0, W); dv.setUint32(4, H); ihdr.set([8, 2, 0, 0, 0], 8);
+  const parts = [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", z), chunk("IEND", new Uint8Array(0))];
+  const png = new Uint8Array(parts.reduce((n, p) => n + p.length, 0)); let off = 0; for (const p of parts) { png.set(p, off); off += p.length; }
+  return png;
+}
+async function stageBytes(bytes: Uint8Array, base: string) {
   const png = bytes[0] === 0x89 && bytes[1] === 0x50, webp = bytes[8] === 0x57 && bytes[9] === 0x45;
   const mime = png ? "image/png" : webp ? "image/webp" : "image/jpeg", filename = base + (png ? ".png" : webp ? ".webp" : ".jpg");
   const d = await gql(`mutation($input: [StagedUploadInput!]!) { stagedUploadsCreate(input: $input) { stagedTargets { url resourceUrl parameters { name value } } userErrors { field message } } }`,
@@ -123,7 +168,8 @@ async function ensureStyle(code: string, name: string, orderColors: string[]) {
   const colors = [...new Set([...((site && site.data && site.data.colors) || []).filter((c: any) => c && c.on && c.name).map((c: any) => c.name), ...orderColors, ...kept.map(k => k.color)])];
   const photos = (await rest(`garment_photos?select=key,meta,updated_at`)).filter((p: any) => p.meta && p.meta.code === code && (p.meta.side || "front") === "front");
   const photoOf = (c: string) => photos.find((p: any) => String(p.meta.color || "").toLowerCase() === c.toLowerCase());
-  const sig = "v2" + JSON.stringify(colors.map(c => [c, (photoOf(c) || {}).key || "", (photoOf(c) || {}).updated_at || ""]));
+  const hexOf = (c: string) => (((site && site.data && site.data.colors) || []).find((x: any) => x && x.name === c) || {}).hex || "";
+  const sig = "v3" + JSON.stringify(colors.map(c => [c, (photoOf(c) || {}).key || "", (photoOf(c) || {}).updated_at || "", photoOf(c) ? "" : hexOf(c)]));
   if (row && row.sig === sig) {
     if (!row.published && await publish(row.product_id)) { row.published = true; await patchStyle(code, { published: true }); }
     return row;
@@ -133,6 +179,10 @@ async function ensureStyle(code: string, name: string, orderColors: string[]) {
   for (const c of colors.filter(c => photoOf(c))) {
     try { const u = await stagePhoto(photoOf(c).key + ".img", `${code}-${c}`.replace(/[^\w\-]+/g, "_")); if (u) staged[c] = u; }
     catch (e) { console.log("photo upload failed", code, c, String((e as Error).message || e)); }
+  }
+  for (const c of colors.filter(c => !staged[c])) {
+    try { const u = await stageBytes(await shirtPng(hexOf(c)), `${code}-${c}-plain`.replace(/[^\w\-]+/g, "_")); if (u) staged[c] = u; }
+    catch (e) { console.log("plain shirt failed", code, c, String((e as Error).message || e)); }
   }
   const fileOf = (c: string) => staged[c] ? { originalSource: staged[c], contentType: "IMAGE", alt: `${name} — ${c}` } : null;
   const files = colors.map(fileOf).filter(Boolean);
