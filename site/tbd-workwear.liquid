@@ -1142,7 +1142,7 @@
     var editRef = (location.search.match(/[?&]edit=([0-9a-f]{10})/) || [])[1];
     (editRef ? loadEdit(editRef) : Promise.resolve(false)).then(function (edited) {
       if (!edited) loadState();
-      if (edited) { if (history.replaceState) history.replaceState(null, '', location.pathname + '#order'); else location.hash = 'order'; O.step = maxStep(); }
+      if (edited) { if (history.replaceState) history.replaceState(null, '', location.pathname + '#order'); else location.hash = 'order'; O.step = 1; }   // editing starts at "Pick your shirts"
       route();
       if (O.lines.length && location.hash.indexOf('order') === 0) { O.step = Math.max(1, Math.min(O.step || 1, maxStep())); renderOrder(); }
     });
