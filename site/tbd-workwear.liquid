@@ -44,7 +44,7 @@
   .ww-img svg { width: 62%; height: 62%; }
   .ww-best { position: absolute; top: 8px; left: 8px; z-index: 1; font-size: 11px; font-weight: 500; line-height: 1.3; color: #4b5563; background: rgba(255,255,255,.92); border: 1px solid #e5e7eb; border-radius: 999px; padding: 2px 8px; pointer-events: none; }
   .ww-best b { font-weight: 600; color: #051024; }
-  .ww-mcard .ww-best { font-size: 10px; padding: 1px 7px; top: 6px; left: 6px; }
+  .ww-mcard .ww-best { font-size: 10px; padding: 1px 7px; top: 6px; left: 6px; white-space: nowrap; }
   .ww-cbody { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
   .ww-badges { display: flex; flex-wrap: wrap; gap: 6px; }
   .ww-badge { font-size: 10.5px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; border-radius: 4px; padding: 3px 8px; }
@@ -80,11 +80,22 @@
   .ww-mcard .ww-img { border-radius: 8px; }
   .ww-mcard b { font-size: 13px; line-height: 1.3; font-weight: 600; }
   .ww-mcard small { font-size: 12px; color: #4b5563; }
-  .ww-mini.few { grid-template-columns: repeat(4, minmax(0, 1fr)) 150px; }
   .ww-more { border-style: dashed; justify-content: center; align-items: center; text-align: center; background: #fafbfc; }
-  .ww-morebtn { border: none; background: none; color: #051024; font-weight: 600; font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px; }
-  .ww-morebtn b { font-family: 'Montserrat', sans-serif; font-size: 26px; color: #1a7698; }
   .ww-more .ww-link { font-size: 13px; text-decoration: underline; }
+  /* styles slider: swipe on phones/trackpads, drag or arrows with a mouse */
+  .ww-slider { position: relative; margin-bottom: 22px; }
+  .ww-track { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; overscroll-behavior-x: contain; padding: 2px 2px 12px; scrollbar-width: thin; scrollbar-color: #c9d1da transparent; }
+  .ww-track::-webkit-scrollbar { height: 6px; }
+  .ww-track::-webkit-scrollbar-thumb { background: #c9d1da; border-radius: 3px; }
+  .ww-track .ww-mcard { flex: 0 0 calc((100% - 30px) / 4); scroll-snap-align: start; }
+  .ww-track.drag { scroll-snap-type: none; scroll-behavior: auto; cursor: grabbing; user-select: none; }
+  .ww-track.drag * { pointer-events: none; }
+  .ww-track img { -webkit-user-drag: none; user-select: none; }
+  .ww-arrow { position: absolute; top: calc(50% - 26px); width: 38px; height: 38px; border-radius: 50%; border: 1px solid #e3e3e3; background: #fff; color: #051024; font-size: 22px; line-height: 1; box-shadow: 0 2px 8px rgba(5,16,36,.12); z-index: 2; display: flex; align-items: center; justify-content: center; padding: 0 0 3px; }
+  .ww-arrow:hover { border-color: #1a7698; color: #1a7698; }
+  .ww-arrow.prev { left: -16px; } .ww-arrow.next { right: -16px; }
+  .ww-arrow[hidden] { display: none; }
+  @media (hover: none) { .ww-arrow { display: none; } }
   .ww-addstyle { display: block; width: 100%; margin: 4px 0 6px; padding: 14px; border: 1.5px dashed #c9d1da; border-radius: 12px; background: #fafbfc; color: #051024; font-weight: 600; font-size: 14px; }
   .ww-addstyle:hover { border-color: #1a7698; color: #1a7698; }
   .ww-add { margin-top: auto; padding: 8px; border-radius: 8px; border: 1.5px solid #051024; background: #fff; color: #051024; font-weight: 600; font-size: 13px; }
@@ -213,10 +224,9 @@
     .ww-tbl th, .ww-tbl td { padding: 8px 9px; }
     .ww-tbl tbody th { white-space: normal; min-width: 96px; }
     .ww-chart { padding: 14px 10px; }
-    .ww-mini, .ww-mini.few { grid-template-columns: 1fr 1fr; }
-    .ww-more { grid-column: 1 / -1; flex-direction: row; gap: 14px; }
-    .ww-morebtn { flex-direction: row; gap: 8px; white-space: nowrap; }
-    .ww-morebtn b { font-size: 18px; }
+    .ww-mini { grid-template-columns: 1fr 1fr; }
+    .ww-track .ww-mcard { flex-basis: 56%; }
+    .ww-arrow { display: none; }
     .ww-steps { gap: 4px; }
     .ww-step { padding: 6px; }
     .ww-step:not(.cur) .ww-lbl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
@@ -614,12 +624,11 @@
       if (!collapsed) {
       var inOrder = O.lines.map(function (l) { return l.code; });
       var pick = STYLES.filter(function (s) { return inOrder.indexOf(s.code) < 0; }).concat(STYLES.filter(function (s) { return inOrder.indexOf(s.code) >= 0; }));
-      var shown = O.showAll ? pick : pick.slice(0, 4);
-      h += '<div class="ww-mini' + (pick.length > 4 && !O.showAll ? ' few' : '') + '">' + shown.map(function (s) {
+      h += '<div class="ww-slider"><button class="ww-arrow prev" data-slide="-1" aria-label="Previous styles" hidden>\u2039</button><div class="ww-track" id="ww-track">' + pick.map(function (s) {
         return '<div class="ww-mcard"><div class="ww-img">' + bestHtml(s) + imgHtml(s) + '</div><b>' + esc(s.name) + '</b><small>' + esc([s.type, s.fit].filter(Boolean).join(' · ')) + ' · ' + s.colors.length + ' colors</small><button class="ww-add" data-add="' + esc(s.code) + '">+ Add to order</button></div>';
       }).join('')
-        + (pick.length > 4 ? '<div class="ww-mcard ww-more"><button class="ww-morebtn" data-more>' + (O.showAll ? 'Show fewer styles' : '<b>+' + (pick.length - 4) + '</b>See all ' + pick.length + ' styles') + '</button><a class="ww-link" href="#">or browse the catalog</a></div>' : '')
-        + '</div>';
+        + '<div class="ww-mcard ww-more"><a class="ww-link" href="#">Browse the full catalog</a></div>'
+        + '</div><button class="ww-arrow next" data-slide="1" aria-label="More styles">\u203a</button></div>';
       }
     } else if (O.step === 2) {
       h += '<h2 class="ww-h2">2. Decoration: printed or embroidered?</h2><p class="ww-p">Pick the look you want. We take care of the technical part.</p><div class="ww-choice">'
@@ -752,6 +761,7 @@
       + (O.step === 5 ? '<div class="ww-fine" style="text-align:right;margin-top:8px">' + (O.quote ? '<span style="font-size:15px;color:#051024">Total <b>' + money(O.quote.total$) + '</b>' + (O.quote.setup ? ' (incl. ' + money(O.quote.setup) + ' ' + (method() === 'emb' ? 'digitizing' : 'screen setup') + ')' : '') + ' · free shipping</span><br>' : '') + 'You\u2019ll approve a proof before anything prints.</div>' : '');
     p.innerHTML = h;
     if (O.step === 5) fitLogos(p);
+    initSlider(p);
     saveState();
   }
   // ── keep the order if the page is refreshed (this browser only, 7 days). Cleared when the checkout opens. ──
@@ -835,6 +845,26 @@
       if (img.complete && img.naturalWidth) go(); else img.addEventListener('load', go);
     });
   }
+  // the styles slider: arrows only where there is more to see; a mouse can drag it like a phone swipe
+  function initSlider(rootEl) {
+    var tr = rootEl.querySelector('#ww-track'); if (!tr) return;
+    var sl = tr.parentNode, prev = sl.querySelector('.prev'), next = sl.querySelector('.next');
+    var arrows = function () { prev.hidden = tr.scrollLeft < 4; next.hidden = tr.scrollLeft + tr.clientWidth > tr.scrollWidth - 4; };
+    tr.addEventListener('scroll', arrows, { passive: true }); arrows(); setTimeout(arrows, 300);
+    tr.addEventListener('pointerdown', function (e) { if (e.pointerType !== 'mouse' || e.button !== 0) return; DRAG = { tr: tr, x0: e.clientX, s0: tr.scrollLeft, moved: false }; });
+    tr.addEventListener('click', function (e) { if (tr.dataset.dragged) { delete tr.dataset.dragged; e.stopPropagation(); e.preventDefault(); } }, true);
+  }
+  var DRAG = null;
+  window.addEventListener('pointermove', function (e) {
+    if (!DRAG) return; var dx = e.clientX - DRAG.x0;
+    if (!DRAG.moved && Math.abs(dx) > 6) { DRAG.moved = true; DRAG.tr.classList.add('drag'); }
+    if (DRAG.moved) DRAG.tr.scrollLeft = DRAG.s0 - dx;
+  });
+  window.addEventListener('pointerup', function () {
+    if (!DRAG) return; var d = DRAG; DRAG = null; if (!d.moved) return;
+    d.tr.classList.remove('drag'); d.tr.dataset.dragged = '1'; setTimeout(function () { delete d.tr.dataset.dragged; }, 50);
+    var w = d.tr.querySelector('.ww-mcard'); if (w) { var step = w.offsetWidth + 10; d.tr.scrollTo({ left: Math.round(d.tr.scrollLeft / step) * step, behavior: 'smooth' }); }
+  });
   function previews() {
     var out = '';
     O.lines.filter(function (l) { return qtyOf(l) > 0; }).forEach(function (l) {
@@ -1071,7 +1101,7 @@
     if ('clear' in ds) { F.type = []; F.fit = []; F.mat = []; F.fam = []; F.open = null; renderCatalog(); return; }
     if (ds.pm === 'silk' || ds.pm === 'dtf') { O.pick = ds.pm; O.quote = (ds.pm === 'dtf' ? O.qDtf : O.qSilk) || O.quote; renderPanel(); renderAside(); return; }
     if ('pick' in ds) { O.pickOpen = !O.pickOpen; O.showAll = false; renderPanel(); return; }
-    if ('more' in ds) { O.showAll = !O.showAll; renderPanel(); return; }
+    if (ds.slide) { var tr = document.getElementById('ww-track'); if (tr) tr.scrollBy({ left: +ds.slide * tr.clientWidth * 0.9, behavior: 'smooth' }); return; }
     if (ds.add) { O.showAll = false; O.pickOpen = false; addLine(ds.add); renderPanel(); requote(); var ls = app.querySelectorAll('.ww-line'); if (ls.length) ls[ls.length - 1].scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
     if (ds.dup) { var src = lineById(ds.dup), st2 = byCode[src.code], usedC = O.lines.filter(function (x) { return x.code === src.code; }).map(function (x) { return x.color; });
       var next = st2.colors.filter(function (c) { return usedC.indexOf(c.name) < 0; })[0] || st2.colors[0];
