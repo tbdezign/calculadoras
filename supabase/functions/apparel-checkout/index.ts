@@ -281,7 +281,7 @@ Deno.serve(async (req) => {
       ["Price per piece", "$" + money(l.unit)],
     ].filter(([, v]) => v).map(([key, value]) => ({ key, value }));
     // ── cart: one variant per color + price on the hidden product, the page adds them with /cart/add.js ──
-    if (body.mode === "cart") {
+    if (body.mode === "cart") try {
       const ref = crypto.randomUUID().replace(/-/g, "").slice(0, 10);
       const sts: Record<string, any> = {};
       for (const code of [...new Set(q.lines.map((l: any) => l.code))] as string[]) {
@@ -315,6 +315,10 @@ Deno.serve(async (req) => {
       await rest(`cart_orders`, { method: "POST", headers: { Prefer: "resolution=merge-duplicates" },
         body: JSON.stringify({ ref, state: body.state && typeof body.state === "object" ? body.state : null, files: files.map((f: any) => ({ role: f.role, name: f.name, url: f.url })), total: q.total$ }) });
       return json({ ok: true, ref, items, attributes: { ["Custom shirts " + ref]: info }, total: q.total$ });
+    } catch (e) {
+      // anything wrong on the cart side: the page falls back to the direct checkout
+      console.log("cart failed", String((e as Error).message || e));
+      return json({ fallback: true, reason: String((e as Error).message || e).slice(0, 200) });
     }
     // hidden products for the photos (best effort)
     const vmap: Record<string, Record<string, string>> = {};
