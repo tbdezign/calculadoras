@@ -1,0 +1,1156 @@
+{%- comment -%}
+  TBDEZIGN Print — Custom Cart Section
+  File: sections/custom-cart.liquid
+  Replace the default cart section in templates/cart.json
+  Custom shirts from /pages/workwear (lines with the hidden property _ww) are shown as one block per order,
+  without quantity buttons (the price per piece depends on the total) and with "Edit order".
+{%- endcomment -%}
+
+{{ 'component-cart.css' | asset_url | stylesheet_tag }}
+{{ 'component-cart-items.css' | asset_url | stylesheet_tag }}
+{{ 'component-price.css' | asset_url | stylesheet_tag }}
+
+<style>
+  /* ===== RESET & BASE ===== */
+  .tbd-cart * { box-sizing: border-box; margin: 0; padding: 0; }
+  .tbd-cart { font-family: 'Poppins', sans-serif; background: #fff; }
+
+  /* ===== NAVY HERO ===== */
+  .tbd-cart__hero {
+    background: #051024;
+    padding: 40px 0 48px;
+    position: relative;
+  }
+  .tbd-cart__gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #91bc4d, #41a9cc, #b5b5f7);
+  }
+  .tbd-cart__hero-inner {
+    padding: 0 calc(var(--page-gutter, 5rem) + 1.5rem);
+  }
+
+  /* ===== CONTAINER ===== */
+  .tbd-cart__container {
+    max-width: none;
+    margin: 0;
+    padding: 32px calc(var(--page-gutter, 5rem) + 1.5rem) 80px;
+  }
+
+  /* ===== HEADER ===== */
+  .tbd-cart__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .tbd-cart__eyebrow {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #91bc4d;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .tbd-cart__continue {
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s;
+  }
+  .tbd-cart__continue:hover { color: #fff; }
+  .tbd-cart__continue svg { width: 14px; height: 14px; }
+
+  .tbd-cart__title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: clamp(22px, 3vw, 28px);
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 4px;
+    line-height: 1.2;
+  }
+  .tbd-cart__subtitle {
+    font-size: 13px;
+    color: rgba(255,255,255,0.45);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ===== MAIN GRID ===== */
+  .tbd-cart__grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 32px;
+    align-items: start;
+  }
+
+  /* ===== ITEMS CARD ===== */
+  .tbd-cart__items-card {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid rgba(13,27,42,0.08);
+    padding: 8px 28px;
+  }
+
+  /* ===== SINGLE ITEM ===== */
+  .tbd-cart__item {
+    display: grid;
+    grid-template-columns: 100px 1fr auto;
+    gap: 24px;
+    padding: 28px 0;
+    border-bottom: 1px solid rgba(13,27,42,0.06);
+    align-items: start;
+  }
+  .tbd-cart__item:last-child { border-bottom: none; }
+
+  .tbd-cart__item-img {
+    width: 100px;
+    height: 100px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(13,27,42,0.08);
+    background: #f7f7f7;
+  }
+  .tbd-cart__item-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .tbd-cart__item-info { min-width: 0; }
+  .tbd-cart__item-name {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0d1b2a;
+    margin: 0 0 8px;
+    line-height: 1.3;
+  }
+  .tbd-cart__item-name a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .tbd-cart__item-name a:hover { color: #41a9cc; }
+
+  .tbd-cart__item-options {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .tbd-cart__item-option {
+    font-size: 13px;
+    color: #6b7f93;
+    line-height: 1.5;
+  }
+  .tbd-cart__item-option strong {
+    font-weight: 500;
+    color: #6b7f93;
+  }
+  .tbd-cart__item-option span {
+    color: #0d1b2a;
+    font-weight: 400;
+  }
+
+  .tbd-cart__item-price,
+  .tbd-cart .price.price--end {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0d1b2a;
+    margin: 12px 0 0;
+    display: block;
+  }
+
+  /* ===== QUANTITY + REMOVE ===== */
+  .tbd-cart__item-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+  }
+  .tbd-cart__qty {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgba(13,27,42,0.08);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .tbd-cart__qty-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #6b7f93;
+    transition: color 0.15s;
+  }
+  .tbd-cart__qty-btn:hover { color: #0d1b2a; }
+  .tbd-cart__qty-btn svg { width: 14px; height: 14px; }
+
+  .tbd-cart__qty-val {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0d1b2a;
+    border-left: 1px solid rgba(13,27,42,0.08);
+    border-right: 1px solid rgba(13,27,42,0.08);
+  }
+
+  .tbd-cart__remove {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    color: #6b7f93;
+    padding: 4px 0;
+    transition: color 0.15s;
+  }
+  .tbd-cart__remove:hover { color: #c0392b; }
+  .tbd-cart__remove svg { width: 13px; height: 13px; }
+
+  /* ===== CUSTOM SHIRTS (one block per order) ===== */
+  .tbd-ww { padding: 28px 0; border-bottom: 1px solid rgba(13,27,42,0.06); }
+  .tbd-ww:last-child { border-bottom: none; }
+  .tbd-ww__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 14px; }
+  .tbd-ww__tag {
+    display: inline-block;
+    background: rgba(145,188,77,0.14);
+    color: #56751f;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 6px;
+  }
+  .tbd-ww__title { font-family: 'Montserrat', sans-serif; font-size: 16px; font-weight: 700; color: #0d1b2a; line-height: 1.3; }
+  .tbd-ww .tbd-ww__total { margin: 0; white-space: nowrap; }
+  .tbd-ww__line {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 0;
+    border-top: 1px solid rgba(13,27,42,0.06);
+  }
+  .tbd-ww__img {
+    width: 64px;
+    height: 64px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(13,27,42,0.08);
+    background: #f7f7f7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tbd-ww__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .tbd-ww__img svg { width: 46px; height: 46px; }
+  .tbd-ww__name { font-size: 14px; font-weight: 600; color: #0d1b2a; line-height: 1.35; }
+  .tbd-ww__meta { font-size: 12.5px; color: #6b7f93; line-height: 1.55; }
+  .tbd-ww__amt { text-align: right; white-space: nowrap; }
+  .tbd-ww__pcs { font-size: 14px; font-weight: 700; color: #0d1b2a; }
+  .tbd-ww__fee { display: flex; justify-content: space-between; padding: 12px 0; border-top: 1px solid rgba(13,27,42,0.06); font-size: 13px; color: #0d1b2a; }
+  .tbd-ww__fee b { font-weight: 700; }
+  .tbd-ww__info { background: #f7f8fa; border-radius: 10px; padding: 10px 14px; font-size: 12.5px; color: #6b7f93; line-height: 1.6; margin-top: 4px; }
+  .tbd-ww__info b { color: #0d1b2a; font-weight: 500; }
+  .tbd-ww__actions { display: flex; align-items: center; gap: 18px; margin-top: 16px; flex-wrap: wrap; }
+  .tbd-ww__edit {
+    display: inline-flex;
+    align-items: center;
+    height: 38px;
+    padding: 0 18px;
+    border-radius: 8px;
+    background: #051024;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .tbd-ww__edit:hover { opacity: 0.85; }
+  .tbd-ww__note { font-size: 11.5px; color: #6b7f93; margin-top: 10px; }
+  .tbd-ww--loading { opacity: 0.5; pointer-events: none; }
+
+  /* ===== SIDEBAR ===== */
+  .tbd-cart__sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ===== SUMMARY CARD ===== */
+  .tbd-cart__summary {
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid rgba(13,27,42,0.08);
+    overflow: hidden;
+  }
+  .tbd-cart__summary-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid rgba(13,27,42,0.06);
+  }
+  .tbd-cart__summary-label {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #41a9cc;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .tbd-cart__summary-body { padding: 20px 24px; }
+
+  /* ===== PROMO CODE ===== */
+  .tbd-cart__promo {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .tbd-cart__promo-field {
+    position: relative;
+    flex: 1;
+  }
+  .tbd-cart__promo-field svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: #6b7f93;
+    pointer-events: none;
+  }
+  .tbd-cart__promo-input {
+    width: 100%;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid rgba(13,27,42,0.08);
+    background: #fff;
+    padding: 0 12px 0 34px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    color: #0d1b2a;
+    outline: none;
+  }
+  .tbd-cart__promo-input:focus {
+    border-color: #41a9cc;
+  }
+  .tbd-cart__promo-input--applied {
+    border-color: #91bc4d;
+    background: rgba(145,188,77,0.06);
+  }
+  .tbd-cart__promo-btn {
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 10px;
+    border: none;
+    background: #051024;
+    color: #fff;
+    font-family: 'Poppins', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+  .tbd-cart__promo-btn:hover { opacity: 0.85; }
+  .tbd-cart__promo-btn--applied {
+    background: rgba(145,188,77,0.12);
+    color: #91bc4d;
+    cursor: default;
+  }
+
+  .tbd-cart__promo-error {
+    font-size: 12px;
+    color: #c0392b;
+    margin-top: 6px;
+    display: none;
+  }
+  .tbd-cart__promo-error--visible { display: block; }
+
+  /* ===== LINE ITEMS ===== */
+  .tbd-cart__lines {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .tbd-cart__line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tbd-cart__line-label {
+    font-size: 13px;
+    color: #6b7f93;
+  }
+  .tbd-cart__line-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0d1b2a;
+  }
+
+  .tbd-cart__discount-line .tbd-cart__line-label,
+  .tbd-cart__discount-line .tbd-cart__line-value {
+    color: #91bc4d;
+    font-weight: 500;
+  }
+  .tbd-cart__discount-remove {
+    background: none;
+    border: none;
+    color: #91bc4d;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0 0 0 6px;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+    vertical-align: middle;
+  }
+  .tbd-cart__discount-remove:hover { opacity: 1; }
+
+  .tbd-cart__shipping-badge {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7f93;
+    font-style: italic;
+  }
+  .tbd-cart__shipping-badge--free {
+    font-style: normal;
+    font-weight: 700;
+    color: #6f9a2c;
+    letter-spacing: 0.04em;
+  }
+
+  .tbd-cart__divider {
+    height: 1px;
+    background: rgba(13,27,42,0.06);
+    margin: 4px 0 16px;
+  }
+
+  /* ===== TOTAL ===== */
+  .tbd-cart__total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 20px;
+  }
+  .tbd-cart__total-label {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: #051024;
+  }
+  .tbd-cart__total-value {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: #051024;
+  }
+
+  .tbd-cart__tax-note {
+    font-size: 11px;
+    color: #6b7f93;
+    text-align: center;
+    margin: 0 0 20px;
+  }
+
+  /* ===== CHECKOUT CTA ===== */
+  .tbd-cart__checkout {
+    display: flex;
+    width: 100%;
+    height: 50px;
+    border-radius: 12px;
+    border: none;
+    background: #91bc4d;
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .tbd-cart__checkout:hover { background: #82a844; }
+  .tbd-cart__checkout svg { width: 18px; height: 18px; }
+
+  /* ===== TRUST BADGES ===== */
+  .tbd-cart__trust {
+    background: #f7f7f7;
+    border-radius: 14px;
+    padding: 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .tbd-cart__trust-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tbd-cart__trust-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(145,188,77,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .tbd-cart__trust-icon svg { width: 15px; height: 15px; color: #91bc4d; }
+  .tbd-cart__trust-text {
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6b7f93;
+    line-height: 1.3;
+  }
+
+  /* ===== EMPTY CART ===== */
+  .tbd-cart__empty {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 80px 24px;
+    text-align: center;
+  }
+  .tbd-cart__empty-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #f7f7f7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+  }
+  .tbd-cart__empty-icon svg { width: 32px; height: 32px; color: #6b7f93; }
+  .tbd-cart__empty-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    color: #051024;
+    margin: 0 0 8px;
+  }
+  .tbd-cart__empty-text {
+    font-size: 14px;
+    color: #6b7f93;
+    margin: 0 0 32px;
+  }
+  .tbd-cart__empty-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #91bc4d;
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 14px 32px;
+    border-radius: 10px;
+    text-decoration: none;
+    transition: background 0.2s;
+  }
+  .tbd-cart__empty-cta:hover { background: #82a844; }
+  .tbd-cart__empty-cta svg { width: 16px; height: 16px; }
+
+  /* ===== LOADING STATE ===== */
+  .tbd-cart__items-wrap {
+    display: contents;
+  }
+  .tbd-cart__items-wrap form,
+  .tbd-cart__items-wrap .cart__items {
+    display: contents;
+  }
+
+  /* Override theme component CSS within our section */
+  .tbd-cart .cart-item__totals {
+    display: block;
+    text-align: left;
+    padding: 0;
+    border: none;
+  }
+  .tbd-cart .cart-item__price-wrapper {
+    display: block;
+  }
+  .tbd-cart .cart-item__details {
+    display: block;
+    padding: 0;
+  }
+  .tbd-cart .cart-item__details .product-option {
+    display: block;
+    font-size: 13px;
+    color: #6b7f93;
+    line-height: 1.5;
+    margin: 0;
+    padding: 0;
+  }
+  .tbd-cart .cart-item__details .product-option dt {
+    display: inline;
+    font-weight: 500;
+    color: #6b7f93;
+  }
+  .tbd-cart .cart-item__details .product-option dd {
+    display: inline;
+    color: #0d1b2a;
+    font-weight: 400;
+    margin: 0;
+    padding: 0;
+  }
+  .tbd-cart .cart-item__name.h4.break {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0d1b2a;
+    text-decoration: none;
+    line-height: 1.3;
+  }
+  .tbd-cart .cart-item__name.h4.break:hover { color: #41a9cc; }
+
+  .tbd-cart__item--loading {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  /* ===== MOBILE ===== */
+  @media (max-width: 899px) {
+    .tbd-cart__grid {
+      grid-template-columns: 1fr;
+    }
+    .tbd-cart__items-card {
+      padding: 8px 20px;
+    }
+    .tbd-cart__item {
+      grid-template-columns: 80px 1fr;
+      gap: 16px;
+    }
+    .tbd-cart__item-img {
+      width: 80px;
+      height: 80px;
+    }
+    .tbd-cart__item-actions {
+      grid-column: 1 / -1;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .tbd-cart__container {
+      padding: 24px 16px 60px;
+    }
+    .tbd-ww__line { grid-template-columns: 52px 1fr; gap: 12px; }
+    .tbd-ww__img { width: 52px; height: 52px; }
+    .tbd-ww__amt { grid-column: 2; text-align: left; }
+  }
+</style>
+
+{%- comment -%} custom shirt orders in this cart (one ref per order) {%- endcomment -%}
+{%- assign ww_refs = '' -%}
+{%- assign ww_pieces = 0 -%}
+{%- for item in cart.items -%}
+  {%- assign ww_ref = item.properties['_ww'] -%}
+  {%- if ww_ref != blank -%}
+    {%- unless item.properties['_fee'] != blank -%}{%- assign ww_pieces = ww_pieces | plus: item.quantity -%}{%- endunless -%}
+    {%- unless ww_refs contains ww_ref -%}{%- assign ww_refs = ww_refs | append: ww_ref | append: ',' -%}{%- endunless -%}
+  {%- endif -%}
+{%- endfor -%}
+{%- assign ww_list = ww_refs | split: ',' -%}
+{%- assign other_count = 0 -%}
+{%- for item in cart.items -%}{%- if item.properties['_ww'] == blank -%}{%- assign other_count = other_count | plus: item.quantity -%}{%- endif -%}{%- endfor -%}
+{%- assign shown_count = other_count | plus: ww_list.size -%}
+
+<div class="tbd-cart">
+
+  <script src="{{ 'cart.js' | asset_url }}" defer="defer"></script>
+
+  {%- if cart.item_count == 0 -%}
+    <!-- ===== EMPTY CART ===== -->
+    <div class="tbd-cart__empty">
+      <div class="tbd-cart__empty-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/></svg>
+      </div>
+      <h1 class="tbd-cart__empty-title">Your cart is empty</h1>
+      <p class="tbd-cart__empty-text">Looks like you haven't added anything yet.</p>
+      <a href="/collections" class="tbd-cart__empty-cta">
+        Continue Shopping
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+      </a>
+    </div>
+
+  {%- else -%}
+    <!-- ===== NAVY HERO BAR ===== -->
+    <div class="tbd-cart__hero">
+      <div class="tbd-cart__gradient"></div>
+      <div class="tbd-cart__hero-inner">
+        <div class="tbd-cart__header">
+          <span class="tbd-cart__eyebrow">YOUR CART</span>
+          <a href="/collections" class="tbd-cart__continue">
+            Continue shopping
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+          </a>
+        </div>
+        <h1 class="tbd-cart__title">Review your order.</h1>
+        <p class="tbd-cart__subtitle">{{ shown_count }} {{ shown_count | pluralize: 'item', 'items' }} in your cart</p>
+      </div>
+    </div>
+
+    <!-- ===== CART WITH ITEMS ===== -->
+    <div class="tbd-cart__container">
+
+      <!-- Main grid -->
+      <div class="tbd-cart__grid">
+
+        <!-- LEFT: Cart items -->
+        <cart-items class="tbd-cart__items-wrap">
+          <form action="{{ routes.cart_url }}" method="post" id="cart">
+            <div class="cart__items" id="main-cart-items">
+              <div class="tbd-cart__items-card">
+
+                {%- comment -%} ===== CUSTOM SHIRTS: one block per order ===== {%- endcomment -%}
+                {%- for ref in ww_list -%}
+                  {%- assign g_total = 0 -%}
+                  {%- assign g_pcs = 0 -%}
+                  {%- assign g_method = '' -%}
+                  {%- assign g_place = '' -%}
+                  {%- assign g_keys = '' -%}
+                  {%- for item in cart.items -%}
+                    {%- if item.properties['_ww'] == ref -%}
+                      {%- assign g_total = g_total | plus: item.original_line_price -%}
+                      {%- assign g_keys = g_keys | append: item.key | append: ',' -%}
+                      {%- if item.properties['_fee'] == blank -%}
+                        {%- assign g_pcs = g_pcs | plus: item.quantity -%}
+                        {%- if g_method == blank -%}{%- assign g_method = item.properties['Decoration'] -%}{%- endif -%}
+                        {%- if g_place == blank -%}{%- assign g_place = item.properties['Logo'] -%}{%- endif -%}
+                      {%- endif -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+                  <div class="tbd-ww" data-ww="{{ ref }}" data-keys="{{ g_keys }}">
+                    <div class="tbd-ww__head">
+                      <div>
+                        <span class="tbd-ww__tag">Custom Apparel{% if g_method != blank %} · {{ g_method }}{% endif %}</span>
+                        <div class="tbd-ww__title">Your custom shirts · {{ g_pcs }} pieces</div>
+                      </div>
+                      <span class="tbd-cart__item-price tbd-ww__total">{{ g_total | money }}</span>
+                    </div>
+
+                    {%- for item in cart.items -%}
+                      {%- if item.properties['_ww'] == ref and item.properties['_fee'] == blank -%}
+                        <div class="tbd-ww__line">
+                          <div class="tbd-ww__img">
+                            {%- if item.variant.featured_media -%}
+                              <img src="{{ item.variant.featured_media | image_url: width: 160 }}" alt="{{ item.product.title | escape }}" loading="lazy">
+                            {%- else -%}
+                              {%- assign hex = item.properties['_hex'] | default: '#c9ced8' -%}
+                              <svg viewBox="0 0 60 60" aria-hidden="true"><path d="M20 6l-14 8 5 11 6-3v32h26V22l6 3 5-11-14-8c-2 4-6 6-10 6s-8-2-10-6z" fill="{{ hex | escape }}" stroke="#c9ced8"/></svg>
+                            {%- endif -%}
+                          </div>
+                          <div>
+                            <div class="tbd-ww__name">{{ item.product.title }} — {{ item.variant.option1 }}</div>
+                            <div class="tbd-ww__meta">
+                              {{ item.properties['Sizes'] }}
+                              {%- for property in item.properties -%}
+                                {%- assign pf = property.first | slice: 0 -%}
+                                {%- unless pf == '_' or property.first == 'Sizes' or property.first == 'Decoration' or property.first == 'Logo' or property.last == blank -%}
+                                  <br>{{ property.first }}: {{ property.last }}
+                                {%- endunless -%}
+                              {%- endfor -%}
+                            </div>
+                          </div>
+                          <div class="tbd-ww__amt">
+                            <div class="tbd-ww__pcs">{{ item.quantity }} pcs</div>
+                            <div class="tbd-ww__meta">{{ item.original_price | money }} / pc · {{ item.original_line_price | money }}</div>
+                          </div>
+                        </div>
+                      {%- endif -%}
+                    {%- endfor -%}
+
+                    {%- for item in cart.items -%}
+                      {%- if item.properties['_ww'] == ref and item.properties['_fee'] != blank -%}
+                        <div class="tbd-ww__fee"><span>{{ item.variant.option1 | split: ' · ' | first }} (one-time)</span><b>{{ item.original_line_price | money }}</b></div>
+                      {%- endif -%}
+                    {%- endfor -%}
+
+                    {%- if g_place != blank -%}
+                      <div class="tbd-ww__info"><b>Logo:</b> {{ g_place }}</div>
+                    {%- endif -%}
+
+                    <div class="tbd-ww__actions">
+                      <a class="tbd-ww__edit" href="/pages/workwear?edit={{ ref }}">Edit order</a>
+                      <button class="tbd-cart__remove" type="button" data-ww-remove="{{ ref }}" aria-label="Remove custom shirts">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
+                        Remove
+                      </button>
+                    </div>
+                    <p class="tbd-ww__note">To change sizes or quantities, use “Edit order”. The price per piece depends on the total.</p>
+                  </div>
+                {%- endfor -%}
+
+                {%- for item in cart.items -%}
+                  {%- if item.properties['_ww'] != blank -%}{%- continue -%}{%- endif -%}
+                  <div class="tbd-cart__item cart-item" id="CartItem-{{ forloop.index }}" data-line="{{ forloop.index }}" data-item-key="{{ item.key }}">
+
+              <!-- Image -->
+              <div class="tbd-cart__item-img">
+                {%- if item.image -%}
+                  <img src="{{ item.image | image_url: width: 200 }}" alt="{{ item.title | escape }}" loading="lazy">
+                {%- else -%}
+                  <img src="{{ item.product.featured_image | image_url: width: 200 }}" alt="{{ item.title | escape }}" loading="lazy">
+                {%- endif -%}
+              </div>
+
+              <!-- Info -->
+              <div class="tbd-cart__item-info cart-item__details">
+                <h3 class="tbd-cart__item-name">
+                  <a href="{{ item.url }}" class="cart-item__name h4 break">{{ item.product.title }}</a>
+                </h3>
+                <div class="tbd-cart__item-options">
+                  {%- unless item.product.has_only_default_variant -%}
+                    {%- for option in item.options_with_values -%}
+                      <div class="tbd-cart__item-option product-option">
+                        <dt>{{ option.name }}:</dt>
+                        <dd>{{ option.value }}</dd>
+                      </div>
+                    {%- endfor -%}
+                  {%- endunless -%}
+
+                  {%- for property in item.properties -%}
+                    {%- assign prop_first_char = property.first | slice: 0 -%}
+                    {%- if property.last != blank and prop_first_char != '_' -%}
+                      <div class="tbd-cart__item-option product-option">
+                        <dt>{{ property.first }}:</dt>
+                        <dd>{{ property.last }}</dd>
+                      </div>
+                    {%- endif -%}
+                  {%- endfor -%}
+                </div>
+
+                <div class="cart-item__totals">
+                  <div class="cart-item__price-wrapper">
+                    <span class="tbd-cart__item-price price price--end" data-line-price>
+                      {{ item.original_line_price | money }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quantity + Remove -->
+              <div class="tbd-cart__item-actions">
+                <div class="tbd-cart__qty">
+                  <button class="tbd-cart__qty-btn" data-action="decrease" aria-label="Decrease quantity">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14"/></svg>
+                  </button>
+                  <span class="tbd-cart__qty-val">{{ item.quantity }}</span>
+                  <button class="tbd-cart__qty-btn" data-action="increase" aria-label="Increase quantity">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                  </button>
+                </div>
+                <button class="tbd-cart__remove" data-action="remove" aria-label="Remove item">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
+                  Remove
+                </button>
+              </div>
+
+            </div>
+          {%- endfor -%}
+              </div>
+            </div>
+          </form>
+        </cart-items>
+
+        <!-- RIGHT: Sidebar -->
+        <div class="tbd-cart__sidebar">
+
+          <!-- Order Summary -->
+          <div class="tbd-cart__summary">
+            <div class="tbd-cart__summary-header">
+              <h2 class="tbd-cart__summary-label">ORDER SUMMARY</h2>
+            </div>
+            <div class="tbd-cart__summary-body">
+
+              <!-- Promo Code -->
+              <div class="tbd-cart__promo" id="tbd-promo">
+                <div class="tbd-cart__promo-field">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z"/></svg>
+                  <input
+                    type="text"
+                    class="tbd-cart__promo-input"
+                    id="tbd-promo-input"
+                    placeholder="Promo code"
+                    autocomplete="off"
+                    spellcheck="false"
+                  >
+                </div>
+                <button class="tbd-cart__promo-btn" id="tbd-promo-btn" type="button">Apply</button>
+              </div>
+              <p class="tbd-cart__promo-error" id="tbd-promo-error">Invalid discount code</p>
+
+              <!-- Line items -->
+              <div class="tbd-cart__lines">
+                <div class="tbd-cart__line">
+                  <span class="tbd-cart__line-label">Subtotal</span>
+                  <span class="tbd-cart__line-value" id="tbd-subtotal">{{ cart.total_price | money }}</span>
+                </div>
+
+                {%- if cart.cart_level_discount_applications.size > 0 -%}
+                  {%- for discount in cart.cart_level_discount_applications -%}
+                    <div class="tbd-cart__line tbd-cart__discount-line">
+                      <span class="tbd-cart__line-label">
+                        {{ discount.title }}
+                        <button class="tbd-cart__discount-remove" data-action="remove-discount" aria-label="Remove discount" type="button">✕</button>
+                      </span>
+                      <span class="tbd-cart__line-value">-{{ discount.total_allocated_amount | money }}</span>
+                    </div>
+                  {%- endfor -%}
+                {%- endif -%}
+
+                <div class="tbd-cart__line">
+                  <span class="tbd-cart__line-label">Shipping</span>
+                  {%- if ww_list.size > 0 and cart.total_price >= 5000 -%}
+                    <span class="tbd-cart__shipping-badge tbd-cart__shipping-badge--free">FREE</span>
+                  {%- else -%}
+                    <span class="tbd-cart__shipping-badge">Calculated at checkout</span>
+                  {%- endif -%}
+                </div>
+              </div>
+
+              <div class="tbd-cart__divider"></div>
+
+              <!-- Total -->
+              <div class="tbd-cart__total">
+                <span class="tbd-cart__total-label">Estimated Total</span>
+                <span class="tbd-cart__total-value" id="tbd-total">{{ cart.total_price | money }}</span>
+              </div>
+
+              <p class="tbd-cart__tax-note">Taxes calculated at checkout</p>
+
+              <!-- Checkout Button -->
+              <a href="/checkout" class="tbd-cart__checkout">
+                Check Out
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+              </a>
+            </div>
+          </div>
+
+          <!-- Trust Badges -->
+          <div class="tbd-cart__trust">
+            <div class="tbd-cart__trust-item">
+              <div class="tbd-cart__trust-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/></svg>
+              </div>
+              <span class="tbd-cart__trust-text">{{ section.settings.trust_1 }}</span>
+            </div>
+            <div class="tbd-cart__trust-item">
+              <div class="tbd-cart__trust-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/></svg>
+              </div>
+              <span class="tbd-cart__trust-text">{{ section.settings.trust_2 }}</span>
+            </div>
+            <div class="tbd-cart__trust-item">
+              <div class="tbd-cart__trust-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+              </div>
+              <span class="tbd-cart__trust-text">{{ section.settings.trust_3 }}</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  {%- endif -%}
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* === Quantity & Remove === */
+  document.querySelectorAll('.tbd-cart__item').forEach(function(row) {
+    var line = parseInt(row.dataset.line, 10);
+    var key = row.dataset.itemKey;
+    var qtyEl = row.querySelector('.tbd-cart__qty-val');
+
+    row.querySelectorAll('.tbd-cart__qty-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var action = btn.dataset.action;
+        var current = parseInt(qtyEl.textContent, 10);
+        var newQty = action === 'increase' ? current + 1 : Math.max(1, current - 1);
+        updateCart(key, newQty, row);
+      });
+    });
+
+    var removeBtn = row.querySelector('.tbd-cart__remove');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function() {
+        updateCart(key, 0, row);
+      });
+    }
+  });
+
+  function updateCart(key, qty, row) {
+    row.classList.add('tbd-cart__item--loading');
+    fetch('/cart/change.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: key, quantity: qty })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function() {
+      window.location.reload();
+    })
+    .catch(function() {
+      row.classList.remove('tbd-cart__item--loading');
+    });
+  }
+
+  /* === Custom shirts: remove the whole order (all its lines + its note) === */
+  document.querySelectorAll('[data-ww-remove]').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var block = btn.closest('.tbd-ww'), ref = btn.getAttribute('data-ww-remove'), updates = {}, attrs = {};
+      (block.getAttribute('data-keys') || '').split(',').forEach(function(k) { if (k) updates[k] = 0; });
+      attrs['Custom shirts ' + ref] = '';
+      block.classList.add('tbd-ww--loading');
+      fetch('/cart/update.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ updates: updates, attributes: attrs })
+      })
+      .then(function() { window.location.reload(); })
+      .catch(function() { block.classList.remove('tbd-ww--loading'); });
+    });
+  });
+
+  /* === Promo Code === */
+  var promoInput = document.getElementById('tbd-promo-input');
+  var promoBtn = document.getElementById('tbd-promo-btn');
+  var promoError = document.getElementById('tbd-promo-error');
+
+  if (promoBtn) {
+    promoBtn.addEventListener('click', function() {
+      var code = promoInput.value.trim();
+      if (!code) return;
+
+      promoBtn.textContent = '...';
+      promoError.classList.remove('tbd-cart__promo-error--visible');
+
+      fetch('/discount/' + encodeURIComponent(code), {
+        method: 'GET',
+        redirect: 'follow'
+      })
+      .then(function(response) {
+        /* Shopify always redirects after applying — we check by re-fetching the cart */
+        return fetch('/cart.js').then(function(r) { return r.json(); });
+      })
+      .then(function(cart) {
+        /* Reload to show updated prices with discount applied */
+        window.location.reload();
+      })
+      .catch(function() {
+        promoError.textContent = 'Something went wrong. Try again.';
+        promoError.classList.add('tbd-cart__promo-error--visible');
+        promoBtn.textContent = 'Apply';
+      });
+    });
+
+    promoInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        promoBtn.click();
+      }
+    });
+  }
+
+  /* === Remove Discount === */
+  document.querySelectorAll('[data-action="remove-discount"]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      btn.textContent = '...';
+      fetch('/checkout?discount=', { credentials: 'same-origin', redirect: 'manual' })
+        .then(function() {
+          window.location.href = '/cart';
+        })
+        .catch(function() {
+          window.location.href = '/cart';
+        });
+    });
+  });
+
+  /* === Sync YMQ price updates to sidebar totals === */
+  function recalcTotals() {
+    var prices = document.querySelectorAll('.tbd-cart__item-price');
+    var subtotal = 0;
+    prices.forEach(function(el) {
+      var text = el.textContent.replace(/[^0-9.,]/g, '').replace(',', '');
+      var val = parseFloat(text);
+      if (!isNaN(val)) subtotal += val;
+    });
+
+    var subtotalEl = document.getElementById('tbd-subtotal');
+    var totalEl = document.getElementById('tbd-total');
+    if (subtotalEl) subtotalEl.textContent = '$' + subtotal.toFixed(2);
+    if (totalEl) totalEl.textContent = '$' + subtotal.toFixed(2);
+  }
+
+  /* Watch for YMQ modifying prices after page load */
+  var priceEls = document.querySelectorAll('.cart-item__price-wrapper');
+  if (priceEls.length > 0) {
+    var observer = new MutationObserver(function() {
+      recalcTotals();
+    });
+    priceEls.forEach(function(el) {
+      observer.observe(el, { childList: true, subtree: true, characterData: true });
+    });
+
+    /* Also run after a short delay in case YMQ injects after DOMContentLoaded */
+    setTimeout(recalcTotals, 500);
+    setTimeout(recalcTotals, 1500);
+    setTimeout(recalcTotals, 3000);
+  }
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Custom Cart",
+  "settings": [
+    {
+      "type": "text",
+      "id": "trust_1",
+      "label": "Trust badge 1",
+      "default": "We review every file before printing"
+    },
+    {
+      "type": "text",
+      "id": "trust_2",
+      "label": "Trust badge 2",
+      "default": "Free shipping on print orders"
+    },
+    {
+      "type": "text",
+      "id": "trust_3",
+      "label": "Trust badge 3",
+      "default": "Questions? We reply within 24 hours"
+    }
+  ]
+}
+{% endschema %}

@@ -521,7 +521,7 @@
     if (!m || !t || t < DATA.minimums[m]) { O.quote = null; O.upsell = null; O.qSilk = O.qDtf = null; renderAside(); return; }
     qTimer = setTimeout(function () {
       var seq = ++qSeq, body = orderBody();
-      var show = function () { renderAside(); if (O.step === 4) { var ae = document.activeElement; if (ae && ae.dataset && ae.dataset.size && app.contains(ae)) O.dirty = true; else renderPanel(); } };
+      var show = function () { renderAside(); if (O.step >= 4) { var ae = document.activeElement; if (ae && ae.dataset && ae.dataset.size && app.contains(ae)) O.dirty = true; else renderPanel(); } };
       if (ruleMethod() === 'silk' && body.items.length) {
         var ok = function (q) { return q && !q.errors.length && q.total ? q : null; };
         Promise.all([post(orderBody({ method: 'silk', reorder: O.reorder, reorderNo: O.reorder ? O.reorderNo : '' })), post(orderBody({ method: 'dtf', reorder: false, reorderNo: '' }))]).then(function (r) {
@@ -743,11 +743,11 @@
         }
       }
     } else {
-      h += '<h2 class="ww-h2">5. Preview and pay</h2><p class="ww-p">This is a quick preview. We send a final proof for your approval before printing.</p><div class="ww-prevs">' + previews() + '</div>';
+      h += '<h2 class="ww-h2">5. Preview</h2><p class="ww-p">This is a quick preview. We send a final proof for your approval before printing.</p><div class="ww-prevs">' + previews() + '</div>';
       if (O.checkout === 'error') h += '<div class="ww-msg red" style="margin-top:16px">Something went wrong on our side. Please try again, or send us a message on WhatsApp and we\u2019ll finish your order.</div>';
     }
     h += '<div class="ww-nav"><button class="ww-btn ghost" data-back' + (O.step === 1 ? ' disabled' : '') + '>Back</button>'
-      + (O.step < 5 ? '<button class="ww-btn" data-next' + (stepOk(O.step) ? '' : ' disabled') + '>Continue</button>' : '<button class="ww-btn pay" data-pay' + (O.quote && O.checkout !== 'busy' ? '' : ' disabled') + '>' + (O.checkout === 'busy' ? 'One moment…' : 'Continue to checkout') + '</button>') + '</div>'
+      + (O.step < 5 ? '<button class="ww-btn" data-next' + (stepOk(O.step) ? '' : ' disabled') + '>Continue</button>' : '<button class="ww-btn pay" data-pay' + (O.quote && O.checkout !== 'busy' ? '' : ' disabled') + '>' + (O.checkout === 'busy' ? 'Adding to your cart…' : O.editRef ? 'Update cart' : 'Add to cart') + '</button>') + '</div>'
       + (O.step === 5 ? '<div class="ww-fine" style="text-align:right;margin-top:8px">' + (O.quote ? '<span style="font-size:15px;color:#051024">Total <b>' + money(O.quote.total$) + '</b>' + (O.quote.setup ? ' (incl. ' + money(O.quote.setup) + ' ' + (method() === 'emb' ? 'digitizing' : 'screen setup') + ')' : '') + ' · free shipping</span><br>' : '') + 'You\u2019ll approve a proof before anything prints.</div>' : '');
     p.innerHTML = h;
     if (O.step === 5) fitLogos(p);
@@ -762,19 +762,23 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () {
       if (!O.lines.length) { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} return; }
-      var snap = function (withData) {
-        var o = { at: Date.now() }; SAVE_FIELDS.forEach(function (k) { o[k] = O[k]; });
-        o.logo = slimLogo(O.logo, withData); o.xlogo = {};
-        for (var k in O.xlogo) o.xlogo[k] = { diff: O.xlogo[k].diff, logo: slimLogo(O.xlogo[k].logo, withData) };
-        return JSON.stringify(o);
-      };
+      var snap = function (withData) { return JSON.stringify(snapState(withData)); };
       try { localStorage.setItem(SAVE_KEY, snap(true)); }
       catch (e) { try { localStorage.setItem(SAVE_KEY, snap(false)); } catch (e2) {} }   // too big for storage: keep everything but the files
     }, 300);
   }
+  function snapState(withData) {
+    var o = { at: Date.now() }; SAVE_FIELDS.forEach(function (k) { o[k] = O[k]; });
+    o.logo = slimLogo(O.logo, withData); o.xlogo = {};
+    for (var k in O.xlogo) o.xlogo[k] = { diff: O.xlogo[k].diff, logo: slimLogo(O.xlogo[k].logo, withData) };
+    return o;
+  }
   function loadState() {
     var s; try { s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { s = null; }
     if (!s || !s.at || Date.now() - s.at > 7 * 864e5) return;
+    applyState(s);
+  }
+  function applyState(s) {
     SAVE_FIELDS.forEach(function (k) { if (s[k] !== undefined) O[k] = s[k]; });
     O.lines = (O.lines || []).filter(function (l) { return byCode[l.code]; });
     O.xlogo = s.xlogo || {};
@@ -883,7 +887,7 @@
     printBlends().forEach(function (b) { colorNotes[b.shirt.name] = [['Note', 'the ' + cname(b.c, b.shirt) + ' part blends in — adjust on proof']]; notes.push('On ' + b.shirt.name + ' shirts the ' + cname(b.c, b.shirt) + ' part of the logo blends in'); });
     if (dc && dc.on) lineNotes.push(['Print', 'shirt shows through the ' + cname(dc.c, dc.shirt)]);
     else if (dc && dc.fix === 'swap') lineNotes.push(['Print', cname(dc.c, dc.shirt) + ' printed in ' + (lum(dc.shirt.hex) < 128 ? 'white' : 'black')]);
-    return { placement: placeText(), logo: logo, notes: notes.join(' | '), lineNotes: lineNotes, colorNotes: colorNotes, items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) { return { code: l.code, color: l.color, sizes: l.sizes }; }) };
+    return { placement: placeText(), logo: logo, notes: notes.join(' | '), lineNotes: lineNotes, colorNotes: colorNotes, items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) { return { code: l.code, color: l.color, sizes: l.sizes, hex: hexOf(byCode[l.code], l.color) }; }) };
   }
   function startCheckout() {
     if (O.checkout === 'busy' || !O.quote) return;
@@ -897,6 +901,51 @@
       if (j && j.invoiceUrl) { clearState(); window.location.href = j.invoiceUrl; return; }
       O.checkout = 'error'; renderPanel();
     }).catch(function () { O.checkout = 'error'; renderPanel(); });
+  }
+  // ── cart: the server prices the order again and returns the cart lines; the cart groups them by _ww and links back here to edit ──
+  function logoFiles() {
+    var fl = [{ f: O.logo && O.logo.file, d: O.logo && O.logo.data, role: 'main logo', name: O.logo && O.logo.name }];
+    extraSpots().forEach(function (k) { var x = xl(k[0]); if (x.diff && x.logo) fl.push({ f: x.logo.file, d: x.logo.data, role: k[1], name: x.logo.name }); });
+    return Promise.all(fl.map(function (x) { return x.f ? fileData(x.f) : Promise.resolve(x.d || null); })).then(function (datas) {
+      return fl.map(function (x, i) { return datas[i] ? { role: x.role, name: x.name, data: datas[i] } : null; }).filter(Boolean);
+    });
+  }
+  function cartJs(path, body) { return fetch(path, { method: body ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: body ? JSON.stringify(body) : undefined }).then(function (r) { if (!r.ok) throw new Error(path + ' ' + r.status); return r.json(); }); }
+  function startCart() {
+    if (O.checkout === 'busy' || !O.quote) return;
+    O.checkout = 'busy'; renderPanel();
+    var oldRef = O.editRef;
+    logoFiles().then(function (files) {
+      var keep = (O.savedFiles || []).filter(function (k) { return !files.some(function (f) { return f.role === k.role; }); });
+      return fetch(API.replace('apparel-quote', 'apparel-checkout'), { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'cart', order: orderBody(), details: checkoutDetails(), files: files, keep: keep, state: snapState(false) }) });
+    }).then(function (r) { return r.json(); }).then(function (j) {
+      if (j && j.fallback) { O.checkout = null; startCheckout(); return; }   // cart not ready on the store: direct checkout as before
+      if (!j || !j.items) throw new Error('cart');
+      // editing: take the old version out of the cart first
+      var clean = oldRef ? cartJs('/cart.js').then(function (c) {
+        var up = {}; c.items.forEach(function (it) { if (it.properties && it.properties._ww === oldRef) up[it.key] = 0; });
+        var attrs = {}; attrs['Custom shirts ' + oldRef] = '';
+        return cartJs('/cart/update.js', { updates: up, attributes: attrs });
+      }) : Promise.resolve();
+      return clean.then(function () { return cartJs('/cart/add.js', { items: j.items }); })
+        .then(function () { return cartJs('/cart/update.js', { attributes: j.attributes }); })
+        .then(function () { clearState(); window.location.href = '/cart'; });
+    }).catch(function () { O.checkout = 'error'; renderPanel(); });
+  }
+  // /pages/workwear?edit=<ref> (the cart's "Edit order"): reopen that order at the review step
+  function loadEdit(ref) {
+    return fetch(API.replace('apparel-quote', 'apparel-checkout') + '?order=' + encodeURIComponent(ref)).then(function (r) { return r.json(); }).then(function (o) {
+      if (!o || !o.state) return false;
+      applyState(o.state);
+      O.editRef = ref; O.savedFiles = o.files || [];
+      var main = O.savedFiles.filter(function (f) { return f.role === 'main logo'; })[0];
+      if (main && O.logo && !O.logo.url) {
+        O.logo.url = main.url;
+        var im = new Image(); im.crossOrigin = 'anonymous'; im.onload = function () { O.logo.img = im; renderPanel(); }; im.src = main.url;
+      }
+      return true;
+    }).catch(function () { return false; });
   }
   function renderAside() {
     var a = document.getElementById('ww-aside'); if (!a) return;
@@ -1034,7 +1083,7 @@
     if (ds.go) { go(+ds.go); return; }
     if ('next' in ds) { go(O.step + 1); return; }
     if ('back' in ds) { go(O.step - 1); return; }
-    if ('pay' in ds) { startCheckout(); return; }
+    if ('pay' in ds) { startCart(); return; }
   });
   // tap a preview to see it big
   function closeZoom() { var z = document.querySelector('.ww-zoom'); if (z) z.remove(); document.removeEventListener('keydown', zoomKey); }
@@ -1073,9 +1122,13 @@
   fetch(API).then(function (r) { return r.json(); }).then(function (d) {
     DATA = d; STYLES = d.styles || [];
     STYLES.forEach(function (s) { s.name = s.name.split(' ').filter(function (w) { return w.toUpperCase() !== s.code.toUpperCase(); }).join(' '); byCode[s.code] = s; });
-    loadState();
-    route();
-    if (O.lines.length && location.hash.indexOf('order') === 0) { O.step = Math.max(1, Math.min(O.step || 1, maxStep())); renderOrder(); }
+    var editRef = (location.search.match(/[?&]edit=([0-9a-f]{10})/) || [])[1];
+    (editRef ? loadEdit(editRef) : Promise.resolve(false)).then(function (edited) {
+      if (!edited) loadState();
+      if (edited) { if (history.replaceState) history.replaceState(null, '', location.pathname + '#order'); else location.hash = 'order'; O.step = maxStep(); }
+      route();
+      if (O.lines.length && location.hash.indexOf('order') === 0) { O.step = Math.max(1, Math.min(O.step || 1, maxStep())); renderOrder(); }
+    });
   }).catch(function () { app.innerHTML = '<div class="ww-empty">We couldn\'t load the styles right now. Please refresh the page or message us on WhatsApp.</div>'; });
 })();
 </script>
