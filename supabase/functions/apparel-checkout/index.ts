@@ -72,7 +72,7 @@ async function saveFile(folder: string, f: any, i: number) {
     body: JSON.stringify({ expiresIn: 60 * 60 * 24 * 365 }),
   });
   const s = sg.ok ? await sg.json() : {};
-  return { role: f.role || "logo", name: f.name || "logo", url: s.signedURL ? `${SB_URL}/storage/v1${s.signedURL}` : path };
+  return { role: f.role || "logo", name: f.name || "logo", url: `${SB_URL}/functions/v1/apparel-checkout?logo=${folder}/${i + 1}`, long: s.signedURL ? `${SB_URL}/storage/v1${s.signedURL}` : path };
 }
 
 // ── Hidden products (one per style, one variant per color with its photo) so the checkout shows pictures.
@@ -147,6 +147,19 @@ const clip = (s: unknown, n = 500) => String(s ?? "").slice(0, n);
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method === "GET") {
+    // short link to an order's logo file: ?logo=<folder>/<n> → fresh signed link (the order notes stay readable)
+    const lg = new URL(req.url).searchParams.get("logo");
+    if (lg) {
+      const m = /^(\d{4}-\d{2}-\d{2}-[0-9a-f]{8})\/(\d{1,2})$/.exec(lg);
+      if (!m) return json({ error: "not found" }, 404);
+      const ls = await fetch(`${SB_URL}/storage/v1/object/list/photos`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ prefix: `orders/${m[1]}/`, limit: 20 }) });
+      const f = ls.ok ? (await ls.json()).find((x: any) => String(x.name).startsWith(m[2] + "-")) : null;
+      if (!f) return json({ error: "not found" }, 404);
+      const sg = await fetch(`${SB_URL}/storage/v1/object/sign/photos/orders/${m[1]}/${f.name}`, { method: "POST", headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, "Content-Type": "application/json" }, body: JSON.stringify({ expiresIn: 600 }) });
+      const s = sg.ok ? await sg.json() : null;
+      if (!s || !s.signedURL) return json({ error: "not found" }, 404);
+      return new Response(null, { status: 302, headers: { ...CORS, Location: `${SB_URL}/storage/v1${s.signedURL}` } });
+    }
     // health check: are the Shopify credentials working? (shows only the store name)
     try { const d = await gql("{ shop { name } }"); return json({ ok: true, shop: d.shop.name }); }
     catch (e) { return json({ ok: false, error: String((e as Error).message || e) }, 500); }
@@ -217,15 +230,10 @@ Deno.serve(async (req) => {
       ["Logo", clip(d.logo, 300)],
       ["Reorder", order.reorder ? "Yes" + (order.reorderNo ? " — previous order " + clip(order.reorderNo, 40) : "") : "No"],
       ["Notes", clip(d.notes, 1000)],
-      ...files.map((f, i) => [`File ${i + 1} (${f.role})`, f.url] as [string, string]),
+      ...files.map(f => [`Logo file (${f.role})`, f.url] as [string, string]),
     ];
-    const note = [
-      "Website workwear order — " + NAMES[method] + ", " + total + " pcs.",
-      d.placement ? "Placement: " + clip(d.placement, 200) : "",
-      d.logo ? "Logo: " + clip(d.logo, 300) : "",
-      d.notes ? "Notes: " + clip(d.notes, 1000) : "",
-      files.length ? "Files:\n" + files.map(f => `- ${f.role}: ${f.name}\n  ${f.url}`).join("\n") : "No logo file attached.",
-    ].filter(Boolean).join("\n");
+    // short note (details are under Additional details): the logo files to download
+    const note = files.length ? files.map(f => `Logo (${f.role}): ${f.name}\n${f.url}`).join("\n") : "No logo file attached — ask the customer for it.";
     const res = await gql(`mutation($input: DraftOrderInput!) { draftOrderCreate(input: $input) { draftOrder { id name invoiceUrl totalPriceSet { shopMoney { amount } } } userErrors { field message } } }`, {
       input: {
         lineItems, note, tags: ["workwear-site", NAMES[method]],
