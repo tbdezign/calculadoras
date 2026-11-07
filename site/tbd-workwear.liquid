@@ -928,7 +928,9 @@
         var attrs = {}; attrs['Custom shirts ' + oldRef] = '';
         return cartJs('/cart/update.js', { updates: up, attributes: attrs });
       }) : Promise.resolve();
-      return clean.then(function () { return cartJs('/cart/add.js', { items: j.items }); })
+      // a price variant made a second ago can take a moment to reach the store: try again before giving up
+      var add = function (n) { return cartJs('/cart/add.js', { items: j.items }).catch(function (e) { if (n <= 0) throw e; return new Promise(function (r) { setTimeout(r, 1500); }).then(function () { return add(n - 1); }); }); };
+      return clean.then(function () { return add(3); })
         .then(function () { return cartJs('/cart/update.js', { attributes: j.attributes }); })
         .then(function () { clearState(); window.location.href = '/cart'; });
     }).catch(function () { O.checkout = 'error'; renderPanel(); });
