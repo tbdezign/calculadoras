@@ -286,6 +286,21 @@ Deno.serve(async (req) => {
       const [o] = await rest(`cart_orders?ref=eq.${ref}&select=state,files`);
       return o ? json(o) : json({ error: "not found" }, 404);
     }
+    // keep the hidden products ready (pg_cron calls this every 10 min): rebuilds the styles whose colors/photos changed, a few per call
+    if (new URL(req.url).searchParams.get("sync")) {
+      const t0 = Date.now(), done: string[] = [];
+      const codes: string[] = (await rest(`site_products?show=eq.true&select=key`)).map((r: any) => r.key);
+      const prods = codes.length ? await rest(`apparel_products?code=in.(${codes.map(c => '"' + c.replace(/"/g, "") + '"').join(",")})&select=code,data`) : [];
+      for (const code of codes) {
+        if (Date.now() - t0 > 60000 || done.length >= 3) break;
+        const p = prods.find((x: any) => x.code === code); if (!p) continue;
+        const t = Date.now();
+        try { await ensureStyle(code, cleanName(p.data && p.data.name), []); if (Date.now() - t > 1500) done.push(code); }
+        catch (e) { console.log("sync", code, String((e as Error).message || e)); }
+      }
+      try { await ensureSetup(); } catch (e) { console.log("sync setup", String((e as Error).message || e)); }
+      return json({ ok: true, rebuilt: done });
+    }
     // health check: are the Shopify credentials working? (shows only the store name)
     try { const d = await gql("{ shop { name } }"); return json({ ok: true, shop: d.shop.name }); }
     catch (e) { return json({ ok: false, error: String((e as Error).message || e) }, 500); }

@@ -291,6 +291,7 @@
   // ── routing: #order opens the order flow; #order/TT11 starts it with that style ──
   function route() {
     var h = location.hash.replace(/^#/, '');
+    if (h === 'chat') return;   // the store's chat link (#chat): not a page of ours
     if (h.indexOf('order') === 0) {
       var code = decodeURIComponent(h.split('/')[1] || '');
       if (code && byCode[code] && !O.lines.some(function (l) { return l.code === code; })) addLine(code);
@@ -744,7 +745,7 @@
       }
     } else {
       h += '<h2 class="ww-h2">5. Preview</h2><p class="ww-p">This is a quick preview. We send a final proof for your approval before printing.</p><div class="ww-prevs">' + previews() + '</div>';
-      if (O.checkout === 'error') h += '<div class="ww-msg red" style="margin-top:16px">Something went wrong on our side. Please try again, or send us a message on WhatsApp and we\u2019ll finish your order.</div>';
+      if (O.checkout === 'error') h += '<div class="ww-msg red" style="margin-top:16px">We couldn\u2019t add your order just now. Please try again in a moment.<br>Still not working? ' + (chatEl() ? '<button type="button" data-chat style="background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer">Chat with us</button>, email' : 'Email') + ' <a href="mailto:info@tbdezign.com">info@tbdezign.com</a> or message us on <a href="https://wa.me/19548714646" target="_blank" rel="noopener">WhatsApp</a> and we\u2019ll finish your order for you.</div>';
     }
     h += '<div class="ww-nav"><button class="ww-btn ghost" data-back' + (O.step === 1 ? ' disabled' : '') + '>Back</button>'
       + (O.step < 5 ? '<button class="ww-btn" data-next' + (stepOk(O.step) ? '' : ' disabled') + '>Continue</button>' : '<button class="ww-btn pay" data-pay' + (O.quote && O.checkout !== 'busy' ? '' : ' disabled') + '>' + (O.checkout === 'busy' ? 'Adding to your cart…' : O.editRef ? 'Update cart' : 'Add to cart') + '</button>') + '</div>'
@@ -911,6 +912,16 @@
     });
   }
   function cartJs(path, body) { return fetch(path, { method: body ? 'POST' : 'GET', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: body ? JSON.stringify(body) : undefined }).then(function (r) { if (!r.ok) throw new Error(path + ' ' + r.status); return r.json(); }); }
+  // the store's chat: same as the footer's "Chat with us" (a link to #chat that the chat app listens to)
+  function chatEl() { return document.querySelector('a[href="#chat"]:not([data-chat])') || document.querySelector('inbox-online-store-chat, #ShopifyChat'); }
+  function openChat() {
+    var el = chatEl(); if (!el) { window.location.href = 'mailto:info@tbdezign.com'; return; }
+    var keep = location.hash;
+    if (el.tagName === 'A') el.click();
+    else { var b = (el.shadowRoot && el.shadowRoot.querySelector('button')) || el.querySelector('button'); if (b) b.click(); }
+    // the footer link may set #chat: put our page's address back without leaving the order
+    setTimeout(function () { if (location.hash === '#chat' && history.replaceState) history.replaceState(null, '', location.pathname + location.search + keep); }, 50);
+  }
   function startCart() {
     if (O.checkout === 'busy' || !O.quote) return;
     O.checkout = 'busy'; renderPanel();
@@ -929,10 +940,13 @@
         return cartJs('/cart/update.js', { updates: up, attributes: attrs });
       }) : Promise.resolve();
       // a price variant made a second ago can take a moment to reach the store: try again before giving up
-      var add = function (n) { return cartJs('/cart/add.js', { items: j.items }).catch(function (e) { if (n <= 0) throw e; return new Promise(function (r) { setTimeout(r, 1500); }).then(function () { return add(n - 1); }); }); };
-      return clean.then(function () { return add(3); })
-        .then(function () { return cartJs('/cart/update.js', { attributes: j.attributes }); })
-        .then(function () { clearState(); window.location.href = '/cart'; });
+      var waits = [800, 1200, 1800, 2500, 3000, 3500];
+      var add = function (n) { return cartJs('/cart/add.js', { items: j.items }).catch(function (e) { if (n >= waits.length) throw e; return new Promise(function (r) { setTimeout(r, waits[n]); }).then(function () { return add(n + 1); }); }); };
+      return clean.then(function () { return add(0).catch(function () { return 'direct'; }); }).then(function (res) {
+        if (res === 'direct') { O.checkout = null; startCheckout(); return 'done'; }   // the cart still won't take it: direct checkout instead of an error
+      })
+        .then(function (res) { if (res === 'done') return 'done'; return cartJs('/cart/update.js', { attributes: j.attributes }); })
+        .then(function (res) { if (res === 'done') return; clearState(); window.location.href = '/cart'; });
     }).catch(function () { O.checkout = 'error'; renderPanel(); });
   }
   // /pages/workwear?edit=<ref> (the cart's "Edit order"): reopen that order at the review step
@@ -1086,6 +1100,7 @@
     if ('next' in ds) { go(O.step + 1); return; }
     if ('back' in ds) { go(O.step - 1); return; }
     if ('pay' in ds) { startCart(); return; }
+    if ('chat' in ds) { e.preventDefault(); openChat(); return; }
   });
   // tap a preview to see it big
   function closeZoom() { var z = document.querySelector('.ww-zoom'); if (z) z.remove(); document.removeEventListener('keydown', zoomKey); }
