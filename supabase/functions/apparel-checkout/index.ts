@@ -299,7 +299,7 @@ async function quoteDraft(req: Request, body: any) {
     for (const l of (Array.isArray(pt.lines) ? pt.lines.slice(0, 150) : [])) {
       const qty = Math.round(+l.qty), unit = num(l.unit, 5000);
       if (!(qty >= 1 && qty <= 100000) || unit == null) return json({ error: "Check the quantities and prices in the quote." }, 400);
-      const attrs = [["Sizes", SIZE[l.size] || ""], ["Decoration", clip(l.deco, 200)]].filter(([, v]) => v).map(([key, value]) => ({ key, value }));
+      const attrs = [["Sizes", clip(l.sizes, 200) || SIZE[l.size] || ""], ["Decoration", clip(l.deco, 200)]].filter(([, v]) => v).map(([key, value]) => ({ key, value }));
       const vid = baseVariant(l.code, l.color);
       if (vid) lineItems.push({ variantId: vid, quantity: qty, priceOverride: { amount: money(unit), currencyCode: "USD" }, customAttributes: attrs });
       else lineItems.push({ title: `${cleanName(l.name || l.code)}${l.color ? " — " + clip(l.color, 40) : ""}${SIZE[l.size] ? " (" + SIZE[l.size] + ")" : ""}`, sku: clip(l.code, 40),

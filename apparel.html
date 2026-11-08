@@ -340,6 +340,13 @@
   .co-row button:disabled { opacity:.6; cursor:default; }
   .co-err { color:#c0392b; font-size:13px; margin-top:10px; }
   .co-ok a { color:#1a7698; font-weight:600; }
+  .co-sz { border:1px solid #eee; border-radius:8px; padding:8px 10px; margin-top:8px; }
+  .co-sz-h { display:flex; justify-content:space-between; font-size:13px; font-weight:600; }
+  .co-sz-h small { font-weight:500; color:#888; }
+  .co-sz-h small.ok { color:#2E7D32; } .co-sz-h small.bad { color:#c0392b; }
+  .co-sz-g { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+  .co-sz-g label { margin:0; display:flex; flex-direction:column; align-items:center; font-size:11px; color:#666; }
+  .co-sz-g input { width:46px; padding:6px 4px; text-align:center; }
   .sum-sub { font-size:12px; color:#999; margin-top:6px; }
   .cchips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
   .cchip { display:flex; align-items:center; gap:6px; padding:4px 10px 4px 4px; border-radius:20px; border:1.5px solid #E0E0DA; background:#fff; font-size:12px; font-weight:600; color:#444; cursor:pointer; font-family:inherit; }
@@ -1683,7 +1690,7 @@ function orderPartsForShopify() {
     const one = () => {
       const M = METHODS[method], items = validItems().filter(it => itemQty(it) > 0), lines = [];
       items.forEach(it => { const p = prod(it), deco = itemPrint(it);
-        sizeLines(it).forEach(l => lines.push({ code: p.code, name: displayName(it, p), color: (it.color || "").trim() ? titleCase(it.color.trim()) : "", size: l.size, qty: l.q, unit: Math.round(l.r.perPiece * 100) / 100, deco })); });
+        sizeLines(it).forEach(l => lines.push({ id: it.id, code: p.code, name: displayName(it, p), color: (it.color || "").trim() ? titleCase(it.color.trim()) : "", size: l.size, qty: l.q, unit: Math.round(l.r.perPiece * 100) / 100, deco })); });
       const st = items.length ? M.setup() : null;
       return { method, lines, setup: st && st.total > 0 ? { label: method === "emb" ? "Digitizing" : method === "silk" ? "Screen setup" : "Setup", total: Math.round(st.total * 100) / 100 } : null };
     };
@@ -1714,6 +1721,7 @@ function openCreateOrder() {
   const ov = document.createElement("div"); ov.className = "co-ov"; ov.id = "coOv";
   ov.innerHTML = '<div class="co-box" onclick="event.stopPropagation()"><h3>Create order in Shopify</h3><div class="co-sub">A draft order with these prices. Nothing is charged or emailed: you get the payment link to send.</div>'
     + '<div class="co-lines">' + lines + '<br><b>Total ' + fmt(total) + '</b> · free shipping</div>'
+    + '<label>Sizes <span style="color:#999">(per color — leave empty for caps, bags or one-size items)</span></label>' + sizeGridHTML(parts)
     + '<label>Customer name</label><input id="coName" value="' + esc((quotes[activeQ] && quotes[activeQ].name) || q("qName").value || "") + '">'
     + '<label>Email (optional)</label><input id="coEmail" type="email" placeholder="name@company.com">'
     + '<label>Phone (optional)</label><input id="coPhone" type="tel">'
@@ -1723,10 +1731,48 @@ function openCreateOrder() {
   setTimeout(() => q("coName").focus(), 0);
 }
 function closeCreateOrder() { const o = q("coOv"); if (o) o.remove(); }
+// Size breakdown for each line (the quote only has XS–XL / 2XL / 3XL totals); kept on the style so it's there next time.
+const CO_SIZES = { std: ["XS", "S", "M", "L", "XL"], x2: ["2XL"], x3: ["3XL", "4XL", "5XL"] };
+function itemAnyQuote(id) { if (orderItems.some(it => it.id === id)) return orderItems.find(it => it.id === id); for (const s of quotes) { const f = (s.orderItems || []).find(it => it.id === id); if (f) return f; } return null; }
+function sizeGridHTML(parts) {
+  let h = '', n = 0;
+  parts.forEach(p => p.lines.forEach(l => {
+    const it = itemAnyQuote(l.id), saved = (it && it.sizeSplit && it.sizeSplit[l.size]) || {}, names = CO_SIZES[l.size] || CO_SIZES.std;
+    if (l.size === "x2") { h += '<input type="hidden" data-co-line="' + n + '" data-co-fixed="2XL">'; n++; return; }
+    h += '<div class="co-sz" data-co-line="' + n + '" data-qty="' + l.qty + '"><div class="co-sz-h"><span>' + esc(l.code + (l.color ? " · " + l.color : "") + (l.size === "x3" ? " · 3XL+" : "")) + '</span><small id="coszc-' + n + '"></small></div><div class="co-sz-g">'
+      + names.map(z => '<label>' + z + '<input type="number" min="0" inputmode="numeric" data-sz="' + z + '" value="' + (saved[z] || '') + '" oninput="coSizeCount(' + n + ')"></label>').join('') + '</div></div>';
+    n++;
+  }));
+  setTimeout(() => { for (let i = 0; i < n; i++) coSizeCount(i); }, 0);
+  return h;
+}
+function coSizeCount(i) {
+  const box = document.querySelector('.co-sz[data-co-line="' + i + '"]'), el = q("coszc-" + i); if (!box || !el) return;
+  const sum = [...box.querySelectorAll("input")].reduce((a, x) => a + (parseInt(x.value) || 0), 0), qty = +box.dataset.qty;
+  el.textContent = sum ? sum + " of " + qty : qty + " pcs"; el.className = !sum ? "" : sum === qty ? "ok" : "bad";
+}
+// reads the grids: adds "S × 3, M × 5" to each line; returns an error text when a filled grid doesn't add up
+function applySizes(parts) {
+  let i = 0, err = "";
+  parts.forEach(p => p.lines.forEach(l => {
+    const box = document.querySelector('[data-co-line="' + i + '"]'); i++;
+    if (!box) return;
+    if (box.dataset.coFixed) { l.sizes = "2XL × " + l.qty; return; }
+    const split = {}; box.querySelectorAll("input[data-sz]").forEach(x => { const v = parseInt(x.value) || 0; if (v > 0) split[x.dataset.sz] = v; });
+    const sum = Object.values(split).reduce((a, b) => a + b, 0);
+    const it = itemAnyQuote(l.id); if (it) { it.sizeSplit = it.sizeSplit || {}; it.sizeSplit[l.size] = split; }
+    if (!sum) return;
+    if (sum !== l.qty && !err) err = l.code + (l.color ? " " + l.color : "") + ": the sizes add up to " + sum + ", the quote has " + l.qty + ".";
+    l.sizes = Object.entries(split).map(([z, v]) => z + " × " + v).join(", ");
+  }));
+  return err;
+}
 async function createOrder() {
   const go = q("coGo"), msg = q("coMsg"); go.disabled = true; go.textContent = "Creating…"; msg.innerHTML = "";
   try {
-    const body = { mode: "quote", parts: orderPartsForShopify(), files: await logoFilesForOrder(), quoteName: q("qName").value || "",
+    const parts = orderPartsForShopify(), szErr = applySizes(parts);
+    if (szErr) throw new Error(szErr);
+    const body = { mode: "quote", parts, files: await logoFilesForOrder(), quoteName: q("qName").value || "",
       customer: { name: q("coName").value, email: q("coEmail").value, phone: q("coPhone").value }, note: q("coNote").value };
     const { data, error } = await TBDCloud.sb.functions.invoke("apparel-checkout", { body });
     let j = data;
