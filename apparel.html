@@ -100,6 +100,12 @@
   .sc-row label { display:flex; align-items:center; gap:4px; font-size:12px; color:#555; white-space:nowrap; cursor:pointer; }
   .sc-row label input { width:auto; }
   .sc-row.off input[type=text] { color:#aaa; text-decoration:line-through; }
+  .sc-pics { display:flex; align-items:center; gap:6px; flex:0 0 auto; }
+  .sc-pic { width:34px; height:34px; border:1px solid #ddd; border-radius:6px; background:#fff; padding:0; overflow:hidden; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:10px; color:#4b5563; line-height:1.1; }
+  .sc-pic img { width:100%; height:100%; object-fit:cover; display:block; }
+  .sc-pic.empty { border-style:dashed; background:#fafbfc; }
+  .sc-pic:hover { border-color:#1a7698; }
+  .sc-pic.busy { opacity:.5; pointer-events:none; }
   .sc-x { border:none; background:none; color:#999; font-size:16px; cursor:pointer; padding:0 4px; }
   .site-tag { display:inline-block; font-size:10px; font-weight:600; color:#1a7698; background:#E3F2F6; border:1px solid #b5dbe6; border-radius:4px; padding:0 5px; margin-left:4px; vertical-align:1px; }
   .int-head { font-size:10px; font-weight:700; color:#8a6d1f; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
@@ -426,6 +432,7 @@
     <input type="file" id="mkBackupFile" accept=".json,application/json" hidden onchange="if(this.files[0])importLibrary(this.files[0]);this.value=''">
     <input type="file" id="mkBrandFile" accept="image/png,image/*" hidden onchange="if(this.files[0])handleBrandFile(this.files[0]);this.value=''">
     <input type="file" id="mkGarmentFile" accept="image/*" hidden onchange="if(this.files[0])onGarmentPicked(this.files[0]);this.value=''">
+    <input type="file" id="mkCatPhotoFile" accept="image/*" hidden onchange="if(this.files[0])onCatPhotoPicked(this.files[0]);this.value=''">
     <input type="file" id="mkLogoFile" accept="image/*" hidden onchange="if(this.files[0])handleLogoFile(this.files[0], mk.logoPick);this.value=''">
   </div>
 
@@ -708,10 +715,37 @@ function copySiteColors() {
   q("pf_site_copy").value = "";
   q("siteColors").innerHTML = siteColorsHTML();
 }
+// Garment photos right on the product: Front / Back / Side per color (same library the mockups use).
+function colorPhotosHTML(code, name, i) {
+  name = String(name || "").trim();
+  if (!name) return '<span class="sc-pics" title="Type the color name first"><span class="sc-pic empty" style="cursor:default;opacity:.5">Photo</span></span>';
+  return '<span class="sc-pics">' + ["front", "back", "side"].map(side => {
+    const p = photoLib[photoKey(code, titleCase(name), side)];
+    const tip = (p ? "Change " : "Add ") + SIDE_EN[side].toLowerCase() + " photo of " + name;
+    return '<button type="button" class="sc-pic' + (p ? '' : ' empty') + '" id="scpic-' + i + '-' + side + '" title="' + esc(tip) + '" onclick="pickCatPhoto(' + i + ',\'' + side + '\')">'
+      + (p ? '<img src="' + esc(photoSrc(p)) + '" alt="">' : '+ ' + SIDE_EN[side]) + '</button>';
+  }).join("") + '</span>';
+}
+let catPick = null;
+function pickCatPhoto(i, side) {
+  if (!siteDraft || !siteDraft.colors[i] || !String(siteDraft.colors[i].name || "").trim()) { alert("Type the color name first."); return; }
+  if (!libAvailable()) { alert("The photo library isn't available here. Log in at the top first."); return; }
+  catPick = { code: siteDraft.code, color: siteDraft.colors[i].name.trim(), side, i };
+  q("mkCatPhotoFile").click();
+}
+async function onCatPhotoPicked(file) {
+  if (!catPick) return; const pk = catPick; catPick = null;
+  const btn = q("scpic-" + pk.i + "-" + pk.side); if (btn) { btn.classList.add("busy"); btn.textContent = "…"; }
+  const r = await saveGarmentPhoto(file, pk.code.toUpperCase(), titleCase(pk.color), pk.side);
+  if (!r.ok) alert(r.msg);
+  renderLib(); mk.sig = ""; renderMockRows(true);
+  if (siteDraft && siteDraft.code === pk.code && q("siteColors")) q("siteColors").innerHTML = siteColorsHTML();
+}
 function siteColorsHTML() {
   return siteDraft.colors.map((c, i) => '<div class="sc-row' + (c.on ? '' : ' off') + '">'
     + '<input type="color" value="' + esc(c.hex || "#cccccc") + '" oninput="siteDraft.colors[' + i + '].hex=this.value">'
-    + '<input type="text" value="' + esc(c.name) + '" placeholder="Color name (as the supplier writes it)" oninput="siteDraft.colors[' + i + '].name=this.value">'
+    + '<input type="text" value="' + esc(c.name) + '" placeholder="Color name (as the supplier writes it)" oninput="siteDraft.colors[' + i + '].name=this.value" onchange="q(\'siteColors\').innerHTML=siteColorsHTML()">'
+    + colorPhotosHTML(siteDraft.code, c.name, i)
     + '<label><input type="checkbox"' + (c.on ? ' checked' : '') + ' onchange="siteDraft.colors[' + i + '].on=this.checked;this.closest(\'.sc-row\').classList.toggle(\'off\',!this.checked)"> On site</label>'
     + '<button class="sc-x" title="Remove" onclick="siteDraft.colors.splice(' + i + ',1);q(\'siteColors\').innerHTML=siteColorsHTML()">×</button></div>').join("")
     + '<button class="add-btn" style="margin-top:2px" onclick="siteDraft.colors.push({name:\'\',hex:\'#cccccc\',on:true});q(\'siteColors\').innerHTML=siteColorsHTML();const r=q(\'siteColors\').querySelectorAll(\'input[type=text]\');r[r.length-1].focus()">+ Add color</button>';
@@ -1997,6 +2031,8 @@ function photoFor(it, side) {
 // ── library panel ──
 function toggleLib() { libOpen = !libOpen; renderLib(); }
 function renderLib() {
+  // the product form's photo boxes follow the library (unless someone is typing a color name there)
+  const scEl = q("siteColors"); if (siteDraft && scEl && !(document.activeElement && scEl.contains(document.activeElement) && document.activeElement.type === "text")) scEl.innerHTML = siteColorsHTML();
   const n = Object.keys(photoLib).length;
   document.getElementById("libLabel").textContent = "Photo library (" + n + ")";
   const panel = document.getElementById("libPanel");
@@ -2007,7 +2043,7 @@ function renderLib() {
   h += '<div style="display:flex;gap:14px;justify-content:flex-end;margin-bottom:10px;flex-wrap:wrap">' + (uncleaned && libAvailable() ? '<button class="mk-link" onclick="cleanAllBackgrounds(this)">Remove background from all (' + uncleaned + ')</button>' : '') + '<button class="mk-link" onclick="exportLibrary()">Save backup file</button><button class="mk-link" onclick="document.getElementById(\'mkBackupFile\').click()">Restore backup</button></div>';
   if (!mkDb && localLib) h += '<div style="font-size:12px;color:#888;margin-bottom:8px">' + (TBDCloud.loggedIn ? 'Photos are saved online and show up on every device where you log in.' : 'Log in at the top to save photos online. Until then they stay only in this browser.') + '</div>';
   if (!libAvailable()) h += '<div style="font-size:12px;color:#b45309;margin-bottom:8px">The photo library isn\'t available in this view, so photos you add will only last until you close the page.</div>';
-  if (!n) h += '<div style="font-size:12px;color:#888">No saved photos yet. Add a style in the Order Builder, type its color below, then upload the photo. It\'s saved here for next time.</div>';
+  h += '<div style="font-size:12px;color:#888;margin-bottom:8px">' + (n ? '' : 'No saved photos yet. ') + 'Add photos in the catalog: open a product (Edit) and use the Front / Back / Side boxes next to each color. You can also add them in the Order Builder.</div>';
   const groups = {};
   Object.entries(photoLib).forEach(([id,p]) => { (groups[p.code] = groups[p.code] || []).push([id,p]); });
   Object.keys(groups).sort().forEach(code => {
@@ -2452,30 +2488,35 @@ async function importLibrary(file) {
   } catch (e) { mkMsg("Couldn't read that backup file.", true); }
 }
 
+// Adds one garment photo to the library: downscale, remove the background, save (used by the Order Builder and the catalog).
+async function saveGarmentPhoto(file, code, color, side) {
+  try {
+    const src = await loadImage(URL.createObjectURL(file));
+    const s = Math.min(1, 2400 / Math.max(src.naturalWidth, src.naturalHeight));
+    const c = document.createElement("canvas"); c.width = Math.round(src.naturalWidth*s); c.height = Math.round(src.naturalHeight*s);
+    const cx = c.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0,0,c.width,c.height); cx.drawImage(src,0,0,c.width,c.height);
+    const orig = await new Promise(r => c.toBlob(r, "image/jpeg", 0.9));
+    let cleaned = null; try { cleaned = cleanBackgroundCanvas(c); } catch (e) {}
+    const blob = cleaned ? await new Promise(r => cleaned.toBlob(r, "image/jpeg", 0.9)) : orig;
+    await storePhoto(code, color, side, blob, null, cleaned ? orig : null);
+    orderItems.forEach(o => { if (o.code.toUpperCase() === code && slugPart(o.color) === slugPart(color)) delete mk.boxes[boxKey(o, side)]; });
+    return { ok: true, cleaned: !!cleaned };
+  } catch (e) {
+    const c2 = e && e.code;
+    return { ok: false, msg: c2 === "too_large" ? "That photo is too large. Try a smaller file." : c2 === "quota_or_state" ? "The photo library is full. Delete some photos you no longer need." : "Couldn't add that photo. Try again." };
+  }
+}
 async function handleGarmentFile(file, id, side) {
   const it = itemById(id); if (!it) return;
   if (!it.color || !slugPart(it.color)) { mkMsg("Type the garment color first, so the photo is saved under the right name.", true); return; }
   const code = it.code.toUpperCase(), color = titleCase(it.color.trim()), key = photoKey(code, color, side);
   mkMsg("Adding photo…");
-  try {
-    const src = await loadImage(URL.createObjectURL(file));
-    // Downscale to 2400px (the size the mockups use) and flatten onto white (JPEG keeps the library light and uploads fast).
-    const s = Math.min(1, 2400 / Math.max(src.naturalWidth, src.naturalHeight));
-    const c = document.createElement("canvas"); c.width = Math.round(src.naturalWidth*s); c.height = Math.round(src.naturalHeight*s);
-    const cx = c.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0,0,c.width,c.height); cx.drawImage(src,0,0,c.width,c.height);
-    const orig = await new Promise(r => c.toBlob(r, "image/jpeg", 0.9));
-    // Remove the background automatically so every style is framed the same way (Undo keeps the original).
-    let cleaned = null; try { cleaned = cleanBackgroundCanvas(c); } catch (e) {}
-    const blob = cleaned ? await new Promise(r => cleaned.toBlob(r, "image/jpeg", 0.9)) : orig;
-    await storePhoto(code, color, side, blob, null, cleaned ? orig : null);
-    mkMsg((mkDb || localLib) ? "Photo saved to the library as " + code + " · " + color + " · " + SIDE_EN[side] + "." + (cleaned ? " Background removed automatically (Undo is under the photo)." : " No plain background found, so it was kept as it is.") : "Photo added for this session only. The library isn't available in this view.");
-    mk.pasteTarget = null;
-    orderItems.forEach(o => { if (o.code.toUpperCase() === code && slugPart(o.color) === slugPart(color)) delete mk.boxes[boxKey(o, side)]; });
-    renderLib(); mk.sig = ""; renderMockRows(true);
-  } catch (e) {
-    const c2 = e && e.code;
-    mkMsg(c2 === "too_large" ? "That photo is too large. Try a smaller file." : c2 === "quota_or_state" ? "The photo library is full. Delete some photos you no longer need." : "Couldn't add that photo. Try again.", true);
-  }
+  const r = await saveGarmentPhoto(file, code, color, side);
+  if (!r.ok) { mkMsg(r.msg, true); return; }
+  mkMsg((mkDb || localLib) ? "Photo saved to the library as " + code + " · " + color + " · " + SIDE_EN[side] + "." + (r.cleaned ? " Background removed automatically (Undo is under the photo)." : " No plain background found, so it was kept as it is.") : "Photo added for this session only. The library isn't available in this view.");
+  mk.pasteTarget = null;
+  renderLib(); mk.sig = ""; renderMockRows(true);
+  if (siteDraft && siteDraft.code === code && q("siteColors")) q("siteColors").innerHTML = siteColorsHTML();
 }
 
 // ── editor (large view for adjusting one style + side) ──
