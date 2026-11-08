@@ -279,6 +279,56 @@ async function syncReviews() {
   return changed;
 }
 
+// ── Orders made in Apparel Quotes: a draft order with the quote's own prices (any method, caps, bags…).
+// Only for someone logged in to the calculator (the prices come from the browser, so the caller must be us).
+async function quoteDraft(req: Request, body: any) {
+  const auth = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  const who = auth ? await fetch(`${SB_URL}/auth/v1/user`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${auth}` } }) : null;
+  if (!who || !who.ok) return json({ error: "Log in to the calculator first." }, 401);
+  const parts = Array.isArray(body.parts) ? body.parts.slice(0, 8) : [];
+  const num = (v: unknown, max: number) => { const n = +(v as number); return isFinite(n) && n >= 0 && n <= max ? Math.round(n * 100) / 100 : null; };
+  const rows = await rest(`shopify_styles?select=code,variants`);
+  const baseVariant = (code: string, color: string) => {
+    const r = rows.find((x: any) => String(x.code).toUpperCase() === String(code).toUpperCase()); if (!r || !r.variants) return null;
+    const k = Object.keys(r.variants).find(c => c.toLowerCase() === String(color || "").trim().toLowerCase());
+    return k ? r.variants[k] : null;
+  };
+  const SIZE: Record<string, string> = { x2: "2XL", x3: "3XL" };
+  const lineItems: any[] = [];
+  for (const pt of parts) {
+    for (const l of (Array.isArray(pt.lines) ? pt.lines.slice(0, 150) : [])) {
+      const qty = Math.round(+l.qty), unit = num(l.unit, 5000);
+      if (!(qty >= 1 && qty <= 100000) || unit == null) return json({ error: "Check the quantities and prices in the quote." }, 400);
+      const attrs = [["Sizes", SIZE[l.size] || ""], ["Decoration", clip(l.deco, 200)]].filter(([, v]) => v).map(([key, value]) => ({ key, value }));
+      const vid = baseVariant(l.code, l.color);
+      if (vid) lineItems.push({ variantId: vid, quantity: qty, priceOverride: { amount: money(unit), currencyCode: "USD" }, customAttributes: attrs });
+      else lineItems.push({ title: `${cleanName(l.name || l.code)}${l.color ? " — " + clip(l.color, 40) : ""}${SIZE[l.size] ? " (" + SIZE[l.size] + ")" : ""}`, sku: clip(l.code, 40),
+        quantity: qty, requiresShipping: true, taxable: true, originalUnitPriceWithCurrency: { amount: money(unit), currencyCode: "USD" }, customAttributes: attrs });
+    }
+    const st = pt.setup && num(pt.setup.total, 5000);
+    if (st) lineItems.push({ title: clip(pt.setup.label || "Setup", 40) + " (one-time)", quantity: 1, requiresShipping: false, taxable: true, originalUnitPriceWithCurrency: { amount: money(st), currencyCode: "USD" } });
+  }
+  if (!lineItems.length) return json({ error: "The quote has no quantities yet." }, 400);
+  const folder = new Date().toISOString().slice(0, 10) + "-" + crypto.randomUUID().slice(0, 8);
+  const files: any[] = [];
+  for (const [i, f] of (Array.isArray(body.files) ? body.files.slice(0, 6) : []).entries()) { const s = await saveFile(folder, f, i); if (s) files.push(s); }
+  const c = body.customer || {}, email = clip(c.email, 120).trim(), phone = clip(c.phone, 30).trim(), name = clip(c.name, 80).trim();
+  const note = [name ? "Customer: " + name : "", clip(body.note, 1000), ...files.map(f => `Logo (${f.role}): ${f.name}\n${f.url}`)].filter(Boolean).join("\n");
+  const attrs = [["Customer", name], ["Quote", clip(body.quoteName, 80)], ...files.map(f => [`Logo file (${f.role})`, f.url])].filter(([, v]) => v).map(([key, value]) => ({ key, value }));
+  const input: any = { lineItems, note, tags: ["workwear-quote"], customAttributes: attrs,
+    shippingLine: { title: "Free shipping", priceWithCurrency: { amount: "0.00", currencyCode: "USD" } } };
+  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) input.email = email;
+  if (phone) input.phone = phone;
+  let res = await gql(`mutation($input: DraftOrderInput!) { draftOrderCreate(input: $input) { draftOrder { id legacyResourceId name invoiceUrl totalPriceSet { shopMoney { amount } } } userErrors { field message } } }`, { input });
+  // a phone Shopify doesn't accept shouldn't block the order: keep it in the note instead
+  if (res.draftOrderCreate.userErrors.length && input.phone) { delete input.phone; input.note += "\nPhone: " + phone; res = await gql(`mutation($input: DraftOrderInput!) { draftOrderCreate(input: $input) { draftOrder { id legacyResourceId name invoiceUrl totalPriceSet { shopMoney { amount } } } userErrors { field message } } }`, { input }); }
+  const r = res.draftOrderCreate;
+  if (r.userErrors && r.userErrors.length) return json({ error: r.userErrors.map((e: any) => e.message).join("; ") }, 400);
+  const store = SHOP.replace(/\.myshopify\.com$/, "");
+  return json({ ok: true, name: r.draftOrder.name, invoiceUrl: r.draftOrder.invoiceUrl, total: r.draftOrder.totalPriceSet.shopMoney.amount,
+    adminUrl: `https://admin.shopify.com/store/${store}/draft_orders/${r.draftOrder.legacyResourceId}` });
+}
+
 const cleanName = (n: string) => String(n || "").replace(/\s*[®™]/g, "").replace(/\s+/g, " ").trim();
 const SIZE_LABEL: Record<string, string> = { std: "", x2: "2XL", x3: "3XL" };
 const money = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
@@ -330,6 +380,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "use POST" }, 405);
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "invalid JSON" }, 400); }
+  if (body && body.mode === "quote") { try { return await quoteDraft(req, body); } catch (e) { return json({ error: String((e as Error).message || e).slice(0, 300) }, 500); } }
   const order = body && body.order, d = (body && body.details) || {};
   if (!order || !Array.isArray(order.items) || !order.items.length || order.items.length > 50) return json({ error: "items required" }, 400);
   if (order.method && !["silk", "dtf", "emb"].includes(order.method)) return json({ error: "unknown method" }, 400);
@@ -384,8 +435,7 @@ Deno.serve(async (req) => {
         const vid = await priceVariant(sts[l.code], l.code, l.color, l.unit, "$" + money(l.unit) + " each");
         const props: Record<string, string> = {};
         for (const p of lineProps(l, sizesOf(l.code, l.color, l.size))) if (p.key !== "Price per piece") props[p.key as string] = p.value as string;
-        const it = (d.items || []).find((x: any) => x && x.code === l.code && x.color === l.color);
-        props._ww = ref; if (it && it.hex) props._hex = clip(it.hex, 9);
+        props._ww = ref;
         items.push({ id: num(vid), quantity: l.q, properties: props });
       }
       if (setup) {

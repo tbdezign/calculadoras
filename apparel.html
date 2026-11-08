@@ -324,6 +324,22 @@
   .sum-total { font-size:28px; font-weight:700; font-variant-numeric:tabular-nums; }
   .sum-row.profit { margin-top:8px; padding-top:8px; border-top:1px solid #F0F0F0; }
   .sum-row.profit span:last-child { font-size:15px; font-weight:600; color:#2E7D32; }
+  .co-btn { display:block; width:100%; margin-top:12px; padding:11px; border:0; border-radius:8px; background:#051024; color:#fff; font-weight:600; font-size:14px; cursor:pointer; font-family:inherit; }
+  .co-btn:hover { opacity:.9; }
+  .co-ov { position:fixed; inset:0; background:rgba(5,16,36,.45); z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px; }
+  .co-box { background:#fff; border-radius:14px; padding:20px; width:min(440px,100%); max-height:90vh; overflow:auto; box-shadow:0 10px 40px rgba(0,0,0,.2); }
+  .co-box h3 { margin:0 0 4px; font-size:17px; }
+  .co-box .co-sub { font-size:12.5px; color:#666; margin-bottom:12px; }
+  .co-box label { display:block; font-size:12px; color:#555; margin:10px 0 4px; }
+  .co-box input, .co-box textarea { width:100%; box-sizing:border-box; padding:9px 10px; border:1px solid #ddd; border-radius:8px; font:inherit; font-size:14px; }
+  .co-box textarea { min-height:60px; resize:vertical; }
+  .co-lines { font-size:12.5px; color:#444; background:#f7f8fa; border-radius:8px; padding:8px 10px; max-height:160px; overflow:auto; line-height:1.6; }
+  .co-row { display:flex; gap:8px; margin-top:16px; }
+  .co-row button { flex:1; padding:10px; border-radius:8px; border:1px solid #ddd; background:#fff; font:inherit; font-weight:600; cursor:pointer; }
+  .co-row button.go { background:#051024; color:#fff; border-color:#051024; }
+  .co-row button:disabled { opacity:.6; cursor:default; }
+  .co-err { color:#c0392b; font-size:13px; margin-top:10px; }
+  .co-ok a { color:#1a7698; font-weight:600; }
   .sum-sub { font-size:12px; color:#999; margin-top:6px; }
   .cchips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
   .cchip { display:flex; align-items:center; gap:6px; padding:4px 10px 4px 4px; border-radius:20px; border:1.5px solid #E0E0DA; background:#fff; font-size:12px; font-weight:600; color:#444; cursor:pointer; font-family:inherit; }
@@ -1651,10 +1667,75 @@ function updateOrderResults() {
     if (method === "v2") { const o = v2Order(); extra = '<div class="sum-sub">Your cost: ' + fmt(o.vendorSub + o.fees) + ' · Fees: ' + fmt(o.fees) + ' (' + fmt(o.fpu) + '/unit)</div>'; cost = o.vendorSub + o.fees; }
     sum.hidden = false;
     sum.innerHTML = '<div class="card"><div class="sum-row"><span class="muted">Order total (' + tq + ' pcs)' + (setup ? ' + setup' : '') + '</span><span class="sum-total">' + fmt(grand + setup) + '</span></div>' + extra
-      + '<div class="sum-row profit"><span class="muted">Total profit</span><span>' + fmt(grand + setup - cost - setupCost) + '</span></div></div>';
+      + '<div class="sum-row profit"><span class="muted">Total profit</span><span>' + fmt(grand + setup - cost - setupCost) + '</span></div>'
+      + (TBDCloud.loggedIn ? '<button class="co-btn" onclick="openCreateOrder()">Create order in Shopify</button>' : '') + '</div>';
   }
   renderMockRows();
   renderQuote();
+}
+
+// ════════════════════════════════════════════
+// CREATE ORDER — the approved quote becomes a Shopify draft order (same prices), ready to send the payment link
+// ════════════════════════════════════════════
+function orderPartsForShopify() {
+  const keepLang = quoteLang; quoteLang = "en";   // line details in English for the order
+  try {
+    const one = () => {
+      const M = METHODS[method], items = validItems().filter(it => itemQty(it) > 0), lines = [];
+      items.forEach(it => { const p = prod(it), deco = itemPrint(it);
+        sizeLines(it).forEach(l => lines.push({ code: p.code, name: displayName(it, p), color: (it.color || "").trim() ? titleCase(it.color.trim()) : "", size: l.size, qty: l.q, unit: Math.round(l.r.perPiece * 100) / 100, deco })); });
+      const st = items.length ? M.setup() : null;
+      return { method, lines, setup: st && st.total > 0 ? { label: method === "emb" ? "Digitizing" : method === "silk" ? "Screen setup" : "Setup", total: Math.round(st.total * 100) / 100 } : null };
+    };
+    const parts = inCombo() ? comboMembers().map(i => withQuoteState(i === activeQ ? snapshotQuote() : quotes[i], one)) : [one()];
+    return parts.filter(p => p.lines.length);
+  } finally { quoteLang = keepLang; }
+}
+async function logoFilesForOrder() {
+  const seen = new Set(), out = [], add = (lg, role) => { if (lg && !seen.has(lg)) { seen.add(lg); out.push({ lg, role }); } };
+  add(mk.logos.front, "main logo"); ["back", "side", "rside"].forEach(k => add(mk.logos[k], SIDE_EN[k].toLowerCase()));
+  orderItems.forEach(it => add(it.logo, (it.code || "style") + " logo"));
+  const data = async lg => {
+    try {
+      if (lg.url) { const b = await (await fetch(lg.url)).blob(); return await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.onerror = () => r(null); fr.readAsDataURL(b); }); }
+      if (lg.raw) { const c = document.createElement("canvas"); c.width = lg.raw.naturalWidth; c.height = lg.raw.naturalHeight; c.getContext("2d").drawImage(lg.raw, 0, 0); return c.toDataURL("image/png"); }
+    } catch (e) {}
+    return null;
+  };
+  const files = [];
+  for (const { lg, role } of out.slice(0, 6)) { const d = await data(lg); if (d && d.length < 14e6) files.push({ role, name: (lg.name || role.replace(/\s+/g, "-")) + (/^data:image\/png/.test(d) ? ".png" : /^data:image\/jpe?g/.test(d) ? ".jpg" : ""), data: d }); }
+  return files;
+}
+function openCreateOrder() {
+  const parts = orderPartsForShopify();
+  if (!parts.length) { alert("Enter the quantities first."); return; }
+  const total = parts.reduce((a, p) => a + p.lines.reduce((s, l) => s + l.unit * l.qty, 0) + (p.setup ? p.setup.total : 0), 0);
+  const lines = parts.map(p => p.lines.map(l => esc(l.qty + " × " + l.code + (l.color ? " " + l.color : "") + (l.size !== "std" ? " (" + SIZE_LABEL[l.size] + ")" : "") + " · " + fmt(l.unit))).concat(p.setup ? [esc(p.setup.label + " (one-time) · " + fmt(p.setup.total))] : []).join("<br>")).join("<br>");
+  const ov = document.createElement("div"); ov.className = "co-ov"; ov.id = "coOv";
+  ov.innerHTML = '<div class="co-box" onclick="event.stopPropagation()"><h3>Create order in Shopify</h3><div class="co-sub">A draft order with these prices. Nothing is charged or emailed: you get the payment link to send.</div>'
+    + '<div class="co-lines">' + lines + '<br><b>Total ' + fmt(total) + '</b> · free shipping</div>'
+    + '<label>Customer name</label><input id="coName" value="' + esc((quotes[activeQ] && quotes[activeQ].name) || q("qName").value || "") + '">'
+    + '<label>Email (optional)</label><input id="coEmail" type="email" placeholder="name@company.com">'
+    + '<label>Phone (optional)</label><input id="coPhone" type="tel">'
+    + '<label>Note for the order (optional)</label><textarea id="coNote"></textarea>'
+    + '<div id="coMsg"></div><div class="co-row"><button onclick="closeCreateOrder()">Cancel</button><button class="go" id="coGo" onclick="createOrder()">Create order</button></div></div>';
+  ov.onclick = closeCreateOrder; document.body.appendChild(ov);
+  setTimeout(() => q("coName").focus(), 0);
+}
+function closeCreateOrder() { const o = q("coOv"); if (o) o.remove(); }
+async function createOrder() {
+  const go = q("coGo"), msg = q("coMsg"); go.disabled = true; go.textContent = "Creating…"; msg.innerHTML = "";
+  try {
+    const body = { mode: "quote", parts: orderPartsForShopify(), files: await logoFilesForOrder(), quoteName: q("qName").value || "",
+      customer: { name: q("coName").value, email: q("coEmail").value, phone: q("coPhone").value }, note: q("coNote").value };
+    const { data, error } = await TBDCloud.sb.functions.invoke("apparel-checkout", { body });
+    let j = data;
+    if (error) { try { j = await error.context.json(); } catch (e) { j = { error: error.message }; } }
+    if (!j || !j.ok) throw new Error((j && j.error) || "Couldn't create the order.");
+    msg.innerHTML = '<div class="co-ok" style="margin-top:12px;font-size:14px;line-height:1.7">✓ Draft order <b>' + esc(j.name) + '</b> created (' + fmt(+j.total) + ').<br>'
+      + '<a href="' + esc(j.adminUrl) + '" target="_blank" rel="noopener">Open in Shopify</a> · <a href="#" onclick="navigator.clipboard.writeText(\'' + esc(j.invoiceUrl) + '\');this.textContent=\'Payment link copied ✓\';return false">Copy payment link</a></div>';
+    go.textContent = "Done"; go.onclick = closeCreateOrder; go.disabled = false;
+  } catch (e) { msg.innerHTML = '<div class="co-err">' + esc(e.message || String(e)) + '</div>'; go.disabled = false; go.textContent = "Create order"; }
 }
 
 // ════════════════════════════════════════════
