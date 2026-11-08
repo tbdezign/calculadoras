@@ -187,6 +187,28 @@
   .ww-chart b { display: block; font-family: 'Montserrat', sans-serif; font-size: 15px; margin-bottom: 10px; }
   .ww-chart img { max-width: 100%; height: auto; }
   .ww-chart { cursor: default; }
+  /* reviews (Doran, per style) */
+  .ww-stars { position: relative; display: inline-block; font-size: 13px; line-height: 1; letter-spacing: 1px; color: #d7dbe0; white-space: nowrap; }
+  .ww-stars i { position: absolute; left: 0; top: 0; overflow: hidden; color: #f5a623; font-style: normal; white-space: nowrap; }
+  .ww-rate { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; padding: 0; font-size: 12.5px; color: #4b5563; cursor: pointer; text-align: left; }
+  .ww-rate b { color: #051024; font-weight: 600; }
+  .ww-rate:hover u { color: #1a7698; }
+  .ww-trust .ww-trate::before, .ww-trust span span::before { display: none; }
+  .ww-trate { color: #051024; }
+  .ww-revs { background: #fff; border-radius: 14px; padding: 22px 22px 8px; width: min(92vw, 640px); max-height: 86vh; overflow: auto; text-align: left; cursor: default; }
+  .ww-revs h3 { font-family: 'Montserrat', sans-serif; font-size: 18px; margin: 0 0 6px; }
+  .ww-revsum { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid #eef0f3; font-size: 14px; color: #4b5563; }
+  .ww-revsum .big { font-family: 'Montserrat', sans-serif; font-size: 30px; font-weight: 800; color: #051024; }
+  .ww-revsum .ww-stars { font-size: 18px; }
+  .ww-rev { padding: 14px 0; border-bottom: 1px solid #eef0f3; }
+  .ww-rev:last-child { border-bottom: 0; }
+  .ww-rev-h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #6b7280; }
+  .ww-rev-h b { color: #051024; font-weight: 600; }
+  .ww-rev-v { color: #56751f; font-size: 11.5px; }
+  .ww-rev p { margin: 6px 0 0; font-size: 14px; line-height: 1.55; color: #1f2937; }
+  .ww-rev .t { font-weight: 600; color: #051024; }
+  .ww-rev-pics { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .ww-rev-pics img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; }
   .ww-tbl { overflow-x: auto; }
   .ww-tbl table { border-collapse: collapse; font-size: 14px; min-width: 100%; }
   .ww-tbl th, .ww-tbl td { padding: 9px 12px; text-align: center; border-bottom: 1px solid #eceef1; white-space: nowrap; }
@@ -311,12 +333,30 @@
   }
   window.addEventListener('hashchange', route);
 
+  // ── reviews: collected by Doran on each style's checkout product, sent with the catalog ──
+  function starsHtml(avg) { var w = Math.max(0, Math.min(5, +avg || 0)) / 5 * 100; return '<span class="ww-stars" aria-hidden="true">★★★★★<i style="width:' + w.toFixed(0) + '%">★★★★★</i></span>'; }
+  function rateHtml(s) {
+    var r = s && s.rating; if (!r || !r.count) return '';
+    return '<button class="ww-rate" data-reviews="' + esc(s.code) + '" aria-label="' + (+r.avg).toFixed(1) + ' out of 5, ' + r.count + ' reviews">' + starsHtml(r.avg) + '<b>' + (+r.avg).toFixed(1) + '</b><u>(' + r.count + ')</u></button>';
+  }
+  function reviewsModal(s) {
+    var r = s.rating, list = (r.reviews || []).slice(0, 30);
+    var dt = function (ms) { var d = new Date(+ms); return isNaN(d) ? '' : d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); };
+    return '<div class="ww-revs" onclick="event.stopPropagation()"><h3>' + esc(s.name) + '</h3>'
+      + '<div class="ww-revsum"><span class="big">' + (+r.avg).toFixed(1) + '</span><span>' + starsHtml(r.avg) + '<br>' + r.count + ' review' + (r.count === 1 ? '' : 's') + '</span></div>'
+      + list.map(function (v) {
+        return '<div class="ww-rev"><div class="ww-rev-h">' + starsHtml(v.stars) + '<b>' + esc(v.name || 'Customer') + '</b>' + (v.verified ? '<span class="ww-rev-v">✓ Verified buyer</span>' : '') + '<span>' + esc(dt(v.date)) + '</span></div>'
+          + (v.title || v.text ? '<p>' + (v.title ? '<span class="t">' + esc(v.title) + '</span><br>' : '') + esc(v.text || '') + '</p>' : '')
+          + (v.pics && v.pics.length ? '<div class="ww-rev-pics">' + v.pics.slice(0, 4).map(function (u) { return '<img src="' + esc(u) + '" alt="" loading="lazy">'; }).join('') + '</div>' : '')
+          + '</div>';
+      }).join('') + '</div>';
+  }
   function heroHtml(order) {
     return '<div class="ww-crumb"><a href="/">Home</a> › ' + (order ? '<a href="#">Workwear &amp; Apparel</a> &rsaquo; Order custom shirts' : 'Workwear &amp; Apparel') + '</div>'
       + '<span class="ww-tag">' + (order ? 'Order custom shirts' : 'Workwear &amp; Apparel') + '</span>'
       + (order ? '<h1 class="ww-h1">Your team, your logo<br><em>ready in a few clicks.</em></h1><p class="ww-sub">Pick your shirts and upload your logo. We choose the best print method for your order and show your price right away.</p>'
                : '<h1 class="ww-h1">Branded workwear<br><em>your team will actually wear.</em></h1><p class="ww-sub">Pick a style, add your logo and see your price right away. Printed or embroidered, we choose the best method for your order.</p>')
-      + '<div class="ww-trust"><span>Mix styles &amp; colors</span><span>From ' + DATA.minimums.dtf + ' pieces</span><span>Free shipping</span><span>Free proof before printing</span></div>';
+      + '<div class="ww-trust">' + (DATA.reviews && DATA.reviews.count ? '<span class="ww-trate">' + starsHtml(DATA.reviews.avg) + ' <b>' + (+DATA.reviews.avg).toFixed(1) + '</b>&nbsp;· ' + DATA.reviews.count + ' customer reviews</span>' : '') + '<span>Mix styles &amp; colors</span><span>From ' + DATA.minimums.dtf + ' pieces</span><span>Free shipping</span><span>Free proof before printing</span></div>';
   }
 
   // ════════ CATALOG ════════
@@ -364,7 +404,7 @@
       if (F.fam.length) { var m = s.colors.filter(function (c) { return F.fam.indexOf(fam(c.name)) >= 0; }); if (m.length) shown = m[0].name; }
       var mb = MAT[s.material], badges = (mb ? '<span class="ww-badge" style="color:' + mb[0] + ';background:' + mb[1] + '">' + esc(s.material) + '</span>' : '');
       return '<article class="ww-card"><a class="ww-img" href="#order/' + encodeURIComponent(s.code) + '" tabindex="-1">' + bestHtml(s) + imgHtml(s, shown) + '</a><div class="ww-cbody">'
-        + '<div class="ww-badges">' + badges + '</div><h2 class="ww-cname">' + esc(s.name) + '</h2>'
+        + '<div class="ww-badges">' + badges + '</div><h2 class="ww-cname">' + esc(s.name) + '</h2>' + rateHtml(s)
         + '<div class="ww-dots" aria-label="Available colors">' + s.colors.slice(0, 8).map(function (c) { return '<span class="d" title="' + esc(c.name) + '" style="background:' + esc(c.hex) + '"></span>'; }).join('')
         + (s.colors.length > 8 ? '<small>+' + (s.colors.length - 8) + '</small>' : '') + '</div>'
         + (s.sizeChart || s.sizeTable ? '<button class="ww-link" style="padding:0;font-size:13px;text-align:left" data-chart="' + esc(s.code) + '">Size chart</button>' : '')
@@ -625,7 +665,7 @@
       var inOrder = O.lines.map(function (l) { return l.code; });
       var pick = STYLES.filter(function (s) { return inOrder.indexOf(s.code) < 0; }).concat(STYLES.filter(function (s) { return inOrder.indexOf(s.code) >= 0; }));
       h += '<div class="ww-slider"><button class="ww-arrow prev" data-slide="-1" aria-label="Previous styles" hidden>\u2039</button><div class="ww-track" id="ww-track">' + pick.map(function (s) {
-        return '<div class="ww-mcard"><div class="ww-img">' + bestHtml(s) + imgHtml(s) + '</div><b>' + esc(s.name) + '</b><small>' + esc([s.type, s.fit].filter(Boolean).join(' · ')) + ' · ' + s.colors.length + ' colors</small><button class="ww-add" data-add="' + esc(s.code) + '">+ Add to order</button></div>';
+        return '<div class="ww-mcard"><div class="ww-img">' + bestHtml(s) + imgHtml(s) + '</div><b>' + esc(s.name) + '</b><small>' + esc([s.type, s.fit].filter(Boolean).join(' · ')) + ' · ' + s.colors.length + ' colors</small>' + rateHtml(s) + '<button class="ww-add" data-add="' + esc(s.code) + '">+ Add to order</button></div>';
       }).join('')
         + '<div class="ww-mcard ww-more"><a class="ww-link" href="#">Browse the full catalog</a></div>'
         + '</div><button class="ww-arrow next" data-slide="1" aria-label="More styles">\u203a</button></div>';
@@ -1095,6 +1135,7 @@
     var ds = b.dataset;
     if (ds.zoompic) { var zl = lineById(ds.zoompic), zs = byCode[zl.code], zp = photoFor(zs, zl.color, 'front');
       openZoom('<div class="ww-chart" onclick="event.stopPropagation()"><b>' + esc(zs.name) + ' · ' + esc(zl.color) + '</b>' + (zp ? '<img src="' + esc(zp.url) + '" alt="">' : '<div style="width:min(70vw,420px);margin:auto">' + shapeSvg(zs.type, hexOf(zs, zl.color)) + '</div>') + '</div>'); return; }
+    if (ds.reviews) { var rs = byCode[ds.reviews]; if (rs && rs.rating && rs.rating.count) openZoom(reviewsModal(rs)); return; }
     if (ds.chart) { var cs = byCode[ds.chart]; if (cs && (cs.sizeTable || cs.sizeChart)) openZoom('<div class="ww-chart" onclick="event.stopPropagation()"><b>' + esc(cs.name) + ' · size chart</b>' + (cs.sizeTable ? sizeTableHtml(cs) : '<img src="' + esc(cs.sizeChart) + '" alt="Size chart for ' + esc(cs.name) + '">') + '</div>'); return; }
     if (ds.dd) { F.open = F.open === ds.dd ? null : ds.dd; renderCatalog(); return; }
     if (ds.f) { var a = F[ds.f], i = a.indexOf(ds.v); if (i >= 0) a.splice(i, 1); else a.push(ds.v); renderCatalog(); return; }

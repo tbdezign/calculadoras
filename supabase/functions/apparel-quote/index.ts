@@ -41,10 +41,14 @@ async function catalog() {
   const site = await rest("site_products?show=eq.true&select=key,data");
   const codes = site.map((r: any) => r.key);
   if (!codes.length) return { styles: [] };
-  const [prods, photos] = await Promise.all([
+  const [prods, photos, revRows] = await Promise.all([
     rest(`apparel_products?code=in.${inList(codes)}&method=in.(silk,dtf,emb)&select=method,code,data`),
     rest(`garment_photos?select=key,meta`),
+    rest(`shopify_styles?code=in.${inList(codes)}&select=code,reviews`).catch(() => []),
   ]);
+  // reviews collected by Doran on each style's checkout product (copied by apparel-checkout every 10 min)
+  const rev: Record<string, any> = {};
+  for (const r of revRows || []) if (r.reviews && r.reviews.count > 0) rev[r.code] = r.reviews;
   const by: Record<string, Record<string, any>> = {};
   for (const r of prods) (by[r.code] ||= {})[r.method] = r.data;
   const pics = photos.filter((p: any) => p.meta && codes.includes(p.meta.code));
@@ -77,9 +81,12 @@ async function catalog() {
       sizeTable: d.sizeTable || null,
       bestFor: ["emb", "silk", "dtf"].includes(d.bestFor) ? d.bestFor : null,
       from, fromBy: sp.from, up: sp.up,
+      rating: rev[s.key] || null,
     };
   }).filter(Boolean);
-  return { styles, minimums: { silk: P.CONFIG.silk.minPieces, dtf: P.CONFIG.dtf.minPieces, emb: P.CONFIG.emb.minPieces },
+  const all = Object.values(rev) as any[], n = all.reduce((a, r) => a + r.count, 0);
+  const reviews = n ? { count: n, avg: Math.round(all.reduce((a, r) => a + r.avg * r.count, 0) / n * 10) / 10 } : null;
+  return { styles, reviews, minimums: { silk: P.CONFIG.silk.minPieces, dtf: P.CONFIG.dtf.minPieces, emb: P.CONFIG.emb.minPieces },
     days: { silk: P.CONFIG.silk.days, dtf: P.CONFIG.dtf.days, emb: P.CONFIG.emb.days } };
 }
 

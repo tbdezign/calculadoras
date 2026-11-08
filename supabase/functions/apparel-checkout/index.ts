@@ -258,6 +258,27 @@ async function ensureSetup() {
   return out;
 }
 
+// Reviews: Doran keeps each style's reviews on its checkout product (metafields doran.*); copy them for the website catalog.
+async function syncReviews() {
+  const d = await gql(`{ products(first: 100, query: "tag:workwear-checkout") { nodes { id
+    c: metafield(namespace: "doran", key: "prReviewCount") { value } a: metafield(namespace: "doran", key: "prAvgRating") { value }
+    c2: metafield(namespace: "doran", key: "prProductReviewCount") { value } a2: metafield(namespace: "doran", key: "prProductAvgRating") { value }
+    n: metafield(namespace: "doran", key: "prReviewNodes") { value } } } }`);
+  const rows = await rest(`shopify_styles?select=code,product_id,reviews`);
+  let changed = 0;
+  for (const p of d.products.nodes) {
+    const row = rows.find((r: any) => r.product_id === p.id); if (!row || row.code === "_setup") continue;
+    let nodes: any[] = []; try { nodes = JSON.parse((p.n && p.n.value) || "[]"); } catch { /* none */ }
+    const count = +((p.c && p.c.value) || (p.c2 && p.c2.value) || 0), avg = +((p.a && p.a.value) || (p.a2 && p.a2.value) || 0);
+    const pic = (m: any) => typeof m === "string" ? m : m && (m.url || m.src || m.thumbnail || m.originalUrl);
+    const out = count > 0 ? { avg: Math.round(avg * 10) / 10, count, reviews: nodes.filter((v: any) => v && v.stars).slice(0, 30).map((v: any) => ({
+      name: clip(v.authorName, 60), stars: +v.stars, title: clip(v.title, 120), text: clip(v.content, 1500), date: +v.createdAt || null,
+      verified: !!v.isVerifiedPurchase, pics: (v.mediaFiles || []).map(pic).filter((u: any) => typeof u === "string" && /^https:/.test(u)).slice(0, 4) })) } : null;
+    if (JSON.stringify(out) !== JSON.stringify(row.reviews ?? null)) { await patchStyle(row.code, { reviews: out }); changed++; }
+  }
+  return changed;
+}
+
 const cleanName = (n: string) => String(n || "").replace(/\s*[®™]/g, "").replace(/\s+/g, " ").trim();
 const SIZE_LABEL: Record<string, string> = { std: "", x2: "2XL", x3: "3XL" };
 const money = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
@@ -299,7 +320,8 @@ Deno.serve(async (req) => {
         catch (e) { console.log("sync", code, String((e as Error).message || e)); }
       }
       try { await ensureSetup(); } catch (e) { console.log("sync setup", String((e as Error).message || e)); }
-      return json({ ok: true, rebuilt: done });
+      let reviews = 0; try { reviews = await syncReviews(); } catch (e) { console.log("sync reviews", String((e as Error).message || e)); }
+      return json({ ok: true, rebuilt: done, reviews });
     }
     // health check: are the Shopify credentials working? (shows only the store name)
     try { const d = await gql("{ shop { name } }"); return json({ ok: true, shop: d.shop.name }); }
