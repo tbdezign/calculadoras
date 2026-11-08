@@ -105,6 +105,18 @@
   .ww-lpic { flex: 0 0 250px; min-height: 220px; border: 0; padding: 0; margin: 0; box-shadow: none; outline: none; border-radius: 10px; background: #fff; display: flex; align-items: center; justify-content: center; cursor: zoom-in; overflow: hidden; }
   .ww-lpic img { width: 100%; height: 100%; object-fit: contain; }
   .ww-lpic svg { width: 78%; height: 78%; }
+  /* line photo gallery: front / back / side of the chosen color */
+  .ww-gal { position: relative; cursor: default; display: block; }
+  .ww-gtrack { display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; }
+  .ww-gtrack::-webkit-scrollbar { display: none; }
+  .ww-gslide { flex: 0 0 100%; scroll-snap-align: center; border: 0; padding: 0; background: #fff; cursor: zoom-in; display: flex; align-items: center; justify-content: center; }
+  .ww-gslide img { width: 100%; height: 100%; object-fit: contain; }
+  .ww-garr { position: absolute; top: calc(50% - 15px); width: 30px; height: 30px; border-radius: 50%; border: 1px solid #e3e3e3; background: rgba(255,255,255,.95); color: #051024; font-size: 18px; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0 0 2px; z-index: 2; box-shadow: 0 1px 4px rgba(5,16,36,.12); }
+  .ww-garr.prev { left: 6px; } .ww-garr.next { right: 6px; } .ww-garr[hidden] { display: none; }
+  .ww-gdots { position: absolute; bottom: 6px; left: 0; right: 0; display: flex; justify-content: center; gap: 5px; pointer-events: none; }
+  .ww-gdots span { width: 6px; height: 6px; border-radius: 50%; background: #cfd5dc; }
+  .ww-gdots span.on { background: #051024; }
+  .ww-gside { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: 600; color: #4b5563; background: rgba(255,255,255,.9); border: 1px solid #e5e7eb; border-radius: 999px; padding: 1px 8px; pointer-events: none; }
   .ww-lpic:focus-visible { outline: 2px solid #2a9fd6; outline-offset: 2px; }
   .ww-lbody { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 14px; }
   .ww-lsec { display: flex; flex-direction: column; gap: 8px; }
@@ -308,8 +320,32 @@
       || ps.filter(function (p) { var pc = slug(p.color); return (' ' + c + ' ').indexOf(' ' + pc + ' ') >= 0 || (' ' + pc + ' ').indexOf(' ' + c + ' ') >= 0; })[0] || null;
   }
   function hexOf(st, color) { var c = (st.colors || []).filter(function (x) { return x.name === color; })[0]; return c ? c.hex : '#ffffff'; }
+  // order line picture: one photo, or a little gallery when the color has back / side photos too
+  var SIDE_NAMES = { front: 'Front', back: 'Back', side: 'Side', rside: 'Right side' };
+  function linePicHtml(st, l) {
+    var pics = ['front', 'back', 'side', 'rside'].map(function (sd) { var p = photoFor(st, l.color, sd); return p ? [sd, p] : null; }).filter(Boolean);
+    if (pics.length < 2) return '<button class="ww-lpic" data-zoompic="' + l.id + '" aria-label="See ' + esc(st.name) + ' in ' + esc(l.color) + ' bigger">' + imgHtml(st, l.color) + '</button>';
+    return '<div class="ww-lpic ww-gal" data-gal>'
+      + '<div class="ww-gtrack">' + pics.map(function (x) { return '<button class="ww-gslide" data-zoompic="' + l.id + '" data-zside="' + x[0] + '" aria-label="' + esc(st.name + ' in ' + l.color + ', ' + SIDE_NAMES[x[0]]) + ' bigger"><img src="' + esc(x[1].url) + '" alt="" loading="lazy"></button>'; }).join('') + '</div>'
+      + '<button class="ww-garr prev" data-galstep="-1" aria-label="Previous photo" hidden>\u2039</button><button class="ww-garr next" data-galstep="1" aria-label="Next photo">\u203a</button>'
+      + '<span class="ww-gside">Front</span><div class="ww-gdots">' + pics.map(function (x, i) { return '<span' + (i ? '' : ' class="on"') + ' data-side="' + x[0] + '"></span>'; }).join('') + '</div></div>';
+  }
+  function initGalleries(rootEl) {
+    [].forEach.call(rootEl.querySelectorAll('[data-gal]'), function (g) {
+      var tr = g.querySelector('.ww-gtrack'), dots = g.querySelectorAll('.ww-gdots span'), lab = g.querySelector('.ww-gside');
+      var upd = function () {
+        var i = Math.round(tr.scrollLeft / Math.max(1, tr.clientWidth));
+        [].forEach.call(dots, function (d, k) { d.classList.toggle('on', k === i); });
+        if (dots[i]) lab.textContent = SIDE_NAMES[dots[i].dataset.side];
+        g.querySelector('.prev').hidden = i <= 0; g.querySelector('.next').hidden = i >= dots.length - 1;
+      };
+      tr.addEventListener('scroll', upd, { passive: true });
+    });
+  }
   function imgHtml(st, color) {
-    var p = photoFor(st, color, 'front') || (color ? null : (st.photos || [])[0]);
+    // no color asked (catalog card): the first listed color that has a photo, never a color that isn't offered
+    if (!color) { var withPic = st.colors.filter(function (c) { return photoFor(st, c.name, 'front'); })[0]; color = withPic ? withPic.name : null; }
+    var p = photoFor(st, color, 'front');
     return p ? '<img src="' + esc(p.url) + '" alt="' + esc(st.name + (color ? ' in ' + color : '')) + '" loading="lazy">' : shapeSvg(st.type, hexOf(st, color || (st.colors[0] || {}).name));
   }
 
@@ -653,7 +689,7 @@
       if (!O.lines.length) h += '<div class="ww-dash" style="margin-bottom:16px">Add a shirt below to start your order.</div>';
       O.lines.forEach(function (l) {
         var st = byCode[l.code];
-        h += '<div class="ww-line"><button class="ww-lpic" data-zoompic="' + l.id + '" aria-label="See ' + esc(st.name) + ' in ' + esc(l.color) + ' bigger">' + imgHtml(st, l.color) + '</button><div class="ww-lbody"><div class="ww-lhead"><div><div><b style="font-size:15px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small>' + (st.from ? '<br><small style="color:#4b5563">From <b style="color:#051024">' + money(Math.min.apply(null, [st.from].concat(Object.keys(st.fromBy || {}).map(function (k) { return st.fromBy[k]; }).filter(function (x) { return x != null; })))) + '</b> / shirt with your logo</small>' : '') + '</div></div>'
+        h += '<div class="ww-line">' + linePicHtml(st, l) + '<div class="ww-lbody"><div class="ww-lhead"><div><div><b style="font-size:15px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small>' + (st.from ? '<br><small style="color:#4b5563">From <b style="color:#051024">' + money(Math.min.apply(null, [st.from].concat(Object.keys(st.fromBy || {}).map(function (k) { return st.fromBy[k]; }).filter(function (x) { return x != null; })))) + '</b> / shirt with your logo</small>' : '') + '</div></div>'
           + '<span style="white-space:nowrap">' + (st.sizeChart || st.sizeTable ? '<button class="ww-link" data-chart="' + esc(st.code) + '">Size chart</button>' : '') + '<button class="ww-link" data-dup="' + l.id + '">+ Another color</button><button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></span></div>'
           + '<div class="ww-lsec"><span class="ww-lab">Color</span><div class="ww-sw" role="group" aria-label="Color">' + st.colors.map(function (c) { return '<button class="' + (c.name === l.color ? 'on' : '') + '" style="background:' + esc(c.hex) + '" title="' + esc(c.name) + '" aria-label="' + esc(c.name) + '" data-line="' + l.id + '" data-color="' + esc(c.name) + '"></button>'; }).join('') + '</div></div>'
           + '<div class="ww-lsec bottom"><span class="ww-lab">Quantity per size</span>' + sizesHtml(l) + upNote(st, l.code) + '</div></div></div>';
@@ -801,7 +837,7 @@
       + (O.step === 5 ? '<div class="ww-fine" style="text-align:right;margin-top:8px">' + (O.quote ? '<span style="font-size:15px;color:#051024">Total <b>' + money(O.quote.total$) + '</b>' + (O.quote.setup ? ' (incl. ' + money(O.quote.setup) + ' ' + (method() === 'emb' ? 'digitizing' : 'screen setup') + ')' : '') + ' · free shipping</span><br>' : '') + 'You\u2019ll approve a proof before anything prints.</div>' : '');
     p.innerHTML = h;
     if (O.step === 5) fitLogos(p);
-    initSlider(p);
+    initSlider(p); initGalleries(p);
     saveState();
   }
   // ── keep the order if the page is refreshed (this browser only, 7 days). Cleared when the checkout opens. ──
@@ -1133,7 +1169,8 @@
   app.addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b || !app.contains(b)) { if (F.open) { F.open = null; renderCatalog(); } return; }
     var ds = b.dataset;
-    if (ds.zoompic) { var zl = lineById(ds.zoompic), zs = byCode[zl.code], zp = photoFor(zs, zl.color, 'front');
+    if (ds.galstep) { var gt = b.closest('[data-gal]').querySelector('.ww-gtrack'); gt.scrollBy({ left: +ds.galstep * gt.clientWidth, behavior: 'smooth' }); return; }
+    if (ds.zoompic) { var zl = lineById(ds.zoompic), zs = byCode[zl.code], zp = photoFor(zs, zl.color, ds.zside || 'front');
       openZoom('<div class="ww-chart" onclick="event.stopPropagation()"><b>' + esc(zs.name) + ' · ' + esc(zl.color) + '</b>' + (zp ? '<img src="' + esc(zp.url) + '" alt="">' : '<div style="width:min(70vw,420px);margin:auto">' + shapeSvg(zs.type, hexOf(zs, zl.color)) + '</div>') + '</div>'); return; }
     if (ds.reviews) { var rs = byCode[ds.reviews]; if (rs && rs.rating && rs.rating.count) openZoom(reviewsModal(rs)); return; }
     if (ds.chart) { var cs = byCode[ds.chart]; if (cs && (cs.sizeTable || cs.sizeChart)) openZoom('<div class="ww-chart" onclick="event.stopPropagation()"><b>' + esc(cs.name) + ' · size chart</b>' + (cs.sizeTable ? sizeTableHtml(cs) : '<img src="' + esc(cs.sizeChart) + '" alt="Size chart for ' + esc(cs.name) + '">') + '</div>'); return; }

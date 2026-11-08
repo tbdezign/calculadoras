@@ -2457,7 +2457,8 @@ function cleanBackgroundCanvas(img) {
   for (let y = 0; y < H; y += step) { sample(0, y); sample(W - 1, y); }
   const med = a => a.sort((m, n) => m - n)[a.length >> 1], br = med(rs), bg = med(gs), bb = med(bs);
   const dist = i => Math.sqrt((p[i]-br)**2 + (p[i+1]-bg)**2 + (p[i+2]-bb)**2);
-  const tol = 34;
+  // Already a white background: only trim the empty space. A loose tolerance here would eat a white or light shirt.
+  const tol = (br > 232 && bg > 232 && bb > 232) ? 12 : 34;
   // Flood fill from the edges through pixels close to the background color.
   const mask = new Uint8Array(W * H), stack = new Int32Array(W * H); let sp = 0;
   const push = k => { if (!mask[k] && dist(k * 4) < tol) { mask[k] = 1; stack[sp++] = k; } };
