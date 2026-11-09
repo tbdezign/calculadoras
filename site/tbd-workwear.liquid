@@ -123,6 +123,9 @@
   .ww-lab { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #6b7280; }
   .ww-lhead { display: flex; justify-content: space-between; align-items: center; gap: 6px 12px; flex-wrap: wrap; }
   .ww-lhead > div { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  /* the line's links always sit on their own row under the name and price, whatever the name length */
+  .ww-line .ww-lhead { display: block; }
+  .ww-llinks { display: flex; flex-wrap: wrap; gap: 4px 0; margin: 8px 0 0 -12px; }
   .ww-thumb { width: 48px; height: 48px; flex: none; border-radius: 8px; background: #fff; border: 1px solid #eee; overflow: hidden; display: flex; align-items: center; justify-content: center; }
   .ww-thumb img { width: 100%; height: 100%; object-fit: contain; }
   .ww-thumb svg { width: 80%; height: 80%; }
@@ -130,7 +133,7 @@
   .ww-sw button { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #d6dbe1; box-shadow: inset 0 0 0 2px #fff; padding: 0; }
   .ww-sw button.on { border-color: #1a7698; }
   .ww-sizes { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
-  .ww-size { border: 1px solid #e3e3e3; border-radius: 8px; padding: 6px; text-align: center; }
+  .ww-size { border: 1px solid #e3e3e3; border-radius: 8px; padding: 6px; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
   .ww-size label { display: block; font-size: 12px; color: #4b5563; margin-bottom: 4px; }
   .ww-size label small { display: block; font-size: 11px; color: #1a7698; font-weight: 600; line-height: 1.2; }
   .ww-review { display: flex; gap: 12px; align-items: flex-start; background: #f2f8ec; border: 1px solid #d6e8c4; border-radius: 12px; padding: 12px 14px; margin-top: 16px; font-size: 14px; line-height: 1.5; color: #1f2937; }
@@ -710,7 +713,7 @@
       O.lines.forEach(function (l) {
         var st = byCode[l.code];
         h += '<div class="ww-line">' + linePicHtml(st, l) + '<div class="ww-lbody"><div class="ww-lhead"><div><div><b style="font-size:15px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small>' + (st.from ? '<br><small style="color:#4b5563">From <b style="color:#051024">' + money(Math.min.apply(null, [st.from].concat(Object.keys(st.fromBy || {}).map(function (k) { return st.fromBy[k]; }).filter(function (x) { return x != null; })))) + '</b> / shirt with your logo</small>' : '') + (specsOf(st).length ? '<br><small class="ww-spec1">' + esc(specsOf(st)[0]) + '</small>' : '') + '</div></div>'
-          + '<span style="white-space:nowrap">' + (specsOf(st).length ? '<button class="ww-link" data-specs="' + esc(st.code) + '">Specs</button>' : '') + (st.sizeChart || st.sizeTable ? '<button class="ww-link" data-chart="' + esc(st.code) + '">Size chart</button>' : '') + '<button class="ww-link" data-dup="' + l.id + '">+ Another color</button><button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></span></div>'
+          + '<span class="ww-llinks">' + (specsOf(st).length ? '<button class="ww-link" data-specs="' + esc(st.code) + '">Specs</button>' : '') + (st.sizeChart || st.sizeTable ? '<button class="ww-link" data-chart="' + esc(st.code) + '">Size chart</button>' : '') + '<button class="ww-link" data-dup="' + l.id + '">+ Another color</button><button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></span></div>'
           + '<div class="ww-lsec"><span class="ww-lab">Color</span><div class="ww-sw" role="group" aria-label="Color">' + st.colors.map(function (c) { return '<button class="' + (c.name === l.color ? 'on' : '') + '" style="background:' + esc(c.hex) + '" title="' + esc(c.name) + '" aria-label="' + esc(c.name) + '" data-line="' + l.id + '" data-color="' + esc(c.name) + '"></button>'; }).join('') + '</div></div>'
           + '<div class="ww-lsec bottom"><span class="ww-lab">Quantity per size</span>' + sizesHtml(l) + '</div></div></div>';
       });
