@@ -286,7 +286,7 @@
   }
 </style>
 
-<div class="ww" id="tbd-ww" data-api="{{ section.settings.api_url | escape }}"{% if section.settings.deco_print %} data-img-print="{{ section.settings.deco_print | image_url: width: 640 }}"{% endif %}{% if section.settings.deco_emb %} data-img-emb="{{ section.settings.deco_emb | image_url: width: 640 }}"{% endif %}>
+<div class="ww" id="tbd-ww" data-api="{{ section.settings.api_url | escape }}"{% if section.settings.deco_print %} data-img-print="{{ section.settings.deco_print | image_url: width: 900 }}" data-pos-print="{{ section.settings.deco_print.presentation.focal_point }}"{% endif %}{% if section.settings.deco_emb %} data-img-emb="{{ section.settings.deco_emb | image_url: width: 900 }}" data-pos-emb="{{ section.settings.deco_emb.presentation.focal_point }}"{% endif %}>
   <div class="ww-hero-wrap"><div class="ww-hero" id="ww-hero"></div></div>
   <div class="ww-main" id="ww-app"><div class="ww-loading">Loading styles…</div></div>
 </div>
@@ -362,7 +362,8 @@
   // the choice's photo (theme settings), with the "Best for your shirts" badge on top of it so both cards line up
   function decoImg(k, badge) {
     var u = root.getAttribute('data-img-' + k); if (!u) return badge;
-    return '<span class="ww-chimgw"><img class="ww-chimg" src="' + esc(u) + '" alt="' + (k === 'emb' ? 'Embroidered logo close-up' : 'Printed logo close-up') + '" loading="lazy">' + badge + '</span>';
+    var pos = (root.getAttribute('data-pos-' + k) || '').trim();   // focal point set in the theme editor (Edit image → focal point)
+    return '<span class="ww-chimgw"><img class="ww-chimg"' + (/^[\d.]+% [\d.]+%$/.test(pos) ? ' style="object-position:' + pos + '"' : '') + ' src="' + esc(u) + '" alt="' + (k === 'emb' ? 'Embroidered logo close-up' : 'Printed logo close-up') + '" loading="lazy">' + badge + '</span>';
   }
   function specsOf(st) { return String(st.description || '').split(/\n|\s\/\s/).map(function (x) { return x.trim(); }).filter(Boolean); }
   function specsModal(st) {
