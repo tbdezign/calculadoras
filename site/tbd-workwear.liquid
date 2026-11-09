@@ -557,7 +557,8 @@
   function embStitchEst() {
     if (!O.logo || !O.logo.fill) return 0;
     var a = O.logo.aspect || 1, w = a >= 1 ? 4 : 4 * a, h = a >= 1 ? 4 / a : 4;
-    return w * h * O.logo.fill * 1800;
+    var off = threadSwaps().filter(function (t) { return t.knock; }).reduce(function (m, t) { return Math.max(m, t.share); }, 0);
+    return w * h * O.logo.fill * (1 - off) * 1800;
   }
   // Embroidery: a logo color with little contrast against the shirts (black on black, navy on black…) is stitched in white (dark shirts) or black (light shirts). Same price.
   // every shirt color in the order (one entry per color name)
@@ -570,9 +571,18 @@
   function threadSwap() { return threadSwaps()[0] || null; }
   function threadSwapFor(sh) {
     if (O.deco !== 'emb' || !O.logo || !(O.logo.colors || []).length || !sh) return null;
-    var c = O.logo.colors.filter(function (x) { return cdist(x, sh.hex) < 100; })[0]; if (!c) return null;
-    var alt = lum(sh.hex) < 128 ? 'white' : 'black';
-    return { c: c, shirt: sh, alt: alt, altHex: alt === 'white' ? '#ffffff' : '#111111', same: cdist(c, sh.hex) < 40 || (lum(c) < 60 && lum(sh.hex) < 60) || (lum(c) > 225 && lum(sh.hex) > 225) };
+    var cols = O.logo.colors, i = -1;
+    for (var j = 0; j < cols.length; j++) if (cdist(cols[j], sh.hex) < 100) { i = j; break; }
+    if (i < 0) return null;
+    var c = cols[i], share = (O.logo.share || [])[i] || 0, edge = (O.logo.edge || [])[i] || 0;
+    var alt = lum(sh.hex) < 128 ? 'white' : 'black', altHex = alt === 'white' ? '#ffffff' : '#111111';
+    // A fill inside the logo (black inside a badge) or a color whose swap would merge with another logo color
+    // (black → white when the logo already has white): leave it unstitched so the shirt shows through.
+    // Text or a part on the outer edge: stitch it in white/black so it doesn't vanish.
+    var altInLogo = cols.some(function (x, k) { return k !== i && cdist(x, altHex) < 90; });
+    var key = c + '|' + sh.hex + '|emb', ans = (O.dropAns || {})[key];
+    var knock = ans ? ans === 'knock' : share >= 0.15 && (edge < 0.25 || altInLogo);
+    return { c: c, shirt: sh, key: key, share: share, knock: knock, alt: alt, altHex: knock ? null : altHex, same: cdist(c, sh.hex) < 40 || (lum(c) < 60 && lum(sh.hex) < 60) || (lum(c) > 225 && lum(sh.hex) > 225) };
   }
   // Printed, several shirt colors: a logo color that blends into one of them (we adjust it on the proof)
   function printBlends() {
@@ -756,7 +766,10 @@
           var tpv = logoOnShirt(ts.c, ts.shirt.hex, ts.altHex), tn = colorWord(ts.c, ts.shirt), last = i === tss.length - 1;
           var who = many ? 'On your ' + esc(ts.shirt.name) + ' shirts, part of your logo is ' + (ts.same ? esc(tn) : 'too close to the shirt color') : (ts.same ? 'Part of your logo is ' + esc(tn) + ', same as your shirts' : 'Part of your logo is too close to your shirt color');
           h += '<div class="ww-msg green ww-drop" style="margin-top:' + (i ? 8 : 16) + 'px">' + (tpv ? '<div class="ww-dropimg" style="background:' + esc(ts.shirt.hex) + '"><img src="' + tpv + '" alt="Your logo on a ' + esc(ts.shirt.name) + ' shirt"></div>' : '')
-            + '<div class="ww-save"><div>' + who + ', so we\u2019ll stitch it in ' + ts.alt + ' thread' + (many ? ' on those shirts' : '') + ' to make it stand out. Same price. You\u2019ll see it on the proof.</div>'
+            + '<div class="ww-save"><div>' + who + (ts.knock
+              ? ', so we\u2019ll leave that part unstitched and let the shirt show through' + (many ? ' on those shirts' : '') + '. It keeps the rest of your logo crisp. You\u2019ll see it on the proof.'
+              : ', so we\u2019ll stitch it in ' + ts.alt + ' thread' + (many ? ' on those shirts' : '') + ' to make it stand out. Same price. You\u2019ll see it on the proof.') + '</div>'
+            + '<button class="ww-link" style="padding:0;font-size:13px;text-align:left" data-embans="' + esc(ts.key) + '|' + (ts.knock ? 'swap' : 'knock') + '">' + (ts.knock ? 'Stitch it in ' + ts.alt + ' thread instead' : 'Leave it unstitched instead') + '</button>'
             + (!last ? '' : O.threadOpen ? '<label style="font-size:14px;display:block">Which thread color would you like?<input id="ww-thread" class="ww-ta" style="margin-top:6px;resize:none" value="' + esc(O.threadNote || '') + '" placeholder="e.g. gold, light gray"></label>'
               : '<button class="ww-link" style="padding:0;font-size:13px" data-thread>Use a different thread color</button>') + '</div></div>';
         });
@@ -1016,7 +1029,7 @@
     else logo = O.logoType === 'solid' ? O.inks + ' solid color' + (O.inks === 1 ? '' : 's') + (inks() !== O.inks ? ' (' + inks() + ' printed: shirt shows through)' : '') : O.logoType === 'full' ? 'Full color / effects' : 'Not sure';
     if (O.logo && O.logo.colors && O.logo.colors.length) logo += ' · detected ' + O.logo.colors.join(' ');
     var dc = dropColor(); if (dc) notes.push(dc.on ? 'Same-color part: shirt shows through (customer: looks good)' : dc.fix === 'swap' ? 'Same-color part: print it in ' + (lum(dc.shirt.hex) < 128 ? 'white' : 'black') : 'Same-color part: customer chose Fix it');
-    var ts = threadSwap(); if (ts) notes.push(O.threadNote ? 'Thread color requested: ' + O.threadNote : 'Low-contrast color stitched in ' + ts.alt + ' thread');
+    var ts = threadSwap(); if (ts) notes.push(O.threadNote ? 'Thread color requested: ' + O.threadNote : ts.knock ? 'Low-contrast color left unstitched (shirt shows through)' : 'Low-contrast color stitched in ' + ts.alt + ' thread');
     if (O.pick && ruleMethod() === 'silk') notes.push('Customer picked ' + (O.pick === 'dtf' ? 'DTF' : 'Silk Screen'));
     if (O.placement === 'other' && O.otherText) notes.push('Placement described: ' + O.otherText);
     extraSpots().forEach(function (k) { var x = xl(k[0]); notes.push(k[1] + ': ' + (x.diff ? 'different logo' + (x.logo ? ' (' + x.logo.name + ')' : '') : 'same logo')); });
@@ -1024,7 +1037,7 @@
     // short notes shown under each shirt in the checkout
     var lineNotes = [], cname = function (c, sh) { return lum(c) < 60 ? 'black' : lum(c) > 225 ? 'white' : String(sh.name).toLowerCase(); };
     var colorNotes = {};
-    threadSwaps().forEach(function (t) { colorNotes[t.shirt.name] = [['Thread', O.threadNote ? O.threadNote : t.alt + ' instead of ' + cname(t.c, t.shirt)]]; });
+    threadSwaps().forEach(function (t) { colorNotes[t.shirt.name] = [['Thread', O.threadNote ? O.threadNote : t.knock ? cname(t.c, t.shirt) + ' left unstitched (shirt shows through)' : t.alt + ' instead of ' + cname(t.c, t.shirt)]]; });
     printBlends().forEach(function (b) { colorNotes[b.shirt.name] = [['Note', 'the ' + cname(b.c, b.shirt) + ' part blends in — adjust on proof']]; notes.push('On ' + b.shirt.name + ' shirts the ' + cname(b.c, b.shirt) + ' part of the logo blends in'); });
     if (dc && dc.on) lineNotes.push(['Print', 'shirt shows through the ' + cname(dc.c, dc.shirt)]);
     else if (dc && dc.fix === 'swap') lineNotes.push(['Print', cname(dc.c, dc.shirt) + ' printed in ' + (lum(dc.shirt.hex) < 128 ? 'white' : 'black')]);
@@ -1273,6 +1286,7 @@
     if (ds.lt) { O.logoType = ds.lt; renderPanel(); requote(); return; }
     if (ds.inks) { O.inks = +ds.inks; O.manualInks = true; renderPanel(); requote(); return; }
     if (ds.fix) { var fc = dropColor(); if (ds.fix === 'shirt') { go(1); return; } if (fc) { O.majorFix = O.majorFix || {}; O.majorFix[fc.key] = ds.fix; } renderPanel(); return; }
+    if (ds.embans) { var ea = ds.embans.lastIndexOf('|'); O.dropAns = O.dropAns || {}; O.dropAns[ds.embans.slice(0, ea)] = ds.embans.slice(ea + 1); renderPanel(); return; }
     if (ds.drop) { var dc = dropColor(); if (dc) { O.dropAns = O.dropAns || {}; O.dropAns[dc.key] = ds.drop; } renderPanel(); requote(); return; }
     if (ds.place) { O.placement = ds.place; renderPanel(); requote(); return; }
     if (ds.sleeves != null) { O.sleeves = +ds.sleeves; renderPanel(); requote(); return; }
