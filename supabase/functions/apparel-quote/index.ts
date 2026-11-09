@@ -42,7 +42,7 @@ async function catalog() {
   const codes = site.map((r: any) => r.key);
   if (!codes.length) return { styles: [] };
   const [prods, photos, revRows] = await Promise.all([
-    rest(`apparel_products?code=in.${inList(codes)}&method=in.(silk,dtf,emb)&select=method,code,data`),
+    rest(`apparel_products?code=in.${inList(codes)}&method=in.(silk,dtf,emb,v2)&select=method,code,data`),
     rest(`garment_photos?select=key,meta`),
     rest(`shopify_styles?code=in.${inList(codes)}&select=code,reviews`).catch(() => []),
   ]);
@@ -64,7 +64,7 @@ async function catalog() {
   const styles = site.map((s: any) => {
     const m = by[s.key] || {};
     const base = m.silk || m.dtf || m.emb;
-    if (!base) return null;
+    if (!base) return null;   // Vendor 2 only: not on the site
     const meth = m.silk ? "silk" : m.dtf ? "dtf" : "emb";
     let sp: any = { from: {}, up: { x2: 0, x3: 0 } };
     try { sp = P.stylePrices(s.key, m); } catch { /* leave empty */ }
@@ -72,7 +72,8 @@ async function catalog() {
     const d = s.data || {};
     return {
       code: s.key, name: cleanName(base.name), type: d.type || "", fit: d.fit || "", material: d.material || "",
-      description: base.desc_en || "",
+      // specs: the most complete English description among the method rows (they're edited separately in the calculator)
+      description: ["silk", "dtf", "emb", "v2"].map(k => String((m[k] && m[k].desc_en) || "").trim()).sort((a, b) => b.length - a.length)[0] || "",
       methods: ["silk", "dtf", "emb"].filter(k => m[k]),
       // the main color (picked in the calculator) goes first: its photo is the card's thumbnail and the default color
       colors: (d.colors || []).filter((c: any) => c && c.on && c.name).map((c: any) => ({ name: c.name, hex: c.hex }))

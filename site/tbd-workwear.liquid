@@ -132,6 +132,10 @@
   .ww-sizes { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
   .ww-size { border: 1px solid #e3e3e3; border-radius: 8px; padding: 6px; text-align: center; }
   .ww-size label { display: block; font-size: 12px; color: #4b5563; margin-bottom: 4px; }
+  .ww-size label small { display: block; font-size: 11px; color: #1a7698; font-weight: 600; line-height: 1.2; }
+  .ww-review { display: flex; gap: 12px; align-items: flex-start; background: #f2f8ec; border: 1px solid #d6e8c4; border-radius: 12px; padding: 12px 14px; margin-top: 16px; font-size: 14px; line-height: 1.5; color: #1f2937; }
+  .ww-review svg { flex: none; width: 26px; height: 26px; color: #5f8f2a; margin-top: 1px; }
+  .ww-review b { color: #051024; }
   .ww-size div { display: flex; align-items: center; justify-content: space-between; gap: 2px; }
   .ww-size button { width: 28px; height: 28px; border-radius: 6px; border: 1px solid #d6dbe1; background: #fff; color: #051024; -webkit-appearance: none; appearance: none; font-size: 16px; line-height: 1; padding: 0; flex: none; }
   .ww-size input { width: 100%; min-width: 0; border: none; text-align: center; font-weight: 600; font-size: 16px; color: #051024; font-family: inherit; background: transparent; -moz-appearance: textfield; padding: 0; }
@@ -405,7 +409,7 @@
       + '<span class="ww-tag">' + (order ? 'Order custom shirts' : 'Workwear &amp; Apparel') + '</span>'
       + (order ? '<h1 class="ww-h1">Your team, your logo<br><em>ready in a few clicks.</em></h1><p class="ww-sub">Pick your shirts and upload your logo. We choose the best print method for your order and show your price right away.</p>'
                : '<h1 class="ww-h1">Branded workwear<br><em>your team will actually wear.</em></h1><p class="ww-sub">Pick a style, add your logo and see your price right away. Printed or embroidered, we choose the best method for your order.</p>')
-      + '<div class="ww-trust">' + (DATA.reviews && DATA.reviews.count ? '<span class="ww-trate">' + starsHtml(DATA.reviews.avg) + ' <b>' + (+DATA.reviews.avg).toFixed(1) + '</b>&nbsp;· ' + DATA.reviews.count + ' customer reviews</span>' : '') + '<span>Mix styles &amp; colors</span><span>From ' + DATA.minimums.dtf + ' pieces</span><span>Free shipping</span><span>Free proof before printing</span></div>';
+      + '<div class="ww-trust">' + (DATA.reviews && DATA.reviews.count ? '<span class="ww-trate">' + starsHtml(DATA.reviews.avg) + ' <b>' + (+DATA.reviews.avg).toFixed(1) + '</b>&nbsp;· ' + DATA.reviews.count + ' customer reviews</span>' : '') + '<span>Mix styles &amp; colors</span><span>From ' + DATA.minimums.dtf + ' pieces</span><span>Free shipping</span><span>Every file checked by our team</span><span>Free proof before printing</span></div>';
   }
 
   // ════════ CATALOG ════════
@@ -684,9 +688,10 @@
   }
   function sizesFor(code) { var t = (byCode[code] || {}).sizeTable; return t && t.cols ? SIZES.filter(function (s) { return t.cols.indexOf(s[0]) >= 0; }) : SIZES.filter(function (s) { return s[0] !== '2XS'; }); }
   function sizesHtml(l) {
+    var up = (byCode[l.code] || {}).up || {};
     return '<div class="ww-sizes">' + sizesFor(l.code).map(function (s) {
-      var q = +l.sizes[s[0]] || 0;
-      return '<div class="ww-size"><label for="q' + l.id + s[0] + '">' + s[0] + '</label><div><button data-line="' + l.id + '" data-dec="' + s[0] + '" aria-label="Fewer ' + s[0] + '">−</button><input id="q' + l.id + s[0] + '" type="number" inputmode="numeric" min="0" value="' + (q || '') + '" placeholder="0" data-line="' + l.id + '" data-size="' + s[0] + '"><button data-line="' + l.id + '" data-inc="' + s[0] + '" aria-label="More ' + s[0] + '">+</button></div></div>';
+      var q = +l.sizes[s[0]] || 0, extra = s[1] !== 'std' && up[s[1]] > 0 ? '<small>+' + money(up[s[1]]) + '</small>' : '';
+      return '<div class="ww-size"><label for="q' + l.id + s[0] + '">' + s[0] + extra + '</label><div><button data-line="' + l.id + '" data-dec="' + s[0] + '" aria-label="Fewer ' + s[0] + '">−</button><input id="q' + l.id + s[0] + '" type="number" inputmode="numeric" min="0" value="' + (q || '') + '" placeholder="0" data-line="' + l.id + '" data-size="' + s[0] + '"><button data-line="' + l.id + '" data-inc="' + s[0] + '" aria-label="More ' + s[0] + '">+</button></div></div>';
     }).join('') + '</div>';
   }
   // quick quantity editor (step 4), so the client can add pieces without going back
@@ -707,7 +712,7 @@
         h += '<div class="ww-line">' + linePicHtml(st, l) + '<div class="ww-lbody"><div class="ww-lhead"><div><div><b style="font-size:15px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small>' + (st.from ? '<br><small style="color:#4b5563">From <b style="color:#051024">' + money(Math.min.apply(null, [st.from].concat(Object.keys(st.fromBy || {}).map(function (k) { return st.fromBy[k]; }).filter(function (x) { return x != null; })))) + '</b> / shirt with your logo</small>' : '') + (specsOf(st).length ? '<br><small class="ww-spec1">' + esc(specsOf(st)[0]) + '</small>' : '') + '</div></div>'
           + '<span style="white-space:nowrap">' + (specsOf(st).length ? '<button class="ww-link" data-specs="' + esc(st.code) + '">Specs</button>' : '') + (st.sizeChart || st.sizeTable ? '<button class="ww-link" data-chart="' + esc(st.code) + '">Size chart</button>' : '') + '<button class="ww-link" data-dup="' + l.id + '">+ Another color</button><button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></span></div>'
           + '<div class="ww-lsec"><span class="ww-lab">Color</span><div class="ww-sw" role="group" aria-label="Color">' + st.colors.map(function (c) { return '<button class="' + (c.name === l.color ? 'on' : '') + '" style="background:' + esc(c.hex) + '" title="' + esc(c.name) + '" aria-label="' + esc(c.name) + '" data-line="' + l.id + '" data-color="' + esc(c.name) + '"></button>'; }).join('') + '</div></div>'
-          + '<div class="ww-lsec bottom"><span class="ww-lab">Quantity per size</span>' + sizesHtml(l) + upNote(st, l.code) + '</div></div></div>';
+          + '<div class="ww-lsec bottom"><span class="ww-lab">Quantity per size</span>' + sizesHtml(l) + '</div></div></div>';
       });
       var collapsed = O.lines.length && !O.pickOpen;
       if (collapsed) h += '<button class="ww-addstyle" data-pick>+ Add another style</button>';
@@ -729,7 +734,7 @@
       loadEst();
     } else if (O.step === 3) {
       h += '<h2 class="ww-h2">3. Your logo</h2><p class="ww-p">Upload your logo. PNG, JPG, PDF or AI.</p>'
-        + '<label class="ww-upload' + (O.logo ? ' on' : '') + '" for="ww-file">' + (O.logo ? (O.logo.url ? '<img src="' + O.logo.url + '" alt="Your logo">' : '<b>LOGO</b>') + '<span><b>' + esc(O.logo.name) + '</b><br><small style="color:#4b5563">Tap to change the file</small></span>' : '<span><b>Upload your logo</b></span>') + '</label>'
+        + '<label class="ww-upload' + (O.logo ? ' on' : '') + '" for="ww-file">' + (O.logo ? (O.logo.url ? '<img src="' + (cleanLogo() || O.logo.url) + '" alt="Your logo">' : '<b>LOGO</b>') + '<span><b>' + esc(O.logo.name) + '</b><br><small style="color:#4b5563">Tap to change the file</small></span>' : '<span><b>Upload your logo</b></span>') + '</label>'
         + '<input type="file" id="ww-file" accept=".png,.jpg,.jpeg,.pdf,.ai,.svg,.eps,image/*,application/pdf" style="position:absolute;left:-9999px">';
       if (O.logo && O.deco === 'emb') {
         if (O.logo.effects && !O.keepEmb) h += '<div class="ww-msg amber ww-save" style="margin-top:16px"><div>Your logo has gradients or shading. Embroidery simplifies those. Want it exactly like your file? Printed keeps every detail.</div><div class="ww-pills" style="margin:0"><button class="ww-pill on" data-deco="print">Switch to printed</button><button class="ww-pill" data-keepemb>Keep embroidery</button></div></div>';
@@ -779,7 +784,7 @@
         });
         if (O.logoType === 'full') h += '<div class="ww-fine" style="margin-top:12px;color:#051024">Full color logos print with DTF, so the number of colors doesn\u2019t change your price.</div>';
         if (O.logoType === 'unsure') h += '<div class="ww-fine" style="margin-top:12px;color:#051024">No problem. We\u2019ll check your file and confirm the price before anything prints.</div>';
-        if (O.logoType) h += '<div class="ww-fine" style="margin-top:12px">Our team checks every file before printing. If anything doesn\u2019t match, we\u2019ll message you first.</div>';
+        if (O.logoType) h += '<div class="ww-review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><div><b>Real people check every order.</b> Someone from our team reviews your file and your order by hand, and we send you a proof to approve. Nothing prints until you say it looks right.</div></div>';
       }
     } else if (O.step === 4) {
       var both = ruleMethod() === 'silk' && O.qSilk && O.qDtf, save = both ? printSave() : 0;
@@ -844,8 +849,8 @@
         }
       }
     } else {
-      h += '<h2 class="ww-h2">5. Preview</h2><p class="ww-p">This is a quick preview. We send a final proof for your approval before printing.</p><div class="ww-prevs">' + previews() + '</div>'
-        + '<div class="ww-q" style="margin-top:20px">Notes for our team <span style="font-weight:400;color:#6b7280">(optional)</span></div><textarea class="ww-note-in" id="ww-custnote" maxlength="800" placeholder="e.g. add our phone number under the logo, names on the back…">' + esc(O.custNote || '') + '</textarea>';
+      h += '<h2 class="ww-h2">5. Preview</h2><p class="ww-p">This is a quick preview. The final proof comes from our team before anything prints.</p><div class="ww-prevs">' + previews() + '</div>' + '<div class="ww-review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><div><b>Real people check every order.</b> Someone from our team reviews your file and your order by hand, and we send you a proof to approve. Nothing prints until you say it looks right.</div></div>'
+        + '<div class="ww-q" style="margin-top:20px">Notes for our team <span style="font-weight:400;color:#6b7280">(optional)</span></div><textarea class="ww-note-in" id="ww-custnote" maxlength="800" placeholder="e.g. phone number under the logo, list of services…">' + esc(O.custNote || '') + '</textarea>';
       if (O.checkout === 'error') h += '<div class="ww-msg red" style="margin-top:16px">We couldn\u2019t add your order just now. Please try again in a moment.<br>Still not working? ' + (chatEl() ? '<button type="button" data-chat style="background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer">Chat with us</button>, email' : 'Email') + ' <a href="mailto:info@tbdezign.com">info@tbdezign.com</a> or message us on <a href="https://wa.me/19548714646" target="_blank" rel="noopener">WhatsApp</a> and we\u2019ll finish your order for you.</div>';
     }
     h += '<div class="ww-nav"><button class="ww-btn ghost" data-back' + (O.step === 1 ? ' disabled' : '') + '>Back</button>'
@@ -1158,6 +1163,22 @@
       if (Math.abs(d[i] - cr[0]) + Math.abs(d[i + 1] - cr[1]) + Math.abs(d[i + 2] - cr[2]) < 110) { if (sw) { d[i] = sw[0]; d[i + 1] = sw[1]; d[i + 2] = sw[2]; } else d[i + 3] = 0; } }
     x.putImageData(im, 0, 0);
     return (prevCache[key] = cv.toDataURL());
+  }
+  // the uploaded logo without its plain (white) background, for the thumbnail
+  function cleanLogo() {
+    var img = O.logo && O.logo.img; if (!img) return '';
+    if (O.logo.clean) return O.logo.clean;
+    try {
+      var W = 320, H = Math.max(1, Math.round(W * img.height / img.width)), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      var x = cv.getContext('2d'); x.drawImage(img, 0, 0, W, H);
+      var im = x.getImageData(0, 0, W, H), d = im.data;
+      var corners = [0, W - 1, (H - 1) * W, H * W - 1].map(function (j) { return [d[j * 4], d[j * 4 + 1], d[j * 4 + 2], d[j * 4 + 3]]; });
+      if (corners.filter(function (p) { return p[3] < 128; }).length >= 2) return (O.logo.clean = O.logo.url);
+      var bg = corners.reduce(function (a, p) { return [a[0] + p[0] / 4, a[1] + p[1] / 4, a[2] + p[2] / 4]; }, [0, 0, 0]), out = outsideMask(d, W, H, bg);
+      for (var j = 0; j < W * H; j++) if (out[j]) d[j * 4 + 3] = 0;
+      x.putImageData(im, 0, 0);
+      return (O.logo.clean = cv.toDataURL());
+    } catch (e) { return ''; }
   }
   function readLogo(file) {
     O.logo = { name: file.name, url: null, guess: '', colors: [], file: file }; O.confirmed = false;
