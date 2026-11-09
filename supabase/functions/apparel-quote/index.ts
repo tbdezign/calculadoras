@@ -74,7 +74,9 @@ async function catalog() {
       code: s.key, name: cleanName(base.name), type: d.type || "", fit: d.fit || "", material: d.material || "",
       description: base.desc_en || "",
       methods: ["silk", "dtf", "emb"].filter(k => m[k]),
-      colors: (d.colors || []).filter((c: any) => c && c.on && c.name).map((c: any) => ({ name: c.name, hex: c.hex })),
+      // the main color (picked in the calculator) goes first: its photo is the card's thumbnail and the default color
+      colors: (d.colors || []).filter((c: any) => c && c.on && c.name).map((c: any) => ({ name: c.name, hex: c.hex }))
+        .sort((a: any, b: any) => (b.name === d.mainColor ? 1 : 0) - (a.name === d.mainColor ? 1 : 0)),
       photos: pics.filter((p: any) => p.meta.code === s.key && signed[p.key + ".img"])
         .map((p: any) => ({ color: p.meta.color, side: p.meta.side, url: signed[p.key + ".img"], place: p.meta.place || {} })),
       sizeChart: d.sizeChart && signed[d.sizeChart] ? signed[d.sizeChart] : null,

@@ -689,7 +689,7 @@ TBDCloud.onLoad(async () => {
 });
 function siteBoxHTML(code) {
   const sp = siteProducts[code] || {};
-  if (!siteDraft || siteDraft.code !== code) siteDraft = { code, colors: (sp.colors || []).map(c => ({ ...c })), sizeChart: sp.sizeChart || "", newChart: null };
+  if (!siteDraft || siteDraft.code !== code) siteDraft = { code, colors: (sp.colors || []).map(c => ({ ...c })), sizeChart: sp.sizeChart || "", newChart: null, main: sp.mainColor || "" };
   const sel = (id, list, v) => '<select id="' + id + '"><option value="">—</option>' + list.map(o => '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>').join("") + '</select>';
   return '<div class="site-box"><div class="int-head">Website catalog</div>'
     + '<label class="site-show"><input type="checkbox" id="pf_site_show"' + (sp.show ? ' checked' : '') + '> Show on site</label>'
@@ -764,11 +764,14 @@ async function onCatPhotoPicked(file) {
   renderLib(); mk.sig = ""; renderMockRows(true);
   if (siteDraft && siteDraft.code === pk.code && q("siteColors")) q("siteColors").innerHTML = siteColorsHTML();
 }
+// main color = the one whose photo shows on the site's catalog card (default: the first color)
+function isMainColor(c, i) { const m = String(siteDraft.main || "").trim().toLowerCase(); return m ? String(c.name || "").trim().toLowerCase() === m : i === 0; }
 function siteColorsHTML() {
   return siteDraft.colors.map((c, i) => '<div class="sc-row' + (c.on ? '' : ' off') + '">'
     + '<input type="color" value="' + esc(c.hex || "#cccccc") + '" oninput="siteDraft.colors[' + i + '].hex=this.value">'
     + '<input type="text" value="' + esc(c.name) + '" placeholder="Color name (as the supplier writes it)" oninput="siteDraft.colors[' + i + '].name=this.value" onchange="q(\'siteColors\').innerHTML=siteColorsHTML()">'
     + colorPhotosHTML(siteDraft.code, c.name, i)
+    + '<label title="Main color: its photo is the thumbnail on the site"><input type="radio" name="sc-main"' + (isMainColor(c, i) ? ' checked' : '') + ' onchange="siteDraft.main=(siteDraft.colors[' + i + '].name||\'\').trim()"> Main</label>'
     + '<label><input type="checkbox"' + (c.on ? ' checked' : '') + ' onchange="siteDraft.colors[' + i + '].on=this.checked;this.closest(\'.sc-row\').classList.toggle(\'off\',!this.checked)"> On site</label>'
     + '<button class="sc-x" title="Remove" onclick="siteDraft.colors.splice(' + i + ',1);q(\'siteColors\').innerHTML=siteColorsHTML()">×</button></div>').join("")
     + '<button class="add-btn" style="margin-top:2px" onclick="siteDraft.colors.push({name:\'\',hex:\'#cccccc\',on:true});q(\'siteColors\').innerHTML=siteColorsHTML();const r=q(\'siteColors\').querySelectorAll(\'input[type=text]\');r[r.length-1].focus()">+ Add color</button>';
@@ -779,6 +782,8 @@ async function saveSiteForm(code) {
   const { show: _s, ...kept } = siteProducts[code] || {};
   const o = { ...kept, type: q("pf_site_type").value, fit: q("pf_site_fit").value, material: q("pf_site_mat").value, bestFor: q("pf_site_best").value,
     colors: siteDraft.colors.map(c => ({ name: c.name.trim(), hex: c.hex, on: !!c.on })).filter(c => c.name) };
+  const mainC = o.colors.find(c => c.name.toLowerCase() === String(siteDraft.main || "").trim().toLowerCase());
+  if (mainC) o.mainColor = mainC.name; else delete o.mainColor;
   // size chart: stored next to the garment photos; only the path goes in the row
   const chartPath = "sizechart/" + catDocId(code) + ".img";
   if (siteDraft.newChart) {

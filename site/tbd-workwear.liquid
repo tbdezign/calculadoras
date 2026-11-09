@@ -31,7 +31,7 @@
   .ww-opt.on .ww-box { background: #051024; border-color: #051024; }
   .ww-box.dot { border-radius: 50%; }
   .ww-opt.on .ww-box.dot { border-color: #1a7698; box-shadow: 0 0 0 2px #fff inset; }
-  .ww-count { margin-left: auto; font-size: 14px; color: #4b5563; }
+  .ww-count { font-size: 14px; color: #4b5563; }
   .ww-link { border: none; background: none; color: #1a7698; font-size: 14px; font-weight: 600; padding: 8px; }
 
   /* catalog grid */
@@ -143,6 +143,11 @@
   .ww-ch b { display: block; font-size: 15px; margin-bottom: 3px; }
   .ww-ch span { font-size: 13px; color: #4b5563; }
   .ww-ch .ww-swatch { height: 46px; border-radius: 8px; margin-bottom: 10px; }
+  .ww-ch .ww-chimg { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; margin-bottom: 10px; background: #f3f4f6; }
+  .ww-sort { margin-left: auto; height: 38px; border: 1px solid #e3e3e3; border-radius: 10px; background: #fff; padding: 0 10px; font: inherit; font-size: 13.5px; color: #051024; cursor: pointer; }
+  .ww-specs { margin: 8px 0 0; padding-left: 18px; font-size: 14px; line-height: 1.7; color: #1f2937; text-align: left; }
+  .ww-spec1 { color: #4b5563; }
+  .ww-note-in { width: 100%; box-sizing: border-box; min-height: 64px; border: 1px solid #d9dee5; border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 14px; resize: vertical; }
   .ww-ch .ww-pop { display: inline-block; font-size: 10.5px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; color: #4f7a1f; background: #eef6e2; border-radius: 4px; padding: 3px 9px; margin-bottom: 6px; }
   .ww-pills { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .ww-pill { padding: 9px 16px; border-radius: 999px; border: 1.5px solid #d6dbe1; background: #fff; color: #051024; font-weight: 600; font-size: 14px; }
@@ -269,7 +274,7 @@
   }
 </style>
 
-<div class="ww" id="tbd-ww" data-api="{{ section.settings.api_url | escape }}">
+<div class="ww" id="tbd-ww" data-api="{{ section.settings.api_url | escape }}"{% if section.settings.deco_print %} data-img-print="{{ section.settings.deco_print | image_url: width: 640 }}"{% endif %}{% if section.settings.deco_emb %} data-img-emb="{{ section.settings.deco_emb | image_url: width: 640 }}"{% endif %}>
   <div class="ww-hero-wrap"><div class="ww-hero" id="ww-hero"></div></div>
   <div class="ww-main" id="ww-app"><div class="ww-loading">Loading styles…</div></div>
 </div>
@@ -342,6 +347,14 @@
       tr.addEventListener('scroll', upd, { passive: true });
     });
   }
+  function decoImg(k) { var u = root.getAttribute('data-img-' + k); return u ? '<img class="ww-chimg" src="' + esc(u) + '" alt="' + (k === 'emb' ? 'Embroidered logo close-up' : 'Printed logo close-up') + '" loading="lazy">' : ''; }
+  function specsOf(st) { return String(st.description || '').split(/\n|\s\/\s/).map(function (x) { return x.trim(); }).filter(Boolean); }
+  function specsModal(st) {
+    var d = [st.material, st.fit, st.type].filter(Boolean).join(' · ');
+    return '<div class="ww-revs" onclick="event.stopPropagation()"><h3>' + esc(st.name) + '</h3>' + (d ? '<div style="font-size:13px;color:#6b7280">' + esc(d) + '</div>' : '')
+      + '<ul class="ww-specs">' + specsOf(st).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>'
+      + (st.sizeChart || st.sizeTable ? '<p style="margin:12px 0 10px"><button class="ww-link" style="padding:0" onclick="this.closest(\'.ww-zoom\').remove();document.querySelector(\'[data-chart=&quot;' + esc(st.code) + '&quot;]\').click()">See the size chart</button></p>' : '<div style="height:10px"></div>') + '</div>';
+  }
   function imgHtml(st, color) {
     // no color asked (catalog card): the first listed color that has a photo, never a color that isn't offered
     if (!color) { var withPic = st.colors.filter(function (c) { return photoFor(st, c.name, 'front'); })[0]; color = withPic ? withPic.name : null; }
@@ -350,7 +363,7 @@
   }
 
   var DATA = null, STYLES = [], byCode = {};
-  var F = { type: [], fit: [], mat: [], fam: [], open: null };
+  var F = { type: [], fit: [], mat: [], fam: [], open: null, sort: '' };
   var O = { reorder: false, reorderNo: '', step: 1, lines: [], deco: null, logo: null, logoType: null, inks: 1, placement: 'lc', sleeves: 0, otherText: '', otherSpots: ['small'], sleeveSide: '', xlogo: {}, nextId: 1, quote: null, upsell: null, checkout: false };
   var SIZES = [['2XS', 'std'], ['XS', 'std'], ['S', 'std'], ['M', 'std'], ['L', 'std'], ['XL', 'std'], ['2XL', 'x2'], ['3XL', 'x3']];
   var NAMES = { silk: 'Silk Screen', dtf: 'DTF Full-Color Print', emb: 'Embroidery' };
@@ -414,6 +427,7 @@
   function renderCatalog() {
     hero.innerHTML = heroHtml(false);
     var list = filtered(), any = F.type.length + F.fit.length + F.mat.length + F.fam.length;
+    if (F.sort) list = list.slice().sort(function (a, b) { var x = a.from == null ? 1e9 : a.from, y = b.from == null ? 1e9 : b.from; return F.sort === 'low' ? x - y : y - x; });
     var h = '<div class="ww-filters">';
     FDEF.forEach(function (d) {
       // only offer options that exist in the catalog
@@ -433,6 +447,7 @@
       }
       h += '</div>';
     });
+    h += '<select class="ww-sort" id="ww-sort" aria-label="Sort styles"><option value="">Sort: Featured</option><option value="low"' + (F.sort === 'low' ? ' selected' : '') + '>Price: low to high</option><option value="high"' + (F.sort === 'high' ? ' selected' : '') + '>Price: high to low</option></select>';
     h += '<span class="ww-count"><b style="color:#051024">' + list.length + '</b> styles' + (any ? ' <button class="ww-link" data-clear>Clear</button>' : '') + '</span></div>';
     if (!list.length) h += '<div class="ww-empty">No styles match these filters. <button class="ww-link" data-clear>Clear filters</button></div>';
     h += '<div class="ww-grid">' + list.map(function (s) {
@@ -443,7 +458,7 @@
         + '<div class="ww-badges">' + badges + '</div><h2 class="ww-cname">' + esc(s.name) + '</h2>' + rateHtml(s)
         + '<div class="ww-dots" aria-label="Available colors">' + s.colors.slice(0, 8).map(function (c) { return '<span class="d" title="' + esc(c.name) + '" style="background:' + esc(c.hex) + '"></span>'; }).join('')
         + (s.colors.length > 8 ? '<small>+' + (s.colors.length - 8) + '</small>' : '') + '</div>'
-        + (s.sizeChart || s.sizeTable ? '<button class="ww-link" style="padding:0;font-size:13px;text-align:left" data-chart="' + esc(s.code) + '">Size chart</button>' : '')
+        + ((s.sizeChart || s.sizeTable) || specsOf(s).length ? '<span style="display:flex;gap:14px">' + (specsOf(s).length ? '<button class="ww-link" style="padding:0;font-size:13px;text-align:left" data-specs="' + esc(s.code) + '">Specs</button>' : '') + (s.sizeChart || s.sizeTable ? '<button class="ww-link" style="padding:0;font-size:13px;text-align:left" data-chart="' + esc(s.code) + '">Size chart</button>' : '') + '</span>' : '')
         + (s.from ? '<div class="ww-from">From <b>' + money(s.from) + '</b> / piece</div>' : '<div class="ww-from"></div>')
         + '<a class="ww-cta" href="#order/' + encodeURIComponent(s.code) + '" aria-label="Customize ' + esc(s.name) + '">Customize</a></div></article>';
     }).join('') + '</div>';
@@ -689,8 +704,8 @@
       if (!O.lines.length) h += '<div class="ww-dash" style="margin-bottom:16px">Add a shirt below to start your order.</div>';
       O.lines.forEach(function (l) {
         var st = byCode[l.code];
-        h += '<div class="ww-line">' + linePicHtml(st, l) + '<div class="ww-lbody"><div class="ww-lhead"><div><div><b style="font-size:15px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small>' + (st.from ? '<br><small style="color:#4b5563">From <b style="color:#051024">' + money(Math.min.apply(null, [st.from].concat(Object.keys(st.fromBy || {}).map(function (k) { return st.fromBy[k]; }).filter(function (x) { return x != null; })))) + '</b> / shirt with your logo</small>' : '') + '</div></div>'
-          + '<span style="white-space:nowrap">' + (st.sizeChart || st.sizeTable ? '<button class="ww-link" data-chart="' + esc(st.code) + '">Size chart</button>' : '') + '<button class="ww-link" data-dup="' + l.id + '">+ Another color</button><button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></span></div>'
+        h += '<div class="ww-line">' + linePicHtml(st, l) + '<div class="ww-lbody"><div class="ww-lhead"><div><div><b style="font-size:15px">' + esc(st.name) + '</b><br><small style="color:#4b5563" id="pcs' + l.id + '">' + esc(l.color) + ' · ' + pcs(qtyOf(l)) + '</small>' + (st.from ? '<br><small style="color:#4b5563">From <b style="color:#051024">' + money(Math.min.apply(null, [st.from].concat(Object.keys(st.fromBy || {}).map(function (k) { return st.fromBy[k]; }).filter(function (x) { return x != null; })))) + '</b> / shirt with your logo</small>' : '') + (specsOf(st).length ? '<br><small class="ww-spec1">' + esc(specsOf(st)[0]) + '</small>' : '') + '</div></div>'
+          + '<span style="white-space:nowrap">' + (specsOf(st).length ? '<button class="ww-link" data-specs="' + esc(st.code) + '">Specs</button>' : '') + (st.sizeChart || st.sizeTable ? '<button class="ww-link" data-chart="' + esc(st.code) + '">Size chart</button>' : '') + '<button class="ww-link" data-dup="' + l.id + '">+ Another color</button><button class="ww-link" style="color:#4b5563" data-rm="' + l.id + '">Remove</button></span></div>'
           + '<div class="ww-lsec"><span class="ww-lab">Color</span><div class="ww-sw" role="group" aria-label="Color">' + st.colors.map(function (c) { return '<button class="' + (c.name === l.color ? 'on' : '') + '" style="background:' + esc(c.hex) + '" title="' + esc(c.name) + '" aria-label="' + esc(c.name) + '" data-line="' + l.id + '" data-color="' + esc(c.name) + '"></button>'; }).join('') + '</div></div>'
           + '<div class="ww-lsec bottom"><span class="ww-lab">Quantity per size</span>' + sizesHtml(l) + upNote(st, l.code) + '</div></div></div>';
       });
@@ -708,8 +723,8 @@
       }
     } else if (O.step === 2) {
       h += '<h2 class="ww-h2">2. Decoration: printed or embroidered?</h2><p class="ww-p">Pick the look you want. We take care of the technical part.</p><div class="ww-choice">'
-        + '<button class="ww-ch' + (O.deco === 'print' ? ' on' : '') + '" data-deco="print">' + (bestDeco() === 'print' ? '<span class="ww-pop">Best for your shirts</span>' : '') + '<b>Printed</b><span>Smooth, flat print. Great for big logos, full color and the best price per shirt.</span>' + fromLine('print') + '</button>'
-        + '<button class="ww-ch' + (O.deco === 'emb' ? ' on' : '') + '" data-deco="emb">' + (bestDeco() === 'emb' ? '<span class="ww-pop">Best for your shirts</span>' : '') + '<b>Embroidered</b><span>Stitched thread for a premium look. Best for small logos on the chest. Min ' + DATA.minimums.emb + ' pieces.</span>' + fromLine('emb') + '</button></div>';
+        + '<button class="ww-ch' + (O.deco === 'print' ? ' on' : '') + '" data-deco="print">' + (bestDeco() === 'print' ? '<span class="ww-pop">Best for your shirts</span>' : '') + decoImg('print') + '<b>Printed</b><span>Smooth, flat print. Great for big logos, full color and the best price per shirt.</span>' + fromLine('print') + '</button>'
+        + '<button class="ww-ch' + (O.deco === 'emb' ? ' on' : '') + '" data-deco="emb">' + (bestDeco() === 'emb' ? '<span class="ww-pop">Best for your shirts</span>' : '') + decoImg('emb') + '<b>Embroidered</b><span>Stitched thread for a premium look. Best for small logos on the chest. Min ' + DATA.minimums.emb + ' pieces.</span>' + fromLine('emb') + '</button></div>';
       h += '<div class="ww-fine" style="margin-top:10px">Estimate with a 1-color left chest logo. Your exact price shows once you add your logo.</div>';
       loadEst();
     } else if (O.step === 3) {
@@ -829,7 +844,8 @@
         }
       }
     } else {
-      h += '<h2 class="ww-h2">5. Preview</h2><p class="ww-p">This is a quick preview. We send a final proof for your approval before printing.</p><div class="ww-prevs">' + previews() + '</div>';
+      h += '<h2 class="ww-h2">5. Preview</h2><p class="ww-p">This is a quick preview. We send a final proof for your approval before printing.</p><div class="ww-prevs">' + previews() + '</div>'
+        + '<div class="ww-q" style="margin-top:20px">Notes for our team <span style="font-weight:400;color:#6b7280">(optional)</span></div><textarea class="ww-note-in" id="ww-custnote" maxlength="800" placeholder="e.g. add our phone number under the logo, names on the back…">' + esc(O.custNote || '') + '</textarea>';
       if (O.checkout === 'error') h += '<div class="ww-msg red" style="margin-top:16px">We couldn\u2019t add your order just now. Please try again in a moment.<br>Still not working? ' + (chatEl() ? '<button type="button" data-chat style="background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer">Chat with us</button>, email' : 'Email') + ' <a href="mailto:info@tbdezign.com">info@tbdezign.com</a> or message us on <a href="https://wa.me/19548714646" target="_blank" rel="noopener">WhatsApp</a> and we\u2019ll finish your order for you.</div>';
     }
     h += '<div class="ww-nav"><button class="ww-btn ghost" data-back' + (O.step === 1 ? ' disabled' : '') + '>Back</button>'
@@ -841,7 +857,7 @@
     saveState();
   }
   // ── keep the order if the page is refreshed (this browser only, 7 days). Cleared when the checkout opens. ──
-  var SAVE_KEY = 'tbd-workwear-order', SAVE_FIELDS = ['reorder', 'reorderNo', 'step', 'lines', 'deco', 'decoPicked', 'logoType', 'inks', 'manualInks', 'placement', 'sleeves', 'sleeveSide', 'otherText', 'otherSpots', 'nextId', 'pick', 'dropAns', 'majorFix', 'threadNote', 'threadOpen', 'keepEmb'];
+  var SAVE_KEY = 'tbd-workwear-order', SAVE_FIELDS = ['reorder', 'reorderNo', 'step', 'lines', 'deco', 'decoPicked', 'logoType', 'inks', 'manualInks', 'placement', 'sleeves', 'sleeveSide', 'otherText', 'otherSpots', 'nextId', 'pick', 'dropAns', 'majorFix', 'threadNote', 'threadOpen', 'keepEmb', 'custNote'];
   function keepData(lg, file) { if (!file || file.size > 4 * 1024 * 1024) return; var r = new FileReader(); r.onload = function () { lg.data = r.result; saveState(); }; r.readAsDataURL(file); }
   function slimLogo(lg, withData) { if (!lg) return null; var o = {}; for (var k in lg) if (k !== 'img' && k !== 'file' && (withData || (k !== 'data' && k !== 'url'))) o[k] = lg[k]; return o; }
   var saveTimer = null;
@@ -886,7 +902,7 @@
     label += ' · ' + ({ emb: 'Embroidered', silk: 'Screen printed', dtf: 'DTF printed' })[method()] ;
     var logo = lurl ? '<img src="' + lurl + '" alt="">' : '<span style="background:' + (dark ? '#fff' : '#051024') + ';color:' + (dark ? '#051024' : '#fff') + '">LOGO</span>';
     var box = 'left:' + (pl.cx - pl.maxW / 2) * 100 + '%;top:' + (pl.cy - pl.maxH / 2) * 100 + '%;width:' + pl.maxW * 100 + '%;height:' + pl.maxH * 100 + '%';
-    var base = ph ? '<img src="' + esc(ph.url) + '" alt="" crossorigin="anonymous">' : (side === 'front' ? shapeSvg(st.type, hex) : '');
+    var base = ph ? '<img src="' + esc(ph.url) + '" alt="" crossorigin="anonymous">' : (side === 'front' || side === 'back' ? shapeSvg(st.type, hex) : '');
     if (!base) return '';
     var fit = ph && REAL[spot] ? ' data-fit="' + spot + '" data-cx="' + pl.cx + '" data-cy="' + pl.cy + '" data-w="' + pl.maxW + '" data-h="' + pl.maxH + '"' : '';
     return '<div class="ww-prev"><div class="ww-pimg"' + fit + '>' + base + '<div class="ww-logo" style="' + box + '">' + logo + '</div></div><b>' + esc(st.name) + '</b><small>' + esc(color) + ' · ' + label + '</small></div>';
@@ -948,7 +964,7 @@
       var front = pl === 'lc' || pl === 'lcb' || pl === 'other' ? 'lc' : pl === 'ff' || pl === 'fb' ? 'ff' : null;
       var back = pl === 'bk' || pl === 'fb' || pl === 'lcb';
       if (front) out += view(st, l.color, 'front', front, 'Front' + (pl === 'other' ? ' (placement you described)' : ''));
-      if (back) out += view(st, l.color, 'back', 'fb', 'Back') || (front ? '' : view(st, l.color, 'front', 'ff', 'Back (shown on front)'));
+      if (back) out += view(st, l.color, 'back', 'fb', 'Back');
       if (O.sleeves === 1) out += view(st, l.color, 'side', 'sl', O.sleeveSide === 'r' ? 'Right sleeve' : 'Left sleeve', logoFor('sl'));
       if (O.sleeves === 2) {
         if (logoFor('sr') === logoFor('sl')) out += view(st, l.color, 'side', 'sl', 'Sleeves (both)', logoFor('sl'));
@@ -994,6 +1010,7 @@
     printBlends().forEach(function (b) { colorNotes[b.shirt.name] = [['Note', 'the ' + cname(b.c, b.shirt) + ' part blends in — adjust on proof']]; notes.push('On ' + b.shirt.name + ' shirts the ' + cname(b.c, b.shirt) + ' part of the logo blends in'); });
     if (dc && dc.on) lineNotes.push(['Print', 'shirt shows through the ' + cname(dc.c, dc.shirt)]);
     else if (dc && dc.fix === 'swap') lineNotes.push(['Print', cname(dc.c, dc.shirt) + ' printed in ' + (lum(dc.shirt.hex) < 128 ? 'white' : 'black')]);
+    if (O.custNote && O.custNote.trim()) notes.unshift('Customer note: ' + O.custNote.trim());
     return { placement: placeText(), logo: logo, notes: notes.join(' | '), lineNotes: lineNotes, colorNotes: colorNotes, items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) { return { code: l.code, color: l.color, sizes: l.sizes, hex: hexOf(byCode[l.code], l.color) }; }) };
   }
   function startCheckout() {
@@ -1172,6 +1189,7 @@
     if (ds.galstep) { var gt = b.closest('[data-gal]').querySelector('.ww-gtrack'); gt.scrollBy({ left: +ds.galstep * gt.clientWidth, behavior: 'smooth' }); return; }
     if (ds.zoompic) { var zl = lineById(ds.zoompic), zs = byCode[zl.code], zp = photoFor(zs, zl.color, ds.zside || 'front');
       openZoom('<div class="ww-chart" onclick="event.stopPropagation()"><b>' + esc(zs.name) + ' · ' + esc(zl.color) + '</b>' + (zp ? '<img src="' + esc(zp.url) + '" alt="">' : '<div style="width:min(70vw,420px);margin:auto">' + shapeSvg(zs.type, hexOf(zs, zl.color)) + '</div>') + '</div>'); return; }
+    if (ds.specs) { var ss = byCode[ds.specs]; if (ss) openZoom(specsModal(ss)); return; }
     if (ds.reviews) { var rs = byCode[ds.reviews]; if (rs && rs.rating && rs.rating.count) openZoom(reviewsModal(rs)); return; }
     if (ds.chart) { var cs = byCode[ds.chart]; if (cs && (cs.sizeTable || cs.sizeChart)) openZoom('<div class="ww-chart" onclick="event.stopPropagation()"><b>' + esc(cs.name) + ' · size chart</b>' + (cs.sizeTable ? sizeTableHtml(cs) : '<img src="' + esc(cs.sizeChart) + '" alt="Size chart for ' + esc(cs.name) + '">') + '</div>'); return; }
     if (ds.dd) { F.open = F.open === ds.dd ? null : ds.dd; renderCatalog(); return; }
@@ -1225,6 +1243,7 @@
   });
   app.addEventListener('focusout', function (e) { if (e.target.dataset && e.target.dataset.size && O.step === 4) setTimeout(function () { var ae = document.activeElement; if (!(ae && ae.dataset && ae.dataset.size)) { O.dirty = false; renderPanel(); } }, 0); });
   app.addEventListener('change', function (e) {
+    if (e.target.id === 'ww-sort') { F.sort = e.target.value; renderCatalog(); return; }
     if (e.target.id === 'ww-conf') { O.confirmed = e.target.checked; renderSteps(); var nb = app.querySelector('[data-next]'); if (nb) nb.disabled = !stepOk(O.step); }
     if (e.target.id === 'ww-file' && e.target.files[0]) readLogo(e.target.files[0]);
     if (e.target.dataset && e.target.dataset.xfile && e.target.files[0]) {
@@ -1239,10 +1258,12 @@
       var qt = document.getElementById('ww-qtotal'); if (qt) qt.textContent = pcs(total());
       var nb = app.querySelector('[data-next]'); if (nb) nb.disabled = !stepOk(O.step); }
     if (t.id === 'ww-reno') { O.reorderNo = t.value; return; }
+    if (t.id === 'ww-custnote') { O.custNote = t.value; saveState(); return; }
     if (t.id === 'ww-thread') { O.threadNote = t.value; return; }
     if (t.id === 'ww-other') { O.otherText = t.value; var nb2 = app.querySelector('[data-next]'); if (nb2) nb2.disabled = !stepOk(O.step); renderSteps(); }
   });
-  document.addEventListener('click', function (e) { if (F.open && e.composedPath().indexOf(root) < 0) { F.open = null; renderCatalog(); } });
+  // an open filter menu closes on any click outside it (header, page, anywhere)
+  document.addEventListener('click', function (e) { if (F.open && !(e.target.closest && e.target.closest('.ww-dd'))) { F.open = null; renderCatalog(); } });
 
   fetch(API).then(function (r) { return r.json(); }).then(function (d) {
     DATA = d; STYLES = d.styles || [];
@@ -1263,7 +1284,9 @@
 {
   "name": "TBD Workwear",
   "settings": [
-    { "type": "text", "id": "api_url", "label": "Pricing service URL", "default": "https://fipimpagtmdhuznclqdn.supabase.co/functions/v1/apparel-quote" }
+    { "type": "text", "id": "api_url", "label": "Pricing service URL", "default": "https://fipimpagtmdhuznclqdn.supabase.co/functions/v1/apparel-quote" },
+    { "type": "image_picker", "id": "deco_print", "label": "Decoration step: Printed photo", "info": "A close-up of a printed logo (silk screen / DTF). Shown on the 'Printed' choice." },
+    { "type": "image_picker", "id": "deco_emb", "label": "Decoration step: Embroidered photo", "info": "A close-up of an embroidered logo. Shown on the 'Embroidered' choice." }
   ],
   "presets": [{ "name": "TBD Workwear" }]
 }
