@@ -150,6 +150,11 @@
   .ww-ch b { display: block; font-size: 15px; margin-bottom: 3px; }
   .ww-ch span { font-size: 13px; color: #4b5563; }
   .ww-ch .ww-swatch { height: 46px; border-radius: 8px; margin-bottom: 10px; }
+  .ww-choice > .ww-ch { display: flex; flex-direction: column; align-items: stretch; }
+  .ww-choice > .ww-ch .ww-chfrom { margin-top: auto; padding-top: 10px; }
+  .ww-choice > .ww-ch > .ww-pop { align-self: flex-start; }
+  .ww-ch .ww-chimgw { position: relative; display: block; }
+  .ww-ch .ww-chimgw .ww-pop { position: absolute; top: 10px; left: 10px; margin: 0; box-shadow: 0 1px 4px rgba(0,0,0,.15); }
   .ww-ch .ww-chimg { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 10px; margin-bottom: 10px; background: #f3f4f6; }
   .ww-sort { margin-left: auto; height: 38px; border: 1px solid #e3e3e3; border-radius: 10px; background: #fff; padding: 0 10px; font: inherit; font-size: 13.5px; color: #051024; cursor: pointer; }
   .ww-specs { margin: 8px 0 0; padding-left: 18px; font-size: 14px; line-height: 1.7; color: #1f2937; text-align: left; }
@@ -354,7 +359,11 @@
       tr.addEventListener('scroll', upd, { passive: true });
     });
   }
-  function decoImg(k) { var u = root.getAttribute('data-img-' + k); return u ? '<img class="ww-chimg" src="' + esc(u) + '" alt="' + (k === 'emb' ? 'Embroidered logo close-up' : 'Printed logo close-up') + '" loading="lazy">' : ''; }
+  // the choice's photo (theme settings), with the "Best for your shirts" badge on top of it so both cards line up
+  function decoImg(k, badge) {
+    var u = root.getAttribute('data-img-' + k); if (!u) return badge;
+    return '<span class="ww-chimgw"><img class="ww-chimg" src="' + esc(u) + '" alt="' + (k === 'emb' ? 'Embroidered logo close-up' : 'Printed logo close-up') + '" loading="lazy">' + badge + '</span>';
+  }
   function specsOf(st) { return String(st.description || '').split(/\n|\s\/\s/).map(function (x) { return x.trim(); }).filter(Boolean); }
   function specsModal(st) {
     var d = [st.material, st.fit, st.type].filter(Boolean).join(' · ');
@@ -731,8 +740,8 @@
       }
     } else if (O.step === 2) {
       h += '<h2 class="ww-h2">2. Decoration: printed or embroidered?</h2><p class="ww-p">Pick the look you want. We take care of the technical part.</p><div class="ww-choice">'
-        + '<button class="ww-ch' + (O.deco === 'print' ? ' on' : '') + '" data-deco="print">' + (bestDeco() === 'print' ? '<span class="ww-pop">Best for your shirts</span>' : '') + decoImg('print') + '<b>Printed</b><span>Smooth, flat print. Great for big logos, full color and the best price per shirt.</span>' + fromLine('print') + '</button>'
-        + '<button class="ww-ch' + (O.deco === 'emb' ? ' on' : '') + '" data-deco="emb">' + (bestDeco() === 'emb' ? '<span class="ww-pop">Best for your shirts</span>' : '') + decoImg('emb') + '<b>Embroidered</b><span>Stitched thread for a premium look. Best for small logos on the chest. Min ' + DATA.minimums.emb + ' pieces.</span>' + fromLine('emb') + '</button></div>';
+        + '<button class="ww-ch' + (O.deco === 'print' ? ' on' : '') + '" data-deco="print">' + decoImg('print', bestDeco() === 'print' ? '<span class="ww-pop">Best for your shirts</span>' : '') + '<b>Printed</b><span>Smooth, flat print. Great for big logos, full color and the best price per shirt.</span>' + fromLine('print') + '</button>'
+        + '<button class="ww-ch' + (O.deco === 'emb' ? ' on' : '') + '" data-deco="emb">' + decoImg('emb', bestDeco() === 'emb' ? '<span class="ww-pop">Best for your shirts</span>' : '') + '<b>Embroidered</b><span>Stitched thread for a premium look. Best for small logos on the chest. Min ' + DATA.minimums.emb + ' pieces.</span>' + fromLine('emb') + '</button></div>';
       h += '<div class="ww-fine" style="margin-top:10px">Estimate with a 1-color left chest logo. Your exact price shows once you add your logo.</div>';
       loadEst();
     } else if (O.step === 3) {
