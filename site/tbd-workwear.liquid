@@ -864,7 +864,7 @@
   // ── keep the order if the page is refreshed (this browser only, 7 days). Cleared when the checkout opens. ──
   var SAVE_KEY = 'tbd-workwear-order', SAVE_FIELDS = ['reorder', 'reorderNo', 'step', 'lines', 'deco', 'decoPicked', 'logoType', 'inks', 'manualInks', 'placement', 'sleeves', 'sleeveSide', 'otherText', 'otherSpots', 'nextId', 'pick', 'dropAns', 'majorFix', 'threadNote', 'threadOpen', 'keepEmb', 'custNote'];
   function keepData(lg, file) { if (!file || file.size > 4 * 1024 * 1024) return; var r = new FileReader(); r.onload = function () { lg.data = r.result; saveState(); }; r.readAsDataURL(file); }
-  function slimLogo(lg, withData) { if (!lg) return null; var o = {}; for (var k in lg) if (k !== 'img' && k !== 'file' && (withData || (k !== 'data' && k !== 'url'))) o[k] = lg[k]; return o; }
+  function slimLogo(lg, withData) { if (!lg) return null; var o = {}; for (var k in lg) if (k !== 'img' && k !== 'file' && k !== 'cutUrl' && (withData || (k !== 'data' && k !== 'url'))) o[k] = lg[k]; return o; }
   var saveTimer = null;
   function saveState() {
     clearTimeout(saveTimer);
@@ -903,7 +903,7 @@
     var ph = photoFor(st, color, side), pl = (ph && ph.place && ph.place[spot]) || DEF[spot], hex = hexOf(st, color);
     var dark = !/white|natural|silver|grey|gray|light|ceil|sand|oatmeal|yellow|pink/i.test(color);
     lg = lg || O.logo;
-    var ts = lg === O.logo ? threadSwapFor({ hex: hex, name: color }) : null, lurl = lg && lg.url ? (ts && !O.threadNote ? logoOnShirt(ts.c, ts.shirt.hex, ts.altHex) || lg.url : lg.url) : '';
+    var ts = lg === O.logo ? threadSwapFor({ hex: hex, name: color }) : null, lurl = lg && lg.url ? (ts && !O.threadNote ? logoOnShirt(ts.c, ts.shirt.hex, ts.altHex) || shirtLogo(lg) : shirtLogo(lg)) : '';
     label += ' · ' + ({ emb: 'Embroidered', silk: 'Screen printed', dtf: 'DTF printed' })[method()] ;
     var logo = lurl ? '<img src="' + lurl + '" alt="">' : '<span style="background:' + (dark ? '#fff' : '#051024') + ';color:' + (dark ? '#051024' : '#fff') + '">LOGO</span>';
     var box = 'left:' + (pl.cx - pl.maxW / 2) * 100 + '%;top:' + (pl.cy - pl.maxH / 2) * 100 + '%;width:' + pl.maxW * 100 + '%;height:' + pl.maxH * 100 + '%';
@@ -1149,37 +1149,64 @@
   }
   // the logo as it will print on that shirt: background removed, the matching color left out (the shirt shows through)
   var prevCache = {};
+  // The logo with its plain background cut away (JPGs on white…). Edge pixels are un-mixed from the background,
+  // so there's no white halo around the letters. Returns image data at width W (cached on the image).
+  function cutData(img, W) {
+    img._cut = img._cut || {};
+    if (img._cut[W]) return img._cut[W];
+    var H = Math.max(1, Math.round(W * img.height / img.width)), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    var x = cv.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(img, 0, 0, W, H);
+    var im = x.getImageData(0, 0, W, H), d = im.data;
+    var corners = [0, W - 1, (H - 1) * W, H * W - 1].map(function (j) { return [d[j * 4], d[j * 4 + 1], d[j * 4 + 2], d[j * 4 + 3]]; });
+    var bg = corners.filter(function (p) { return p[3] < 128; }).length >= 2 ? null : corners.reduce(function (a, p) { return [a[0] + p[0] / 4, a[1] + p[1] / 4, a[2] + p[2] / 4]; }, [0, 0, 0]);
+    if (bg) {
+      var out = outsideMask(d, W, H, bg);
+      // background-colored holes inside the logo (letters like a, o, e, the inside of a P): small ones are background too.
+      // Big enclosed areas are kept: they're more likely white ink that's part of the design.
+      var isBg = function (j) { var i = j * 4; return Math.abs(d[i] - bg[0]) + Math.abs(d[i + 1] - bg[1]) + Math.abs(d[i + 2] - bg[2]) < 60; };
+      var logoPx = 0; for (var q = 0; q < W * H; q++) if (!out[q]) logoPx++;
+      var seen = new Uint8Array(W * H);
+      for (var s0 = 0; s0 < W * H; s0++) {
+        if (out[s0] || seen[s0] || !isBg(s0)) continue;
+        var comp = [], st = [s0]; seen[s0] = 1;
+        while (st.length) { var c0 = st.pop(); comp.push(c0); var cx = c0 % W;
+          [cx > 0 ? c0 - 1 : -1, cx < W - 1 ? c0 + 1 : -1, c0 - W, c0 + W].forEach(function (n) { if (n >= 0 && n < W * H && !seen[n] && !out[n] && isBg(n)) { seen[n] = 1; st.push(n); } }); }
+        if (comp.length < logoPx * 0.04) comp.forEach(function (n) { out[n] = 1; });
+      }
+      for (var j = 0; j < W * H; j++) {
+        var i = j * 4;
+        if (out[j]) { d[i + 3] = 0; continue; }
+        var px = j % W, near = (px > 0 && out[j - 1]) || (px < W - 1 && out[j + 1]) || (j >= W && out[j - W]) || (j < (H - 1) * W && out[j + W])
+          || (px > 1 && out[j - 2]) || (px < W - 2 && out[j + 2]) || (j >= 2 * W && out[j - 2 * W]) || (j < (H - 2) * W && out[j + 2 * W]);
+        if (!near) continue;
+        // edge pixel: part logo, part background → keep only the logo part
+        var dist = Math.abs(d[i] - bg[0]) + Math.abs(d[i + 1] - bg[1]) + Math.abs(d[i + 2] - bg[2]), a = Math.max(0, Math.min(1, (dist - 40) / 220));
+        if (a <= 0.02) { d[i + 3] = 0; continue; }
+        for (var k = 0; k < 3; k++) d[i + k] = Math.max(0, Math.min(255, (d[i + k] - bg[k] * (1 - a)) / a));
+        d[i + 3] = Math.round(d[i + 3] * a);
+      }
+    }
+    return (img._cut[W] = { im: im, W: W, H: H, cut: !!bg });
+  }
+  function dataUrl(c) { var cv = document.createElement('canvas'); cv.width = c.W; cv.height = c.H; cv.getContext('2d').putImageData(c.im, 0, 0); return cv.toDataURL(); }
+  // a logo ready to place on a shirt (any logo: main or a sleeve/back one); loads its image the first time
+  function shirtLogo(lg) {
+    if (!lg || !lg.url) return '';
+    if (!lg.img) { var im = new Image(); im.onload = function () { lg.img = im; if (O.step >= 3) renderPanel(); }; im.src = lg.url; return lg.url; }
+    if (lg.cutUrl) return lg.cutUrl;
+    try { var c = cutData(lg.img, 600); return (lg.cutUrl = c.cut ? dataUrl(c) : lg.url); } catch (e) { return lg.url; }
+  }
+  // the logo as it will print on that shirt: background removed, the matching color left out (the shirt shows through) or swapped
+  var prevCache = {};
   function logoOnShirt(c, shirtHex, swapHex) {
     var key = c + shirtHex + (swapHex || '') + (O.logo && O.logo.url || '').length; if (prevCache[key]) return prevCache[key];
     var img = O.logo && O.logo.img; if (!img) return '';
-    var W = 260, H = Math.max(1, Math.round(W * img.height / img.width)), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-    var x = cv.getContext('2d'); x.drawImage(img, 0, 0, W, H);
-    var im = x.getImageData(0, 0, W, H), d = im.data, cr = rgb(c), sw = swapHex ? rgb(swapHex) : null;
-    var corners = [0, W - 1, (H - 1) * W, H * W - 1].map(function (j) { return [d[j * 4], d[j * 4 + 1], d[j * 4 + 2], d[j * 4 + 3]]; });
-    var bg = corners.filter(function (p) { return p[3] < 128; }).length >= 2 ? null : corners.reduce(function (a, p) { return [a[0] + p[0] / 4, a[1] + p[1] / 4, a[2] + p[2] / 4]; }, [0, 0, 0]);
-    var out = outsideMask(d, W, H, bg);
-    for (var j = 0; j < W * H; j++) { var i = j * 4;
-      if (out[j]) { d[i + 3] = 0; continue; }
+    var src = cutData(img, 600), im = new ImageData(new Uint8ClampedArray(src.im.data), src.W, src.H), d = im.data, cr = rgb(c), sw = swapHex ? rgb(swapHex) : null;
+    for (var j = 0; j < src.W * src.H; j++) { var i = j * 4; if (!d[i + 3]) continue;
       if (Math.abs(d[i] - cr[0]) + Math.abs(d[i + 1] - cr[1]) + Math.abs(d[i + 2] - cr[2]) < 110) { if (sw) { d[i] = sw[0]; d[i + 1] = sw[1]; d[i + 2] = sw[2]; } else d[i + 3] = 0; } }
-    x.putImageData(im, 0, 0);
-    return (prevCache[key] = cv.toDataURL());
+    return (prevCache[key] = dataUrl({ im: im, W: src.W, H: src.H }));
   }
-  // the uploaded logo without its plain (white) background, for the thumbnail
-  function cleanLogo() {
-    var img = O.logo && O.logo.img; if (!img) return '';
-    if (O.logo.clean) return O.logo.clean;
-    try {
-      var W = 320, H = Math.max(1, Math.round(W * img.height / img.width)), cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-      var x = cv.getContext('2d'); x.drawImage(img, 0, 0, W, H);
-      var im = x.getImageData(0, 0, W, H), d = im.data;
-      var corners = [0, W - 1, (H - 1) * W, H * W - 1].map(function (j) { return [d[j * 4], d[j * 4 + 1], d[j * 4 + 2], d[j * 4 + 3]]; });
-      if (corners.filter(function (p) { return p[3] < 128; }).length >= 2) return (O.logo.clean = O.logo.url);
-      var bg = corners.reduce(function (a, p) { return [a[0] + p[0] / 4, a[1] + p[1] / 4, a[2] + p[2] / 4]; }, [0, 0, 0]), out = outsideMask(d, W, H, bg);
-      for (var j = 0; j < W * H; j++) if (out[j]) d[j * 4 + 3] = 0;
-      x.putImageData(im, 0, 0);
-      return (O.logo.clean = cv.toDataURL());
-    } catch (e) { return ''; }
-  }
+  function cleanLogo() { return O.logo ? shirtLogo(O.logo) : ''; }
   function readLogo(file) {
     O.logo = { name: file.name, url: null, guess: '', colors: [], file: file }; O.confirmed = false;
     if (!/^image\/(png|jpe?g|svg\+xml|webp|gif)$/.test(file.type)) { O.logoType = O.logoType || 'unsure'; keepData(O.logo, file); renderPanel(); return; }
