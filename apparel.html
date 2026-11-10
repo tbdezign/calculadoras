@@ -2006,7 +2006,7 @@ function renderQuoteTabs() {
   q("qTabs").innerHTML = quotes.map((s, i) => {
     const m = i === activeQ ? method : s.method, its = (i === activeQ ? orderItems : (s.orderItems || [])).filter(it => cats[m][(it.code||"").toUpperCase()]);
     const codes = its.map(it => it.code.toUpperCase()).join(", "), title = s.name || codes || ("Quote " + (i + 1));
-    return '<button class="qtab' + (i === activeQ ? ' active' : '') + '" onclick="switchQuote(' + i + ')"><span>' + esc(title) + '</span><small>' + METHOD_SHORT[m] + (s.name && codes ? ' · ' + esc(codes) : '') + '</small></button>';
+    return '<button class="qtab' + (i === activeQ ? ' active' : '') + '" onclick="switchQuote(' + i + ')"><span>' + esc(title) + '</span><small>' + methodShort(m, i === activeQ ? dtfSrc : s.dtfSrc) + (s.name && codes ? ' · ' + esc(codes) : '') + '</small></button>';
   }).join("");
   q("qClose").hidden = quotes.length < 2;
   const cb = q("comboBar"); if (cb) cb.innerHTML = comboHTML();
