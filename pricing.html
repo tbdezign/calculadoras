@@ -154,16 +154,27 @@
   /* Output */
   .output { margin-top: 14px; background: #fff; border: 2px solid #051024; border-radius: 10px; overflow: hidden; }
   .out-head {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;
     padding: 8px 12px; background: #051024; color: #fff;
   }
   .out-head span { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-  .out-head div { display: flex; gap: 6px; }
+  .out-head div { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .out-head .lang-sw { flex: none; }
+  .out-head span.lang-sw { font-size: inherit; }
   .out-head button {
     font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 5px; border: none;
     cursor: pointer; font-family: inherit; background: #fff; color: #051024;
   }
   .out-head button.ghost { background: transparent; color: #bbb; border: 1px solid #555; }
+  .lang-sw { display: inline-flex; flex: none; border: 1px solid #555; border-radius: 6px; overflow: hidden; margin-right: 4px; }
+  .out-head .lang-sw button { background: transparent; color: #bbb; border: 0; border-radius: 0; padding: 4px 8px; }
+  .out-head .lang-sw button.on { background: #fff; color: #051024; }
+  .tr-panel details { border-top: 1px solid #eee; padding: 10px 14px; font-size: 12px; }
+  .tr-panel summary { cursor: pointer; font-weight: 600; color: #555; }
+  .tr-row { display: block; margin-top: 8px; }
+  .tr-row small { display: block; color: #888; margin-bottom: 3px; }
+  .tr-row.miss input { border-color: #e0a100; background: #fffaf0; }
+  .tr-row input { width: 100%; }
   .out-text { padding: 12px 14px; font-size: 13px; white-space: pre-wrap; word-break: break-word; color: #333; }
   .out-text.empty { color: #aaa; font-style: italic; }
 
@@ -460,6 +471,96 @@ const CATALOG_KEY = 'tbdezign-catalog';
 const CATS_KEY = 'tbdezign-categories';
 const SUFFIX = ' dias úteis após aprovação da arte';
 
+/* ---------- Quote language (PT / EN / ES) ----------
+   The WhatsApp text can go out in Portuguese, English or Spanish.
+   Fixed words (Tamanho, Frete grátis, Prazo…) come from L10N; what's typed in a product is translated with DICT
+   (whole phrases, longest first). Anything else stays as typed — the preview lists what needs a hand translation,
+   and a hand translation is saved with the product (q.tr[lang][original text]). */
+const LANG_KEY = 'tbdezign-pricing-lang';
+let qLang = (() => { try { return ['pt', 'en', 'es'].includes(localStorage.getItem(LANG_KEY)) ? localStorage.getItem(LANG_KEY) : 'pt'; } catch (e) { return 'pt'; } })();
+const L10N = {
+  pt: { qtyNote: 'Quantidade', size: 'Tamanho', stock: 'Material', printing: 'Impressão', finish: 'Acabamento', lamination: 'Laminação',
+        free: 'Frete grátis', due: 'Prazo: ', suffix: ' dias úteis após aprovação da arte', anyQty: ' (qualquer quantidade)', noExtra: 'Sem custo adicional', noCost: 'sem custo', unit: 'un' },
+  en: { qtyNote: 'Quantity', size: 'Size', stock: 'Material', printing: 'Printing', finish: 'Finish', lamination: 'Lamination',
+        free: 'Free shipping', due: 'Turnaround: ', suffix: ' business days after artwork approval', anyQty: ' (any quantity)', noExtra: 'No extra cost', noCost: 'no extra cost', unit: 'pcs' },
+  es: { qtyNote: 'Cantidad', size: 'Tamaño', stock: 'Material', printing: 'Impresión', finish: 'Acabado', lamination: 'Laminado',
+        free: 'Envío gratis', due: 'Plazo: ', suffix: ' días hábiles después de aprobar el arte', anyQty: ' (cualquier cantidad)', noExtra: 'Sin costo adicional', noCost: 'sin costo', unit: 'uds' },
+};
+const LT = () => L10N[qLang] || L10N.pt;
+// [portuguese, english, spanish] — common print terms
+const DICT = [
+  ['frente e verso', 'front and back', 'frente y reverso'], ['frente/verso', 'front/back', 'frente/reverso'],
+  ['somente frente', 'front only', 'solo frente'], ['só frente', 'front only', 'solo frente'], ['apenas frente', 'front only', 'solo frente'],
+  ['dupla face', 'double-sided', 'doble cara'], ['face única', 'single-sided', 'una cara'], ['uma face', 'single-sided', 'una cara'],
+  ['frente', 'front', 'frente'], ['verso', 'back', 'reverso'], ['costas', 'back', 'espalda'],
+  ['colorido', 'full color', 'a todo color'], ['colorida', 'full color', 'a todo color'], ['coloridos', 'full color', 'a todo color'], ['4 cores', 'full color', 'a todo color'],
+  ['preto e branco', 'black and white', 'blanco y negro'], ['1 cor', '1 color', '1 color'], ['2 cores', '2 colors', '2 colores'], ['3 cores', '3 colors', '3 colores'],
+  ['cores', 'colors', 'colores'], ['cor', 'color', 'color'],
+  ['foil dourado', 'gold foil', 'foil dorado'], ['foil prata', 'silver foil', 'foil plateado'], ['foil prateado', 'silver foil', 'foil plateado'], ['foil rosé', 'rose gold foil', 'foil oro rosa'],
+  ['foil holográfico', 'holographic foil', 'foil holográfico'], ['dourado', 'gold', 'dorado'], ['dourada', 'gold', 'dorada'], ['prateado', 'silver', 'plateado'], ['prata', 'silver', 'plata'],
+  ['laminação fosca', 'matte lamination', 'laminado mate'], ['laminação brilho', 'gloss lamination', 'laminado brillante'], ['laminação brilhante', 'gloss lamination', 'laminado brillante'],
+  ['laminação aveludada', 'velvet (soft touch) lamination', 'laminado aterciopelado'], ['laminação', 'lamination', 'laminado'], ['laminado', 'laminated', 'laminado'],
+  ['fosco', 'matte', 'mate'], ['fosca', 'matte', 'mate'], ['brilho', 'gloss', 'brillo'], ['brilhante', 'glossy', 'brillante'], ['aveludado', 'velvet (soft touch)', 'aterciopelado'], ['aveludada', 'velvet (soft touch)', 'aterciopelada'],
+  ['verniz localizado em relevo', 'raised spot UV', 'UV selectivo en relieve'], ['verniz localizado', 'spot UV', 'UV selectivo'], ['verniz', 'varnish', 'barniz'],
+  ['alto relevo', 'embossed', 'alto relieve'], ['em relevo', 'raised', 'en relieve'], ['relevo', 'embossed', 'relieve'],
+  ['arredondados', 'rounded', 'redondeadas'], ['arredondado', 'rounded', 'redondeado'], ['arredondadas', 'rounded', 'redondeadas'], ['retos', 'square', 'rectas'], ['reto', 'square', 'recto'],
+  ['cantos arredondados', 'rounded corners', 'esquinas redondeadas'], ['canto arredondado', 'rounded corners', 'esquinas redondeadas'], ['cantos retos', 'square corners', 'esquinas rectas'], ['cantos', 'corners', 'esquinas'],
+  ['corte especial', 'custom cut', 'corte especial'], ['corte personalizado', 'custom cut', 'corte personalizado'], ['corte reto', 'straight cut', 'corte recto'], ['corte', 'cut', 'corte'],
+  ['papel couché', 'coated paper', 'papel couché'], ['papel kraft', 'kraft paper', 'papel kraft'], ['papel', 'paper', 'papel'],
+  ['cartões de visita', 'business cards', 'tarjetas de presentación'], ['cartão de visita', 'business card', 'tarjeta de presentación'],
+  ['adesivos', 'stickers', 'adhesivos'], ['adesivo', 'sticker', 'adhesivo'], ['etiquetas', 'labels', 'etiquetas'], ['etiqueta', 'label', 'etiqueta'],
+  ['folhas', 'sheets', 'hojas'], ['folha', 'sheet', 'hoja'], ['unidades', 'pieces', 'unidades'], ['unidade', 'piece', 'unidad'], ['peças', 'pieces', 'piezas'], ['peça', 'piece', 'pieza'],
+  ['vinil', 'vinyl', 'vinilo'], ['transparente', 'clear', 'transparente'], ['branco', 'white', 'blanco'], ['branca', 'white', 'blanca'], ['preto', 'black', 'negro'], ['preta', 'black', 'negra'],
+  ['ímã', 'magnet', 'imán'], ['imã', 'magnet', 'imán'], ['magnético', 'magnetic', 'magnético'], ['lona', 'vinyl banner', 'lona'], ['ilhoses', 'grommets', 'ojales'], ['ilhós', 'grommets', 'ojales'], ['bainha', 'hem', 'dobladillo'],
+  ['suporte', 'stand', 'soporte'], ['redondo', 'round', 'redondo'], ['redonda', 'round', 'redonda'], ['círculo', 'circle', 'círculo'], ['quadrado', 'square', 'cuadrado'], ['retangular', 'rectangular', 'rectangular'], ['formato', 'shape', 'forma'],
+  ['arte inclusa', 'artwork included', 'arte incluido'], ['design incluso', 'design included', 'diseño incluido'], ['incluso', 'included', 'incluido'], ['inclusa', 'included', 'incluida'],
+  ['alta resolução', 'high resolution', 'alta resolución'], ['arquivo', 'file', 'archivo'], ['arte', 'artwork', 'arte'], ['cliente', 'client', 'cliente'],
+  ['prova digital', 'digital proof', 'prueba digital'], ['dias úteis', 'business days', 'días hábiles'], ['após aprovação da arte', 'after artwork approval', 'después de aprobar el arte'],
+  ['impressão', 'printing', 'impresión'], ['acabamento', 'finish', 'acabado'], ['tamanho', 'size', 'tamaño'], ['quantidade', 'quantity', 'cantidad'], ['material', 'material', 'material'],
+  ['com laminação', 'with lamination', 'con laminado'], ['com', 'with', 'con'], ['sem', 'without', 'sin'], ['ou', 'or', 'o'], ['e', 'and', 'y'], ['cada', 'each', 'c/u'],
+];
+const LANG_COL = { en: 1, es: 2 };
+const NOT_LETTER = '(?<![\\p{L}\\p{N}])', NOT_LETTER_AFTER = '(?![\\p{L}\\p{N}])';
+const DICT_RE = DICT.slice().sort((a, b) => b[0].length - a[0].length)
+  .map(d => [new RegExp(NOT_LETTER + d[0].replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&') + NOT_LETTER_AFTER, 'giu'), d]);
+// words that show a text is still in Portuguese
+const PT_WORDS = /(?<![\p{L}])(de|do|da|dos|das|em|no|na|nos|nas|para|por|um|uma|não|mais|muito|até|também|pelo|pela|sobre|entre|ao|aos|à|às)(?![\p{L}])|[ãõçêôâà]|(ção|ções|ões|ados|adas|idos|idas|ado|ada|ido|ida|eiro|eira|inho|inha)$/iu;
+const ES_OK = /^(de|no|para|por|un|una|entre|sobre|mas)$/i;
+function autoTr(s) {
+  const col = LANG_COL[qLang]; if (!col) return { text: s, left: [] };
+  const marks = [];
+  let out = s;
+  // replace phrases (longest first) through placeholders, so a translated word is never translated again
+  DICT_RE.forEach(([re, d]) => {
+    out = out.replace(re, m => { const t = d[col]; marks.push(m[0] === m[0].toUpperCase() && m[0] !== m[0].toLowerCase() ? t.charAt(0).toUpperCase() + t.slice(1) : t); return '\u0000' + (marks.length - 1) + '\u0001'; });
+  });
+  // what's left in the original words and still looks Portuguese
+  const rest = out.replace(/\u0000\d+\u0001/g, ' ');
+  const left = (rest.match(/[\p{L}]+/gu) || []).filter(w => PT_WORDS.test(w) && !(qLang === 'es' && ES_OK.test(w)));
+  out = out.replace(/\u0000(\d+)\u0001/g, (_, i) => marks[+i]);
+  return { text: out, left };
+}
+// text typed in a product → quote language (a hand translation saved with the product wins)
+function tr(s, q) {
+  s = String(s ?? ''); if (qLang === 'pt' || !s.trim()) return s;
+  const own = q && q.tr && q.tr[qLang] && q.tr[qLang][s.trim()];
+  return own && own.trim() ? own : autoTr(s).text;
+}
+// every typed text that goes into the quote (for the translation panel)
+function trSources(q) {
+  const S = [];
+  const add = v => { v = String(v ?? '').trim(); if (v && !/^[\d\s.,x×"'\-–\/$%+()]+$/.test(v) && !S.includes(v)) S.push(v); };
+  add(q.title);
+  OUT_ORDER.forEach(k => add(q[k]));
+  q.custom.forEach(c => { add(c.label); add(c.value); });
+  q.options.forEach(o => { add(o.name); o.choices.forEach(c => add(c.name)); });
+  q.lines.forEach(l => add(l.group));
+  q.notes.filter(n => !n.internal).forEach(n => add(n.text));
+  if (q.unitName) add(q.unitName); if (q.pieceName) add(q.pieceName);
+  const t = q.turnaround.trim(); if (t && !/^[\d\s\-–a]+$/.test(t)) add(t);
+  return S;
+}
+
 // Main categories from the website menu (more can be typed in anytime)
 const SEED_CATS = {
   'Digital Cards': [], 'Business Cards': ['Premium Business Cards'], 'Print Materials': [],
@@ -486,14 +587,14 @@ const newOption = () => ({ id: uid(), name: '', choices: [newChoice(), newChoice
 const newQuote = () => ({
   cat: '', sub: '', title: '', qtyNote: '', size: '', stock: '', printing: '', finish: '', lamination: '',
   vendor: '', memo: '', turnaround: '', freeShip: true, showUnit: false, unitName: '', perUnit: '', pieceName: '', images: [], custom: [], notes: [], options: [], optMode: 'combos',
-  lines: [newLine()], collapsed: false
+  lines: [newLine()], collapsed: false, tr: {}
 });
 // Fill in anything missing from older saved data
 function normalize(q) {
   q = Object.assign(newQuote(), q);
   q.lines = (q.lines || []).map(l => Object.assign(newLine(), l, { id: l.id || uid() }));
   if (!q.lines.length) q.lines = [newLine()];
-  q.custom = q.custom || []; q.notes = q.notes || []; q.options = q.options || []; q.images = q.images || [];
+  q.custom = q.custom || []; q.notes = q.notes || []; q.options = q.options || []; q.images = q.images || []; q.tr = q.tr || {};
   return q;
 }
 const load = (k, fb) => { try { const v = JSON.parse(localStorage.getItem(k)); return v ?? fb; } catch (e) { return fb; } };
@@ -572,8 +673,8 @@ const moneyAdd = n => '+$' + (n % 1 ? n.toFixed(2) : n.toFixed(0));
 // Price per unit, e.g. $0.38 — 3 decimals when under 10 cents
 const qtyNum = l => parseFloat(String(l.qty).replace(/[^\d.]/g, ''));
 const perUnit = q => (q && parseFloat(q.perUnit)) || 0;
-const unitName = q => ((q && q.unitName) || '').trim() || 'un';
-const pieceName = q => ((q && q.pieceName) || '').trim() || 'item';
+const unitName = q => ((q && q.unitName) || '').trim() ? tr(q.unitName.trim(), q) : LT().unit;
+const pieceName = q => ((q && q.pieceName) || '').trim() ? tr(q.pieceName.trim(), q) : 'item';
 const plural = w => /s$/i.test(w) ? w : w + 's';
 // Price per unit (or per piece when a unit holds several, e.g. labels per sheet)
 // → "$0.38/etiqueta". 3 decimals when under 10 cents.
@@ -617,17 +718,17 @@ function quoteText(q) {
     if (header) L.push('_' + header + '_');
     L.push(...rows);
   };
-  if (q.title.trim()) L.push('_' + q.title.trim() + '_');
+  const T = s => tr(s, q), X = LT();
+  if (q.title.trim()) L.push('_' + T(q.title.trim()) + '_');
   OUT_ORDER.forEach(k => {
-    const spec = SPECS.find(s => s[0] === k);
-    if ((q[k] || '').trim()) L.push(spec[3] + ': ' + q[k].trim());
+    if ((q[k] || '').trim()) L.push(X[k] + ': ' + T(q[k].trim()));
   });
   q.custom.forEach(c => {
     const v = c.value.trim(), lb = c.label.trim();
-    if (v) L.push(lb ? lb + ': ' + v : v);
+    if (v) L.push(lb ? T(lb) + ': ' + T(v) : T(v));
   });
   infoOptions(q).forEach(o => {
-    L.push(o.name.trim() + ': ' + o.choices.map(c => c.name.trim()).filter(Boolean).join(' / '));
+    L.push(T(o.name.trim()) + ': ' + o.choices.map(c => c.name.trim()).filter(Boolean).map(T).join(' / '));
   });
 
   const groups = groupedLines(q);
@@ -636,36 +737,36 @@ function quoteText(q) {
     + (q.showUnit && unitPrice(l, price, q) ? ' (' + unitPrice(l, price, q) + ')' : '');
 
   if (!priced.length) {
-    groups.forEach(({ g, lines }) => block(g, lines.map(l => row(l, calcLine(l).price))));
+    groups.forEach(({ g, lines }) => block(T(g), lines.map(l => row(l, calcLine(l).price))));
   } else if (q.optMode === 'addons') {
-    const defaults = priced.map(o => o.choices[0].name.trim()).filter(Boolean);
+    const defaults = priced.map(o => o.choices[0].name.trim()).filter(Boolean).map(T);
     groups.forEach(({ g, lines }) =>
-      block([g, ...defaults].filter(Boolean).join(' · '), lines.map(l => row(l, calcLine(l).price))));
+      block([T(g), ...defaults].filter(Boolean).join(' · '), lines.map(l => row(l, calcLine(l).price))));
     const allLines = groups.flatMap(x => x.lines);
     priced.forEach(o => o.choices.slice(1).forEach(c => {
       if (!c.name.trim()) return;
       const vals = allLines.map(l => ({ l, r: addon(c, l.id).r }));
-      const header = o.name.trim() + ': ' + c.name.trim();
+      const header = T(o.name.trim()) + ': ' + T(c.name.trim());
       if (vals.every(x => x.r === vals[0].r)) {
-        block(header, [vals[0].r ? moneyAdd(vals[0].r) + ' (qualquer quantidade)' : 'Sem custo adicional']);
+        block(header, [vals[0].r ? moneyAdd(vals[0].r) + X.anyQty : X.noExtra]);
       } else {
-        block(header, vals.map(x => (qtyLabel(x.l, q) ? qtyLabel(x.l, q) + ' - ' : '') + (x.r ? moneyAdd(x.r) : 'sem custo')));
+        block(header, vals.map(x => (qtyLabel(x.l, q) ? qtyLabel(x.l, q) + ' - ' : '') + (x.r ? moneyAdd(x.r) : X.noCost)));
       }
     }));
   } else {
     combos(priced).forEach(combo => {
       groups.forEach(({ g, lines }) => {
-        const header = [g, ...combo.map(c => c.name.trim())].filter(Boolean).join(' · ');
+        const header = [T(g), ...combo.map(c => T(c.name.trim()))].filter(Boolean).join(' · ');
         block(header, lines.map(l => row(l, comboPrice(l, combo).price)));
       });
     });
   }
 
-  const notes = q.notes.filter(n => !n.internal && n.text.trim()).map(n => n.text.trim());
+  const notes = q.notes.filter(n => !n.internal && n.text.trim()).map(n => T(n.text.trim()));
   const tail = [];
-  if (q.freeShip) tail.push('Frete grátis');
+  if (q.freeShip) tail.push(X.free);
   const t = q.turnaround.trim();
-  if (t) tail.push('Prazo: ' + (/^[\d\s\-–a]+$/.test(t) ? t + SUFFIX : t));
+  if (t) tail.push(X.due + (/^[\d\s\-–a]+$/.test(t) ? (qLang === 'pt' ? t : t.replace(/\s+a\s+/g, '-')) + X.suffix : T(t)));
   if (notes.length) { if (L.length) L.push(''); L.push(...notes); }
   if (tail.length) { if (L.length) L.push(''); L.push(...tail); }
   return L.join('\n');
@@ -855,11 +956,13 @@ function quoteHTML(q, qi) {
         <div class="out-head">
           <span>WhatsApp preview</span>
           <div>
+            <span class="lang-sw">${['pt', 'en', 'es'].map(l => `<button class="${l === qLang ? 'on' : ''}" data-act="lang" data-lang="${l}">${l.toUpperCase()}</button>`).join('')}</span>
             <button class="ghost" data-act="save">Save to log</button>
             <button data-act="copy">Copy</button>
           </div>
         </div>
         <div class="out-text"></div>
+        <div class="tr-panel" data-trpanel></div>
       </div>
     </div>
   </div>`;
@@ -924,6 +1027,19 @@ function update() {
     const txt = quoteText(q);
     out.textContent = txt || 'Fill in the fields to build the quote…';
     out.classList.toggle('empty', !txt);
+    const tp = qEl.querySelector('[data-trpanel]'), srcs = qLang === 'pt' ? [] : trSources(q);
+    const sig = qLang + '|' + JSON.stringify(srcs);
+    if (tp.dataset.sig !== sig) {
+      tp.dataset.sig = sig;
+      const own = (q.tr && q.tr[qLang]) || {};
+      const rows = srcs.map((src, i) => ({ src, i, a: autoTr(src), own: own[src] || '' })).sort((x, y) => (y.a.left.length && !y.own) - (x.a.left.length && !x.own));
+      const miss = rows.filter(r => r.a.left.length && !r.own).length;
+      tp.innerHTML = !srcs.length ? '' : `<details${miss ? ' open' : ''}><summary>${miss ? '⚠ ' + miss + (miss > 1 ? ' textos' : ' texto') + ' sem tradução — ajuste abaixo' : 'Ajustar tradução (' + qLang.toUpperCase() + ')'}</summary>`
+        + rows.map(r => `<label class="tr-row${r.a.left.length && !r.own ? ' miss' : ''}"><small>${esc(r.src)}${r.a.left.length ? ' · <b>' + esc(r.a.left.join(', ')) + '</b>' : ''}</small>`
+          + `<input type="text" data-tri="${r.i}" value="${esc(r.own)}" placeholder="${esc(r.a.text)}"></label>`).join('')
+        + '<div class="suffix-hint" style="margin:6px 0 0">Vazio = tradução automática. O que você escrever fica salvo no produto.</div></details>';
+      tp._srcs = srcs;
+    } else tp._srcs = tp._srcs || srcs;
 
     const groups = [...new Set(q.lines.map(l => l.group.trim()).filter(Boolean))];
     qEl.querySelector(`#groups-${qi}`).innerHTML = groups.map(g => `<option value="${esc(g)}">`).join('');
@@ -956,7 +1072,12 @@ function onInput(e) {
   const q = quotes[+qEl.dataset.q];
   if ('upload' in t.dataset) { if (e.type === 'change') { addFiles(q, t.files); t.value = ''; } return; }
   const val = t.type === 'checkbox' ? t.checked : t.value;
-  if (t.dataset.f) q[t.dataset.f] = val;
+  if (t.dataset.tri !== undefined) {
+    const src = t.closest('[data-trpanel]')._srcs[+t.dataset.tri]; q.tr = q.tr || {}; const m = q.tr[qLang] = q.tr[qLang] || {};
+    if (val.trim()) m[src] = val; else delete m[src];
+    t.closest('.tr-row').classList.toggle('miss', !val.trim() && autoTr(src).left.length > 0);
+  }
+  else if (t.dataset.f) q[t.dataset.f] = val;
   else if (t.dataset.lf) q.lines[+t.closest('[data-l]').dataset.l][t.dataset.lf] = val;
   else if (t.dataset.cf) q.custom[+t.closest('[data-c]').dataset.c][t.dataset.cf] = val;
   else if (t.dataset.nf) {
@@ -997,6 +1118,7 @@ wrap.addEventListener('click', e => {
     return;
   }
   if (act === 'copy') return copyText(quoteText(q), b);
+  if (act === 'lang') { qLang = b.dataset.lang; try { localStorage.setItem(LANG_KEY, qLang); } catch (e) {} return render(); }
   if (act === 'save') return saveQuote(q, b);
   if (act === 'addl') return addLine(qi);
   if (act === 'catsave') return saveToCatalog(qi);
