@@ -42,13 +42,13 @@
     // vendorCost = our cost per piece: transfer on a 22" gang sheet (~$0.151 per inch + 10% waste) + pressing (~2 min) + supplies.
     dtfHouse: {
       placements: {
-        lc:         { vendorCost: 1.6,  retail: 5 },
+        lc:         { vendorCost: 1.55, retail: 5 },
         front:      { vendorCost: 3.95, retail: 10 },
         back:       { vendorCost: 3.95, retail: 10 },
         front_back: { vendorCost: 7.9,  retail: 19 },
-        lc_fb:      { vendorCost: 5.55, retail: 14 },
+        lc_fb:      { vendorCost: 5.5,  retail: 14 },
       },
-      extra: { small: { vendorCost: 1.6, retail: 5 }, large: { vendorCost: 3.95, retail: 10 } },  // small = up to 5x5 in, large = up to 15x15 in
+      extra: { small: { vendorCost: 1.55, retail: 5 }, large: { vendorCost: 3.95, retail: 10 } },  // small = up to 4x4 in (same as Vendor 1), large = up to 15x15 in
       sheetShip: 17,      // shipping of the gang sheet order, split across the order's pieces
       sheetMinQty: 10,    // small orders share a sheet with other orders: split over at least 10 pieces
       minProfit: 30,      // every in-house order makes at least this much: small orders get the difference spread over their pieces

@@ -1402,7 +1402,7 @@ function renderSettingsBody() {
     const R = dtfRates();
     el.innerHTML = '<div class="card-label">' + dtfLabel() + '</div>'
       + '<label class="lbl">Production</label><div class="btn-group">' + ["v1", "house"].map((k, i) => '<button class="btn' + (dtfSrc === k ? ' active' : '') + '" onclick="setDtfSrc(\'' + k + '\')">' + ["Vendor 1", "In-house (heat press)"][i] + '</button>').join("") + '</div>'
-      + '<div class="panel-note">Each style picks its own placement and extra spots below. Supplier shipping ($30) and client shipping ($20)' + (R.sheetShip ? ' and the DTF sheet shipping ($' + R.sheetShip + ', split over at least ' + R.sheetMinQty + ' pcs)' : '') + ' are split across the order.' + (R.minProfit ? ' Every order makes at least $' + R.minProfit + ' profit: small orders get the difference added per piece.' : '') + '</div>';
+      + '<div class="panel-note">Each style picks its own placement and extra spots below. Supplier shipping ($30) and client shipping ($20)' + (R.sheetShip ? ' and the DTF sheet shipping ($' + R.sheetShip + ', split over at least ' + R.sheetMinQty + ' pcs)' : '') + ' are split across the order.' + (dtfSrc === 'house' ? ' Small spot = up to 4×4 in, full = up to 15×15 in.' : '') + (R.minProfit ? ' Every order makes at least $' + R.minProfit + ' profit: small orders get the difference added per piece.' : '') + '</div>';
   } else if (method === "v2") {
     const o = v2Order();
     el.innerHTML = '<div class="card-label">Internal costs <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">(not shown in the quote)</span></div>'
