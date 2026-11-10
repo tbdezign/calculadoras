@@ -4,7 +4,7 @@
 // Shopify access: Dev Dashboard app "TBDezign Apparel Checkout" (write_draft_orders, read_orders, write_products, write_publications), client credentials grant.
 // Two ways out: mode "cart" returns cart lines (price variants on hidden products) for /cart/add.js; otherwise a draft-order checkout link.
 // Secrets: SHOPIFY_SHOP, SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET. The token lasts 24h and is renewed here.
-import "https://cdn.jsdelivr.net/gh/tbdezign/calculadoras@3b30951/pricing.js";
+import "https://cdn.jsdelivr.net/gh/tbdezign/calculadoras@f13dcfb/pricing.js";
 const P = (globalThis as any).TBDPricing;
 
 const CORS = {
