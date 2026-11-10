@@ -588,6 +588,7 @@ let tierPref = { silk:true, dtf:false, v2:true, emb:true };  // tier breaks on/o
 let shipMode = "auto", freeShipMin = TBDPricing.CONFIG.freeShipMin;   // supplier shipping: auto (free at freeShipMin in blanks) / on (always charge) / off (free)
 let quoteMode = "options", quoteLang = "pt", splitSuppliers = false;
 let v2Protection = "";                                       // Vendor 2 purchase protection
+let dtfSrc = "v1"; // DTF production: "v1" = Vendor 1, "house" = made in-house (own heat press)
 let embSet = { rate:TBDPricing.CONFIG.emb.rate, dig:true, suppShip:TBDPricing.CONFIG.emb.suppShip, clientShip:TBDPricing.CONFIG.emb.clientShip }; // Embroidery settings (defaults from pricing.js)
 function defaultPlacement(m) { return m === "v2" ? "front" : "lc"; }
 function newItem() { return { id: Date.now() + Math.random(), code:"", qty:"", color:"", supplier:"", placementId: defaultPlacement(method), extraSpots:0, extraSize:"small", decoration:"dtf", name:"" }; }
@@ -1074,22 +1075,22 @@ function comboKey(it) { const p = prod(it); return TBDPricing.supplierKey((it.su
 function comboOut(tq) { const st = comboStats(); return st.maxOut * tq / Math.max(1, tq + st.total - totalQty()); }
 // Run something as if another quote were open (no screen updates), e.g. to price it for the combined message.
 function withQuoteState(sq, fn) {
-  const keep = { method, numColors, numSides, extraSpots, tierPref, quoteMode, splitSuppliers, v2Protection, embSet, orderItems, shipMode, freeShipMin, fp: mk.frontPlace, os: mk.oneSide };
+  const keep = { method, numColors, numSides, extraSpots, tierPref, quoteMode, splitSuppliers, v2Protection, embSet, dtfSrc, orderItems, shipMode, freeShipMin, fp: mk.frontPlace, os: mk.oneSide };
   const frozen = comboStats(); comboFrozen = frozen;
   try {
     method = sq.method; numColors = sq.numColors; numSides = sq.numSides; extraSpots = sq.extraSpots; tierPref = { ...sq.tierPref }; quoteMode = "final";
-    splitSuppliers = sq.splitSuppliers; v2Protection = sq.v2Protection; embSet = { ...sq.embSet }; orderItems = sq.orderItems || [];
+    splitSuppliers = sq.splitSuppliers; v2Protection = sq.v2Protection; embSet = { ...sq.embSet }; dtfSrc = sq.dtfSrc || "v1"; orderItems = sq.orderItems || [];
     shipMode = sq.shipMode || "auto"; freeShipMin = sq.freeShipMin != null ? sq.freeShipMin : 200; mk.frontPlace = sq.frontPlace; mk.oneSide = sq.oneSide;
     return fn();
   } finally {
-    ({ method, numColors, numSides, extraSpots, tierPref, quoteMode, splitSuppliers, v2Protection, embSet, orderItems, shipMode, freeShipMin } = keep);
+    ({ method, numColors, numSides, extraSpots, tierPref, quoteMode, splitSuppliers, v2Protection, embSet, dtfSrc, orderItems, shipMode, freeShipMin } = keep);
     mk.frontPlace = keep.fp; mk.oneSide = keep.os; comboFrozen = null;
   }
 }
 function quoteTitle(i) {
   const sq = i === activeQ ? snapshotQuote() : quotes[i], m = sq.method;
   const codes = (sq.orderItems || []).filter(it => cats[m][(it.code || "").toUpperCase()]).map(it => it.code.toUpperCase());
-  return (sq.name || [...new Set(codes)].join(", ") || "Quote " + (i + 1)) + " · " + METHOD_SHORT[m];
+  return (sq.name || [...new Set(codes)].join(", ") || "Quote " + (i + 1)) + " · " + methodShort(m, sq.dtfSrc);
 }
 function comboHTML() {
   if (quotes.length < 2) return "";
@@ -1173,11 +1174,16 @@ const DTF_PL = [
   { id:"back", label:"Full Back", views:[["back","fb"]] },
   { id:"front_back", label:"Front + Back", views:[["front","ff"],["back","fb"]] },
   { id:"lc_fb", label:"LC + Full Back", views:[["front","lc"],["back","fb"]] },
-].map(p => ({ ...p, ...PCFG.dtf.placements[p.id] }));
-const DTF_EXTRA = PCFG.dtf.extra;
-function dtfPl(it) { return DTF_PL.find(p => p.id === it.placementId) || DTF_PL[0]; }
+];
+// rates of the DTF production picked for this quote (Vendor 1 or in-house)
+function dtfRates() { return dtfSrc === "house" ? TBDPricing.houseCfg(PCFG).dtf : PCFG.dtf; }
+function dtfPlList() { const R = dtfRates(); return DTF_PL.map(p => ({ ...p, ...R.placements[p.id] })); }
+function dtfExtra() { return dtfRates().extra; }
+function dtfLabel() { return dtfSrc === "house" ? "DTF · In-house" : "DTF · Vendor 1"; }
+function dtfPl(it) { const L = dtfPlList(); return L.find(p => p.id === it.placementId) || L[0]; }
 function dtfCalc(cost, pl, tq, shipQty, es, esz, shipIn) {
-  return TBDPricing.dtf({ cost, pl, tq, shipQty, shipIn, extras: Array(es || 0).fill(esz || "small") }, comboCfg("dtf", tq));
+  let cfg = comboCfg("dtf", tq) || PCFG; if (dtfSrc === "house") cfg = TBDPricing.houseCfg(cfg);
+  return TBDPricing.dtf({ cost, pl, tq, shipQty, shipIn, extras: Array(es || 0).fill(esz || "small") }, cfg);
 }
 // ── DTF / Embroidery Vendor 2 ──
 const BLIND_SHIP = PCFG.v2.blindShip, V2_SHIPPING = PCFG.v2.shipping, V2_SHIP_THRESHOLD = PCFG.v2.shipThreshold, V2_TIERS = PCFG.v2.tiers;
@@ -1266,12 +1272,12 @@ const METHODS = {
     ship: () => T().ship(PCFG.silk.days[0], PCFG.silk.days[1], true), tierNote: () => T().tierNote,
   },
   dtf: {
-    label:"DTF · Vendor 1", min:0, tiers:PCFG.dtf.tiers, split:true,
+    get label() { return dtfLabel(); }, min:0, tiers:PCFG.dtf.tiers, split:true,
     views: it => dtfPl(it).views,
     print: it => T().dtf + " · " + placeText(dtfPl(it).views, it.extraSpots || 0, it),
     price(it) { const p = prod(it), pl = dtfPl(it), r = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, it.extraSize, suppShipFor(it, 30));
-      const ex = DTF_EXTRA[it.extraSize || "small"];
-      return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() + " + $" + (PCFG.dtf.sheetShip || 0) + "/" + Math.max(totalQty(), PCFG.dtf.sheetMinQty || 1) }; },
+      const ex = dtfExtra()[it.extraSize || "small"], R = dtfRates();
+      return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() + (R.sheetShip ? " + $" + R.sheetShip + " sheet/" + Math.max(totalQty(), R.sheetMinQty || 1) : "") }; },
     tierPrice(it, t) { const c = prod(it).cost; return dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, it.extraSize, tierSuppShip(c, t, 30)).perPiece; },
     setup: () => null, ship: () => T().ship(PCFG.dtf.days[0], PCFG.dtf.days[1], true), tierNote: () => T().tierNoteMix,
   },
@@ -1377,7 +1383,10 @@ function renderSettingsBody() {
       + '<details class="ymq" id="ymqBox"' + (ymqOpen ? ' open' : '') + ' ontoggle="ymqOpen=this.open;if(this.open)renderYmq()"><summary>Shopify / YMQ tier reference</summary><div id="ymqBody"></div></details>';
     if (ymqOpen) renderYmq();
   } else if (method === "dtf") {
-    el.innerHTML = '<div class="card-label">DTF · Vendor 1</div><div class="panel-note">Each style picks its own placement and extra spots below. Supplier shipping ($30), client shipping ($20) and the DTF sheet shipping ($' + (PCFG.dtf.sheetShip || 0) + ') are split across the order.</div>';
+    const R = dtfRates();
+    el.innerHTML = '<div class="card-label">' + dtfLabel() + '</div>'
+      + '<label class="lbl">Production</label><div class="btn-group">' + ["v1", "house"].map((k, i) => '<button class="btn' + (dtfSrc === k ? ' active' : '') + '" onclick="setDtfSrc(\'' + k + '\')">' + ["Vendor 1", "In-house (heat press)"][i] + '</button>').join("") + '</div>'
+      + '<div class="panel-note">Each style picks its own placement and extra spots below. Supplier shipping ($30) and client shipping ($20)' + (R.sheetShip ? ' and the DTF sheet shipping ($' + R.sheetShip + ', split over at least ' + R.sheetMinQty + ' pcs)' : '') + ' are split across the order.</div>';
   } else if (method === "v2") {
     const o = v2Order();
     el.innerHTML = '<div class="card-label">Internal costs <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">(not shown in the quote)</span></div>'
@@ -1400,6 +1409,7 @@ function shipCtlHTML() {
 }
 function setShipMode(m) { shipMode = m; renderSettings(); updateOrderResults(); }
 function setColors(n) { numColors = n; renderSettings(); updateOrderResults(); }
+function setDtfSrc(k) { dtfSrc = k; renderMethodTabs(); renderQuoteTabs(); renderSettings(); renderOrderItems(); updateOrderResults(); }
 function setSides(n) { numSides = n; mk.sig = ""; renderSettings(); updateOrderResults(); renderMockup(); }
 function setExtra(n) { extraSpots = n; renderSettings(); renderOrderItems(); renderPlacement(); mk.sig = ""; renderMockRows(true); }
 
@@ -1570,9 +1580,9 @@ function itemControlsHTML(it) {
   const id = it.id, pb = (field, val, cur, label, extra) => '<button class="pl-btn' + (val === cur ? ' active' : '') + '" onclick="setItemField(\'' + id + '\',\'' + field + '\',' + (typeof val === "number" ? val : '\'' + val + '\'') + ')">' + label + (extra ? '<span class="pl-price">' + extra + '</span>' : '') + '</button>';
   if (method === "dtf") {
     const es = it.extraSpots || 0, esz = it.extraSize || "small";
-    return '<div class="pl-row">' + DTF_PL.map(p => pb("placementId", p.id, it.placementId, p.label, fmt(p.retail))).join("") + '</div>'
+    return '<div class="pl-row">' + dtfPlList().map(p => pb("placementId", p.id, it.placementId, p.label, fmt(p.retail))).join("") + '</div>'
       + '<label class="lbl">Extra spots (sleeves, etc.)</label><div class="pl-row">' + pb("extraSpots", 0, es, "None") + pb("extraSpots", 1, es, "+1 Spot") + pb("extraSpots", 2, es, "+2 Spots")
-      + (es > 0 ? '<span class="pl-gap"></span>' + pb("extraSize", "small", esz, "Small", fmt(DTF_EXTRA.small.retail)) + pb("extraSize", "large", esz, "Large", fmt(DTF_EXTRA.large.retail)) : '') + '</div>'
+      + (es > 0 ? '<span class="pl-gap"></span>' + pb("extraSize", "small", esz, "Small", fmt(dtfExtra().small.retail)) + pb("extraSize", "large", esz, "Large", fmt(dtfExtra().large.retail)) : '') + '</div>'
       + spotWhereHTML(it, es);
   }
   if (method === "v2") {
@@ -1931,13 +1941,13 @@ function blankQuote(m) {
 }
 function snapshotQuote() {
   const cur = quotes[activeQ] || {};
-  return { qid:cur.qid || newQid(), name:cur.name || "", combo:cur.combo || null, method, numColors, numSides, extraSpots, tierPref:{ ...tierPref }, quoteMode, quoteLang, splitSuppliers, v2Protection, embSet:{ ...embSet },
+  return { qid:cur.qid || newQid(), name:cur.name || "", combo:cur.combo || null, method, numColors, numSides, extraSpots, tierPref:{ ...tierPref }, quoteMode, quoteLang, splitSuppliers, v2Protection, embSet:{ ...embSet }, dtfSrc,
            orderItems, frontPlace:mk.frontPlace, oneSide:mk.oneSide, logos:mk.logos, boxes:mk.boxes, shipMode, freeShipMin };
 }
 function applyQuote(s) {
   method = s.method; numColors = s.numColors; numSides = s.numSides; extraSpots = s.extraSpots;
   tierPref = { ...s.tierPref }; quoteMode = s.quoteMode; quoteLang = s.quoteLang; splitSuppliers = s.splitSuppliers;
-  v2Protection = s.v2Protection; embSet = { ...s.embSet };
+  v2Protection = s.v2Protection; embSet = { ...s.embSet }; dtfSrc = s.dtfSrc || "v1";
   orderItems = s.orderItems || [newItem()]; s.orderItems = orderItems;
   mk.frontPlace = s.frontPlace; mk.oneSide = s.oneSide; mk.logos = s.logos; mk.boxes = s.boxes;
   shipMode = s.shipMode || "auto"; freeShipMin = s.freeShipMin != null ? s.freeShipMin : 200;
@@ -1961,6 +1971,7 @@ function closeQuote(btn) {
 }
 function onQuoteName(v) { if (!quotes[activeQ]) quotes[activeQ] = snapshotQuote(); quotes[activeQ].name = v; renderQuoteTabs(); }
 const METHOD_SHORT = { silk:"Silk", dtf:"DTF V1", v2:"V2", emb:"Emb" };
+const methodShort = (m, src) => m === "dtf" && src === "house" ? "DTF In-house" : METHOD_SHORT[m];
 function renderQuoteTabs() {
   q("qTabs").innerHTML = quotes.map((s, i) => {
     const m = i === activeQ ? method : s.method, its = (i === activeQ ? orderItems : (s.orderItems || [])).filter(it => cats[m][(it.code||"").toUpperCase()]);
@@ -1977,7 +1988,7 @@ function renderAll() {
 }
 const FOOTERS = {
   silk:"Blank retail = cost ÷ divisor (0.50 under $3, 0.55 for $3+) + $30 supplier shipping ÷ qty<br>Print add-on = vendor rate × spots × 2 + $25 client shipping ÷ qty · rounded up to $0.10",
-  dtf:"Unit price = cost ÷ divisor (0.50 under $3, 0.55 for $3+) + $30 ÷ qty + placement + extra spots + $20 client shipping ÷ qty + $17 sheet shipping ÷ qty (min 10) · rounded to $0.10",
+  dtf:"Unit price = cost ÷ divisor (0.50 under $3, 0.55 for $3+) + $30 ÷ qty + placement + extra spots + $20 ÷ qty (in-house: + $17 sheet shipping ÷ qty, min 10) · rounded to $0.10",
   v2:"Unit price = vendor tier price × 2 (÷ 0.55 when $20+) + (vendor shipping + $10 blind ship + protection) ÷ total qty · rounded to $0.10",
   emb:"Unit price = blank × 2 + embroidery rate × 2 per spot + (supplier shipping + client shipping) ÷ total pcs · rounded up to $0.10. Shipping is pass-through: no markup, and it's counted in your cost too.",
 };

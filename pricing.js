@@ -18,19 +18,15 @@
       minPieces: 10, tiers: [10, 15, 20, 25], days: [7, 12],
     },
     dtf: {
-      // Made in-house (own heat press, Nov 2026). vendorCost = our cost per piece: transfer on a 22" gang sheet
-      // (~$0.151 per inch + 10% waste) + pressing (~2 min) + supplies. Full spot = up to 15x15 in, small = up to 5x5 in.
       placements: {
-        lc:         { vendorCost: 1.6,  retail: 5 },
-        front:      { vendorCost: 3.95, retail: 10 },
-        back:       { vendorCost: 3.95, retail: 10 },
-        front_back: { vendorCost: 7.9,  retail: 19 },
-        lc_fb:      { vendorCost: 5.55, retail: 14 },
+        lc:         { vendorCost: 3.5,  retail: 8 },
+        front:      { vendorCost: 7,    retail: 15 },
+        back:       { vendorCost: 7,    retail: 15 },
+        front_back: { vendorCost: 14,   retail: 30 },
+        lc_fb:      { vendorCost: 10.5, retail: 20 },
       },
-      extra: { small: { vendorCost: 1.6, retail: 5 }, large: { vendorCost: 3.95, retail: 10 } },  // small = up to 5x5 in, large = up to 15x15 in
+      extra: { small: { vendorCost: 3.5, retail: 8 }, large: { vendorCost: 7, retail: 15 } },  // small = up to 4x4 in
       shipIn: 30, shipOut: 20,
-      sheetShip: 17,      // shipping of the gang sheet order, split across the order's pieces
-      sheetMinQty: 10,    // small orders share a sheet with other orders: split over at least 10 pieces
       minPieces: 4, tiers: [4, 8, 16, 32], days: [7, 12],
     },
     emb: {
@@ -41,6 +37,20 @@
       stitchesIncluded: 9000, vendorStitchesIncluded: 7000,
       digCost: 5, digRetail: 20, suppShip: 30, clientShip: 25,
       minPieces: 6, tiers: [6, 12, 24, 48], days: [7, 10],
+    },
+    // DTF made in-house (own heat press — planned, calculator only for now). Same formula as DTF Vendor 1, own rates.
+    // vendorCost = our cost per piece: transfer on a 22" gang sheet (~$0.151 per inch + 10% waste) + pressing (~2 min) + supplies.
+    dtfHouse: {
+      placements: {
+        lc:         { vendorCost: 1.6,  retail: 5 },
+        front:      { vendorCost: 3.95, retail: 10 },
+        back:       { vendorCost: 3.95, retail: 10 },
+        front_back: { vendorCost: 7.9,  retail: 19 },
+        lc_fb:      { vendorCost: 5.55, retail: 14 },
+      },
+      extra: { small: { vendorCost: 1.6, retail: 5 }, large: { vendorCost: 3.95, retail: 10 } },  // small = up to 5x5 in, large = up to 15x15 in
+      sheetShip: 17,      // shipping of the gang sheet order, split across the order's pieces
+      sheetMinQty: 10,    // small orders share a sheet with other orders: split over at least 10 pieces
     },
     v2: { blindShip: 10, shipping: 16, shipThreshold: 59, tiers: [2, 4, 8, 16] },
   };
@@ -60,7 +70,8 @@
   }
   function silkSetup(colors, spots, cfg) { return colors * spots * (cfg || CONFIG).silk.screen; }
 
-  // ── DTF (in-house): blank ÷ divisor + supplier shipping + placement retail + extra spots + client shipping + gang sheet shipping
+  // ── DTF Vendor 1: blank ÷ divisor + supplier shipping + placement retail + extra spots + client shipping
+  // (In-house: same formula with CONFIG.dtfHouse rates, see houseCfg, + the gang sheet shipping.)
   // a.pl = { vendorCost, retail }; a.extras = list of extra spot sizes ("small" | "large")
   function dtf(a, cfg) {
     const D = (cfg || CONFIG).dtf;
@@ -98,6 +109,9 @@
     const cp = a.blank + decoCost + ship;
     return { perPiece: rp, unitCost: cp, deco };
   }
+
+  // config for DTF made in-house: the DTF block with the in-house rates on top
+  function houseCfg(cfg) { const C = cfg || CONFIG; return { ...C, dtf: { ...C.dtf, ...C.dtfHouse } }; }
 
   // ── DTF / Embroidery Vendor 2 (tier price from the vendor; fees split across pieces)
   function v2Tier(qty, cfg) { const T = (cfg || CONFIG).v2.tiers; for (let i = T.length - 1; i >= 0; i--) if (qty >= T[i]) return T[i]; return T[0]; }
@@ -219,7 +233,7 @@
     return { from, up };
   }
 
-  const api = { CONFIG, stylePrices, embDeco, ceil10, round10, silk, silkSetup, dtf, emb, v2Tier, v2Fees, v2Base, v2Price, chooseMethod, quoteOrder, blankCost, supplierKey };
+  const api = { CONFIG, stylePrices, embDeco, ceil10, round10, silk, silkSetup, dtf, houseCfg, emb, v2Tier, v2Fees, v2Base, v2Price, chooseMethod, quoteOrder, blankCost, supplierKey };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.TBDPricing = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
