@@ -1271,7 +1271,7 @@ const METHODS = {
     print: it => T().dtf + " · " + placeText(dtfPl(it).views, it.extraSpots || 0, it),
     price(it) { const p = prod(it), pl = dtfPl(it), r = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, it.extraSize, suppShipFor(it, 30));
       const ex = DTF_EXTRA[it.extraSize || "small"];
-      return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() }; },
+      return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() + " + $" + (PCFG.dtf.sheetShip || 0) + "/" + Math.max(totalQty(), PCFG.dtf.sheetMinQty || 1) }; },
     tierPrice(it, t) { const c = prod(it).cost; return dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, it.extraSize, tierSuppShip(c, t, 30)).perPiece; },
     setup: () => null, ship: () => T().ship(PCFG.dtf.days[0], PCFG.dtf.days[1], true), tierNote: () => T().tierNoteMix,
   },
@@ -1377,7 +1377,7 @@ function renderSettingsBody() {
       + '<details class="ymq" id="ymqBox"' + (ymqOpen ? ' open' : '') + ' ontoggle="ymqOpen=this.open;if(this.open)renderYmq()"><summary>Shopify / YMQ tier reference</summary><div id="ymqBody"></div></details>';
     if (ymqOpen) renderYmq();
   } else if (method === "dtf") {
-    el.innerHTML = '<div class="card-label">DTF · Vendor 1</div><div class="panel-note">Each style picks its own placement and extra spots below. Supplier shipping ($30) and client shipping ($20) are split across the order.</div>';
+    el.innerHTML = '<div class="card-label">DTF · Vendor 1</div><div class="panel-note">Each style picks its own placement and extra spots below. Supplier shipping ($30), client shipping ($20) and the DTF sheet shipping ($' + (PCFG.dtf.sheetShip || 0) + ') are split across the order.</div>';
   } else if (method === "v2") {
     const o = v2Order();
     el.innerHTML = '<div class="card-label">Internal costs <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">(not shown in the quote)</span></div>'
@@ -1572,7 +1572,7 @@ function itemControlsHTML(it) {
     const es = it.extraSpots || 0, esz = it.extraSize || "small";
     return '<div class="pl-row">' + DTF_PL.map(p => pb("placementId", p.id, it.placementId, p.label, fmt(p.retail))).join("") + '</div>'
       + '<label class="lbl">Extra spots (sleeves, etc.)</label><div class="pl-row">' + pb("extraSpots", 0, es, "None") + pb("extraSpots", 1, es, "+1 Spot") + pb("extraSpots", 2, es, "+2 Spots")
-      + (es > 0 ? '<span class="pl-gap"></span>' + pb("extraSize", "small", esz, "Small", "$8.00") + pb("extraSize", "large", esz, "Large", "$15.00") : '') + '</div>'
+      + (es > 0 ? '<span class="pl-gap"></span>' + pb("extraSize", "small", esz, "Small", fmt(DTF_EXTRA.small.retail)) + pb("extraSize", "large", esz, "Large", fmt(DTF_EXTRA.large.retail)) : '') + '</div>'
       + spotWhereHTML(it, es);
   }
   if (method === "v2") {
@@ -1977,7 +1977,7 @@ function renderAll() {
 }
 const FOOTERS = {
   silk:"Blank retail = cost ÷ divisor (0.50 under $3, 0.55 for $3+) + $30 supplier shipping ÷ qty<br>Print add-on = vendor rate × spots × 2 + $25 client shipping ÷ qty · rounded up to $0.10",
-  dtf:"Unit price = cost ÷ divisor (0.50 under $3, 0.55 for $3+) + $30 ÷ qty + placement + extra spots + $20 ÷ qty · rounded to $0.10",
+  dtf:"Unit price = cost ÷ divisor (0.50 under $3, 0.55 for $3+) + $30 ÷ qty + placement + extra spots + $20 client shipping ÷ qty + $17 sheet shipping ÷ qty (min 10) · rounded to $0.10",
   v2:"Unit price = vendor tier price × 2 (÷ 0.55 when $20+) + (vendor shipping + $10 blind ship + protection) ÷ total qty · rounded to $0.10",
   emb:"Unit price = blank × 2 + embroidery rate × 2 per spot + (supplier shipping + client shipping) ÷ total pcs · rounded up to $0.10. Shipping is pass-through: no markup, and it's counted in your cost too.",
 };

@@ -18,15 +18,19 @@
       minPieces: 10, tiers: [10, 15, 20, 25], days: [7, 12],
     },
     dtf: {
+      // Made in-house (own heat press, Nov 2026). vendorCost = our cost per piece: transfer on a 22" gang sheet
+      // (~$0.151 per inch + 10% waste) + pressing (~2 min) + supplies. Full spot = up to 15x15 in, small = up to 5x5 in.
       placements: {
-        lc:         { vendorCost: 3.5,  retail: 8 },
-        front:      { vendorCost: 7,    retail: 15 },
-        back:       { vendorCost: 7,    retail: 15 },
-        front_back: { vendorCost: 14,   retail: 30 },
-        lc_fb:      { vendorCost: 10.5, retail: 20 },
+        lc:         { vendorCost: 1.6,  retail: 5 },
+        front:      { vendorCost: 3.95, retail: 10 },
+        back:       { vendorCost: 3.95, retail: 10 },
+        front_back: { vendorCost: 7.9,  retail: 19 },
+        lc_fb:      { vendorCost: 5.55, retail: 14 },
       },
-      extra: { small: { vendorCost: 3.5, retail: 8 }, large: { vendorCost: 7, retail: 15 } },  // small = up to 4x4 in
+      extra: { small: { vendorCost: 1.6, retail: 5 }, large: { vendorCost: 3.95, retail: 10 } },  // small = up to 5x5 in, large = up to 15x15 in
       shipIn: 30, shipOut: 20,
+      sheetShip: 17,      // shipping of the gang sheet order, split across the order's pieces
+      sheetMinQty: 10,    // small orders share a sheet with other orders: split over at least 10 pieces
       minPieces: 4, tiers: [4, 8, 16, 32], days: [7, 12],
     },
     emb: {
@@ -56,7 +60,7 @@
   }
   function silkSetup(colors, spots, cfg) { return colors * spots * (cfg || CONFIG).silk.screen; }
 
-  // ── DTF Vendor 1: blank ÷ divisor + supplier shipping + placement retail + extra spots + client shipping
+  // ── DTF (in-house): blank ÷ divisor + supplier shipping + placement retail + extra spots + client shipping + gang sheet shipping
   // a.pl = { vendorCost, retail }; a.extras = list of extra spot sizes ("small" | "large")
   function dtf(a, cfg) {
     const D = (cfg || CONFIG).dtf;
@@ -66,9 +70,10 @@
     const exCost = extras.reduce((s, z) => s + D.extra[z || "small"].vendorCost, 0);
     const divisor = a.cost < 3 ? 0.5 : 0.55;
     const blankRetail = a.cost / divisor + shipIn / shipQty;
-    const printAddon = a.pl.retail + exRetail + D.shipOut / tq;
+    const sheet = (D.sheetShip || 0) / Math.max(tq, D.sheetMinQty || 1);
+    const printAddon = a.pl.retail + exRetail + D.shipOut / tq + sheet;
     const totalRetail = round10(blankRetail + printAddon);
-    const totalCost = a.cost + a.pl.vendorCost + exCost + shipIn / shipQty + D.shipOut / tq;
+    const totalCost = a.cost + a.pl.vendorCost + exCost + shipIn / shipQty + D.shipOut / tq + sheet;
     return { perPiece: totalRetail, unitCost: totalCost, divisor, shipQty, shipIn };
   }
 
