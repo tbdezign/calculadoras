@@ -51,6 +51,7 @@
       extra: { small: { vendorCost: 1.6, retail: 5 }, large: { vendorCost: 3.95, retail: 10 } },  // small = up to 5x5 in, large = up to 15x15 in
       sheetShip: 17,      // shipping of the gang sheet order, split across the order's pieces
       sheetMinQty: 10,    // small orders share a sheet with other orders: split over at least 10 pieces
+      minProfit: 30,      // every in-house order makes at least this much: small orders get the difference spread over their pieces
     },
     v2: { blindShip: 10, shipping: 16, shipThreshold: 59, tiers: [2, 4, 8, 16] },
   };

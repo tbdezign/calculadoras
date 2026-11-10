@@ -1181,6 +1181,21 @@ function dtfPlList() { const R = dtfRates(); return DTF_PL.map(p => ({ ...p, ...
 function dtfExtra() { return dtfRates().extra; }
 function dtfLabel() { return dtfSrc === "house" ? "DTF · In-house" : "DTF · Vendor 1"; }
 function dtfPl(it) { const L = dtfPlList(); return L.find(p => p.id === it.placementId) || L[0]; }
+// In-house: an order that makes less than the minimum profit ($30) gets the difference spread over its pieces (rounded up to $0.10).
+// tier = price the same mix of styles as if the order had t pieces (tier tables).
+function dtfUplift(t) {
+  if (dtfSrc !== "house" || inCombo()) return 0;
+  const its = validItems(), tq = totalQty(); if (!tq) return 0;
+  const n = t || tq; let prof = 0;
+  its.forEach(it => {
+    const c = prod(it).cost || 0, share = itemQty(it) / tq;
+    const r = t ? dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, it.extraSize, tierSuppShip(c, t, 30))
+                : dtfCalc(c, dtfPl(it), tq, shipQtyFor(it), it.extraSpots || 0, it.extraSize, suppShipFor(it, 30));
+    prof += (r.perPiece - r.unitCost) * share * n;
+  });
+  const min = dtfRates().minProfit || 0;
+  return prof >= min ? 0 : Math.ceil((min - prof) / n * 10 - 1e-9) / 10;
+}
 function dtfCalc(cost, pl, tq, shipQty, es, esz, shipIn) {
   let cfg = comboCfg("dtf", tq) || PCFG; if (dtfSrc === "house") cfg = TBDPricing.houseCfg(cfg);
   return TBDPricing.dtf({ cost, pl, tq, shipQty, shipIn, extras: Array(es || 0).fill(esz || "small") }, cfg);
@@ -1275,10 +1290,11 @@ const METHODS = {
     get label() { return dtfLabel(); }, min:0, tiers:PCFG.dtf.tiers, split:true,
     views: it => dtfPl(it).views,
     print: it => T().dtf + " · " + placeText(dtfPl(it).views, it.extraSpots || 0, it),
-    price(it) { const p = prod(it), pl = dtfPl(it), r = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, it.extraSize, suppShipFor(it, 30));
+    price(it) { const p = prod(it), pl = dtfPl(it), r0 = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, it.extraSize, suppShipFor(it, 30));
+      const up = dtfUplift(), r = up ? { ...r0, perPiece: Math.round((r0.perPiece + up) * 100) / 100 } : r0;
       const ex = dtfExtra()[it.extraSize || "small"], R = dtfRates();
-      return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() + (R.sheetShip ? " + $" + R.sheetShip + " sheet/" + Math.max(totalQty(), R.sheetMinQty || 1) : "") }; },
-    tierPrice(it, t) { const c = prod(it).cost; return dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, it.extraSize, tierSuppShip(c, t, 30)).perPiece; },
+      return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() + (R.sheetShip ? " + $" + R.sheetShip + " sheet/" + Math.max(totalQty(), R.sheetMinQty || 1) : "") + (up ? " + " + fmt(up) + " (min $" + R.minProfit + " profit)" : "") }; },
+    tierPrice(it, t) { const c = prod(it).cost; return Math.round((dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, it.extraSize, tierSuppShip(c, t, 30)).perPiece + dtfUplift(t)) * 100) / 100; },
     setup: () => null, ship: () => T().ship(PCFG.dtf.days[0], PCFG.dtf.days[1], true), tierNote: () => T().tierNoteMix,
   },
   v2: {
@@ -1386,7 +1402,7 @@ function renderSettingsBody() {
     const R = dtfRates();
     el.innerHTML = '<div class="card-label">' + dtfLabel() + '</div>'
       + '<label class="lbl">Production</label><div class="btn-group">' + ["v1", "house"].map((k, i) => '<button class="btn' + (dtfSrc === k ? ' active' : '') + '" onclick="setDtfSrc(\'' + k + '\')">' + ["Vendor 1", "In-house (heat press)"][i] + '</button>').join("") + '</div>'
-      + '<div class="panel-note">Each style picks its own placement and extra spots below. Supplier shipping ($30) and client shipping ($20)' + (R.sheetShip ? ' and the DTF sheet shipping ($' + R.sheetShip + ', split over at least ' + R.sheetMinQty + ' pcs)' : '') + ' are split across the order.</div>';
+      + '<div class="panel-note">Each style picks its own placement and extra spots below. Supplier shipping ($30) and client shipping ($20)' + (R.sheetShip ? ' and the DTF sheet shipping ($' + R.sheetShip + ', split over at least ' + R.sheetMinQty + ' pcs)' : '') + ' are split across the order.' + (R.minProfit ? ' Every order makes at least $' + R.minProfit + ' profit: small orders get the difference added per piece.' : '') + '</div>';
   } else if (method === "v2") {
     const o = v2Order();
     el.innerHTML = '<div class="card-label">Internal costs <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">(not shown in the quote)</span></div>'
