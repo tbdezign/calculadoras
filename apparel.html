@@ -303,6 +303,7 @@
   .pl-row { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
   .pl-btn { padding:7px 10px; border-radius:6px; border:1.5px solid #E0E0DA; background:#fff; color:#666; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
   .pl-btn.active { border-color:#051024; background:#051024; color:#fff; }
+  .pl-in { font-size: 11px; color: #8a94a6; font-weight: 500; }
   .pl-price { margin-left:5px; font-weight:400; opacity:.7; }
   .pl-gap { width:8px; }
   .size-toggle { margin:2px 0 8px; display:inline-block; }
@@ -938,7 +939,7 @@ async function importCatalog() {
 const I18N = {
   pt: { perPc:" por peça", pcs:n => n + (n === 1 ? " peça" : " peças"), plus:n => n + "+ peças", each:" cada", perPiece:"Preço por peça", code:"Cód.",
         silk:"Silk Screen", dtf:"DTF Transfer · Colorido", emb:"Bordado", colors:n => n + (n === 1 ? " cor" : " cores"),
-        front:"Frente", back:"Costas", side:"Lateral", sleeve:"Manga", sleeveL:"Manga esquerda", sleeveR:"Manga direita", upperBack:"Costas (nuca)", capBack:"Atrás", place:{ lc:"peito esquerdo", cc:"centro do peito", ff:"frente inteira", cf:"centro", lf:"lado esquerdo", rf:"lado direito" },
+        front:"Frente", back:"Costas", side:"Lateral", sleeve:"Manga", sleeveL:"Manga esquerda", sleeveR:"Manga direita", upperBack:"Costas (nuca)", capBack:"Atrás", place:{ lc:"peito esquerdo", cc:"centro do peito", ff:"frente inteira", mf:"centro", cf:"centro", lf:"lado esquerdo", rf:"lado direito" },
         extra:n => n + " extra" + (n > 1 ? "s" : "") + " (manga)",
         screens:n => n + " telas", once:"Cobrado uma única vez para o pedido todo. ",
         oneTime:n => "Taxa única para criar " + (n > 1 ? "as telas" : "a tela") + " de impressão da sua arte. ",
@@ -951,7 +952,7 @@ const I18N = {
         disclaimer:"Mockup ilustrativo. A prova final é enviada para aprovação após a confirmação do pedido." },
   en: { perPc:" per piece", pcs:n => n + (n === 1 ? " pc" : " pcs"), plus:n => n + "+ pcs", each:" each", perPiece:"Price per piece", code:"Code",
         silk:"Screen print", dtf:"DTF transfer · Full color", emb:"Embroidery", colors:n => n + (n === 1 ? " color" : " colors"),
-        front:"Front", back:"Back", side:"Side", sleeve:"Sleeve", sleeveL:"Left sleeve", sleeveR:"Right sleeve", upperBack:"Upper back", capBack:"Back", place:{ lc:"left chest", cc:"center chest", ff:"full front", cf:"center", lf:"left side", rf:"right side" },
+        front:"Front", back:"Back", side:"Side", sleeve:"Sleeve", sleeveL:"Left sleeve", sleeveR:"Right sleeve", upperBack:"Upper back", capBack:"Back", place:{ lc:"left chest", cc:"center chest", ff:"full front", mf:"center", cf:"center", lf:"left side", rf:"right side" },
         extra:n => n + " extra (sleeve" + (n > 1 ? "s" : "") + ")",
         screens:n => n + " screens", once:"Charged only once for the whole order. ",
         oneTime:n => "One-time fee to create the print screen" + (n > 1 ? "s" : "") + " for your artwork. ",
@@ -964,7 +965,7 @@ const I18N = {
         disclaimer:"Illustrative mockup. The final proof is sent for approval after the order is confirmed." },
   es: { perPc:" por pieza", pcs:n => n + (n === 1 ? " pieza" : " piezas"), plus:n => n + "+ piezas", each:" c/u", perPiece:"Precio por pieza", code:"Cód.",
         silk:"Serigrafía", dtf:"Transfer DTF · A todo color", emb:"Bordado", colors:n => n + (n === 1 ? " color" : " colores"),
-        front:"Frente", back:"Espalda", side:"Lateral", sleeve:"Manga", sleeveL:"Manga izquierda", sleeveR:"Manga derecha", upperBack:"Espalda (nuca)", capBack:"Atrás", place:{ lc:"pecho izquierdo", cc:"centro del pecho", ff:"frente completo", cf:"centro", lf:"lado izquierdo", rf:"lado derecho" },
+        front:"Frente", back:"Espalda", side:"Lateral", sleeve:"Manga", sleeveL:"Manga izquierda", sleeveR:"Manga derecha", upperBack:"Espalda (nuca)", capBack:"Atrás", place:{ lc:"pecho izquierdo", cc:"centro del pecho", ff:"frente completo", mf:"centro", cf:"centro", lf:"lado izquierdo", rf:"lado derecho" },
         extra:n => n + " extra" + (n > 1 ? "s" : "") + " (manga)",
         screens:n => n + " pantallas", once:"Se cobra una sola vez por todo el pedido. ",
         oneTime:n => "Cargo único para crear " + (n > 1 ? "las pantallas" : "la pantalla") + " de impresión de su arte. ",
@@ -1174,13 +1175,26 @@ const DTF_PL = [
   { id:"back", label:"Full Back", views:[["back","fb"]] },
   { id:"front_back", label:"Front + Back", views:[["front","ff"],["back","fb"]] },
   { id:"lc_fb", label:"LC + Full Back", views:[["front","lc"],["back","fb"]] },
+  // medium spots (in-house only): totes, kids' shirts, smaller front/back designs
+  { id:"mfront", label:"Medium Front", views:[["front","mf"]] },
+  { id:"mback", label:"Medium Back", views:[["back","fb"]] },
+  { id:"m_fb", label:"Medium Front + Back", views:[["front","mf"],["back","fb"]] },
 ];
+const DTF_PL_ORDER = ["lc", "mfront", "mback", "m_fb", "front", "back", "front_back", "lc_fb"];
+const DTF_PL_FALLBACK = { mfront:"front", mback:"back", m_fb:"front_back" };   // a medium spot quoted with Vendor 1 → its full spot
 // rates of the DTF production picked for this quote (Vendor 1 or in-house)
 function dtfRates() { return dtfSrc === "house" ? TBDPricing.houseCfg(PCFG).dtf : PCFG.dtf; }
-function dtfPlList() { const R = dtfRates(); return DTF_PL.map(p => ({ ...p, ...R.placements[p.id] })); }
+function dtfPlList() { const R = dtfRates(); return DTF_PL_ORDER.map(id => DTF_PL.find(p => p.id === id)).filter(p => R.placements[p.id]).map(p => ({ ...p, ...R.placements[p.id] })); }
 function dtfExtra() { return dtfRates().extra; }
 function dtfLabel() { return dtfSrc === "house" ? "DTF · In-house" : "DTF · Vendor 1"; }
-function dtfPl(it) { const L = dtfPlList(); return L.find(p => p.id === it.placementId) || L[0]; }
+function dtfPl(it) { const L = dtfPlList(), id = it.placementId; return L.find(p => p.id === id) || L.find(p => p.id === DTF_PL_FALLBACK[id]) || L[0]; }
+function dtfExtraSize(it) { const X = dtfExtra(), z = it.extraSize || "small"; return X[z] ? z : z === "medium" ? "large" : "small"; }
+// "up to 10×10"" after the placement in the quote (in-house sizes)
+function dtfSizeText(it) {
+  const pl = dtfPl(it); if (!pl.size) return "";
+  const up = { pt:"até", en:"up to", es:"hasta" }[quoteLang] || "up to", es = it.extraSpots || 0, ex = dtfExtra()[dtfExtraSize(it)];
+  return " · " + up + " " + pl.size + (es > 0 && ex && ex.size && ex.size !== pl.size ? " + " + (es > 1 ? es + "× " : "") + ex.size : "");
+}
 // In-house: an order that makes less than the minimum profit ($30) gets the difference spread over its pieces (rounded up to $0.10).
 // tier = price the same mix of styles as if the order had t pieces (tier tables).
 function dtfUplift(t) {
@@ -1189,8 +1203,8 @@ function dtfUplift(t) {
   const n = t || tq; let prof = 0;
   its.forEach(it => {
     const c = prod(it).cost || 0, share = itemQty(it) / tq;
-    const r = t ? dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, it.extraSize, tierSuppShip(c, t, 30))
-                : dtfCalc(c, dtfPl(it), tq, shipQtyFor(it), it.extraSpots || 0, it.extraSize, suppShipFor(it, 30));
+    const r = t ? dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, dtfExtraSize(it), tierSuppShip(c, t, 30))
+                : dtfCalc(c, dtfPl(it), tq, shipQtyFor(it), it.extraSpots || 0, dtfExtraSize(it), suppShipFor(it, 30));
     prof += (r.perPiece - r.unitCost) * share * n;
   });
   const min = dtfRates().minProfit || 0;
@@ -1289,12 +1303,12 @@ const METHODS = {
   dtf: {
     get label() { return dtfLabel(); }, min:0, tiers:PCFG.dtf.tiers, split:true,
     views: it => dtfPl(it).views,
-    print: it => T().dtf + " · " + placeText(dtfPl(it).views, it.extraSpots || 0, it),
-    price(it) { const p = prod(it), pl = dtfPl(it), r0 = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, it.extraSize, suppShipFor(it, 30));
+    print: it => T().dtf + " · " + placeText(dtfPl(it).views, it.extraSpots || 0, it) + dtfSizeText(it),
+    price(it) { const p = prod(it), pl = dtfPl(it), r0 = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, dtfExtraSize(it), suppShipFor(it, 30));
       const up = dtfUplift(), r = up ? { ...r0, perPiece: Math.round((r0.perPiece + up) * 100) / 100 } : r0;
-      const ex = dtfExtra()[it.extraSize || "small"], R = dtfRates();
+      const ex = dtfExtra()[dtfExtraSize(it)], R = dtfRates();
       return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() + (R.sheetShip ? " + $" + R.sheetShip + " sheet/" + Math.max(totalQty(), R.sheetMinQty || 1) : "") + (up ? " + " + fmt(up) + " (min $" + R.minProfit + " profit)" : "") }; },
-    tierPrice(it, t) { const c = prod(it).cost; return Math.round((dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, it.extraSize, tierSuppShip(c, t, 30)).perPiece + dtfUplift(t)) * 100) / 100; },
+    tierPrice(it, t) { const c = prod(it).cost; return Math.round((dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, dtfExtraSize(it), tierSuppShip(c, t, 30)).perPiece + dtfUplift(t)) * 100) / 100; },
     setup: () => null, ship: () => T().ship(PCFG.dtf.days[0], PCFG.dtf.days[1], true), tierNote: () => T().tierNoteMix,
   },
   v2: {
@@ -1402,7 +1416,7 @@ function renderSettingsBody() {
     const R = dtfRates();
     el.innerHTML = '<div class="card-label">' + dtfLabel() + '</div>'
       + '<label class="lbl">Production</label><div class="btn-group">' + ["v1", "house"].map((k, i) => '<button class="btn' + (dtfSrc === k ? ' active' : '') + '" onclick="setDtfSrc(\'' + k + '\')">' + ["Vendor 1", "In-house (heat press)"][i] + '</button>').join("") + '</div>'
-      + '<div class="panel-note">Each style picks its own placement and extra spots below. Supplier shipping ($30) and client shipping ($20)' + (R.sheetShip ? ' and the DTF sheet shipping ($' + R.sheetShip + ', split over at least ' + R.sheetMinQty + ' pcs)' : '') + ' are split across the order.' + (dtfSrc === 'house' ? ' Small spot = up to 4×4 in, full = up to 15×15 in.' : '') + (R.minProfit ? ' Every order makes at least $' + R.minProfit + ' profit: small orders get the difference added per piece.' : '') + '</div>';
+      + '<div class="panel-note">Each style picks its own placement and extra spots below. Supplier shipping ($30) and client shipping ($20)' + (R.sheetShip ? ' and the DTF sheet shipping ($' + R.sheetShip + ', split over at least ' + R.sheetMinQty + ' pcs)' : '') + ' are split across the order.' + (dtfSrc === 'house' ? ' Sizes: small up to 4×4", medium up to 10×10", full up to 15×15".' : '') + (R.minProfit ? ' Every order makes at least $' + R.minProfit + ' profit: small orders get the difference added per piece.' : '') + '</div>';
   } else if (method === "v2") {
     const o = v2Order();
     el.innerHTML = '<div class="card-label">Internal costs <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">(not shown in the quote)</span></div>'
@@ -1595,10 +1609,10 @@ function codeSuggestKey(e, id) {
 function itemControlsHTML(it) {
   const id = it.id, pb = (field, val, cur, label, extra) => '<button class="pl-btn' + (val === cur ? ' active' : '') + '" onclick="setItemField(\'' + id + '\',\'' + field + '\',' + (typeof val === "number" ? val : '\'' + val + '\'') + ')">' + label + (extra ? '<span class="pl-price">' + extra + '</span>' : '') + '</button>';
   if (method === "dtf") {
-    const es = it.extraSpots || 0, esz = it.extraSize || "small";
-    return '<div class="pl-row">' + dtfPlList().map(p => pb("placementId", p.id, it.placementId, p.label, fmt(p.retail))).join("") + '</div>'
+    const es = it.extraSpots || 0, esz = dtfExtraSize(it), X = dtfExtra(), inch = o => o.size ? ' <small class="pl-in">' + o.size + '</small>' : '';
+    return '<div class="pl-row">' + dtfPlList().map(p => pb("placementId", p.id, dtfPl(it).id, p.label + inch(p), fmt(p.retail))).join("") + '</div>'
       + '<label class="lbl">Extra spots (sleeves, etc.)</label><div class="pl-row">' + pb("extraSpots", 0, es, "None") + pb("extraSpots", 1, es, "+1 Spot") + pb("extraSpots", 2, es, "+2 Spots")
-      + (es > 0 ? '<span class="pl-gap"></span>' + pb("extraSize", "small", esz, "Small", fmt(dtfExtra().small.retail)) + pb("extraSize", "large", esz, "Large", fmt(dtfExtra().large.retail)) : '') + '</div>'
+      + (es > 0 ? '<span class="pl-gap"></span>' + ["small", "medium", "large"].filter(z => X[z]).map(z => pb("extraSize", z, esz, z[0].toUpperCase() + z.slice(1) + inch(X[z]), fmt(X[z].retail))).join("") : '') + '</div>'
       + spotWhereHTML(it, es);
   }
   if (method === "v2") {
@@ -2015,6 +2029,7 @@ const PRESETS = {
   lc: { label:"Left chest",   side:"front", cx:.63, cy:.34, maxW:.15, maxH:.12 },
   cc: { label:"Center chest", side:"front", cx:.50, cy:.33, maxW:.24, maxH:.12 },
   ff: { label:"Full front",   side:"front", cx:.50, cy:.47, maxW:.36, maxH:.38 },
+  mf: { label:"Medium front", side:"front", cx:.50, cy:.44, maxW:.27, maxH:.27 },
   fb: { label:"Full back",    side:"back",  cx:.50, cy:.42, maxW:.38, maxH:.40 },
   cf: { label:"Cap center front", side:"front", cx:.50, cy:.40, maxW:.30, maxH:.20 },
   lf: { label:"Cap left front",   side:"front", cx:.63, cy:.42, maxW:.17, maxH:.14 },

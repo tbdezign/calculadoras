@@ -41,14 +41,18 @@
     // DTF made in-house (own heat press — planned, calculator only for now). Same formula as DTF Vendor 1, own rates.
     // vendorCost = our cost per piece: transfer on a 22" gang sheet (~$0.151 per inch + 10% waste) + pressing (~2 min) + supplies.
     dtfHouse: {
+      // size = the biggest print for that spot, in inches (shown in the calculator and the quote)
       placements: {
-        lc:         { vendorCost: 1.55, retail: 5 },
-        front:      { vendorCost: 3.95, retail: 10 },
-        back:       { vendorCost: 3.95, retail: 10 },
-        front_back: { vendorCost: 7.9,  retail: 19 },
-        lc_fb:      { vendorCost: 5.5,  retail: 14 },
+        lc:         { vendorCost: 1.55, retail: 5,  size: '4×4"' },
+        mfront:     { vendorCost: 2.22, retail: 4,  size: '10×10"' },
+        mback:      { vendorCost: 2.22, retail: 4,  size: '10×10"' },
+        m_fb:       { vendorCost: 4.45, retail: 8,  size: '10×10"' },
+        front:      { vendorCost: 3.95, retail: 10, size: '15×15"' },
+        back:       { vendorCost: 3.95, retail: 10, size: '15×15"' },
+        front_back: { vendorCost: 7.9,  retail: 19, size: '15×15"' },
+        lc_fb:      { vendorCost: 5.5,  retail: 14, size: '4×4" + 15×15"' },
       },
-      extra: { small: { vendorCost: 1.55, retail: 5 }, large: { vendorCost: 3.95, retail: 10 } },  // small = up to 4x4 in (same as Vendor 1), large = up to 15x15 in
+      extra: { small: { vendorCost: 1.55, retail: 5, size: '4×4"' }, medium: { vendorCost: 2.22, retail: 4, size: '10×10"' }, large: { vendorCost: 3.95, retail: 10, size: '15×15"' } },
       sheetShip: 17,      // shipping of the gang sheet order, split across the order's pieces
       sheetMinQty: 10,    // small orders share a sheet with other orders: split over at least 10 pieces
       minProfit: 30,      // every in-house order makes at least this much: small orders get the difference spread over their pieces
