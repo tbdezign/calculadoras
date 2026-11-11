@@ -112,6 +112,15 @@
   .oi-supplier { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12px; color:#888; }
   .oi-supplier input { flex:1; min-width:0; padding:7px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px; font-family:inherit; outline:none; background:#fff; }
   .oi-supplier input:focus { border-color:#1a7698; }
+  .oi-supplier select { flex:1; min-width:0; padding:7px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px; font-family:inherit; background:#fff; }
+  .src-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:6px; margin:4px 0; }
+  .src-row { display:flex; align-items:center; gap:6px; background:#fff; border:1px solid #F5DFA3; border-radius:6px; padding:5px 8px; font-size:13px; }
+  .src-row input[type=checkbox] { width:auto; flex:none; margin:0; }
+  .src-name { flex:1; color:#333; font-weight:500; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .src-row .src-other { flex:1; min-width:0; padding:3px 6px; font-size:13px; }
+  .src-cost { display:flex; align-items:center; gap:2px; color:#888; }
+  .src-cost { flex:none; }
+  .src-cost input { width:70px; padding:3px 6px; font-size:13px; }
   .oi-suggest { position: absolute; left: 14px; right: 14px; top: 54px; z-index: 6; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.12); overflow: hidden; max-height: 320px; overflow-y: auto; }
   .oi-suggest button { display: flex; gap: 10px; align-items: baseline; width: 100%; padding: 10px 12px; border: none; background: #fff; text-align: left; font-size: 13px; cursor: pointer; font-family: inherit; border-bottom: 1px solid #F0F0F0; }
   .oi-suggest button:last-child { border-bottom: none; }
@@ -811,6 +820,8 @@ function cleanProduct(k, p) {
   if (k === "silk") { o.cost2xl = o.cost2xl || o.costStd; o.cost3xl = o.cost3xl || o.costStd; ok = o.costStd > 0; }
   if (k === "emb") { o.c2xl = o.c2xl || o.cStd; o.c3xl = o.c3xl || o.cStd; ok = o.cStd > 0; }
   if (k === "dtf") ok = o.cost > 0;
+  // where the blank can be bought: [{ n: supplier, c: XS–XL cost }] (2XL/3XL keep the product's own difference)
+  if (Array.isArray(p.sources)) { const src = p.sources.map(x => ({ n: String((x && x.n) || "").trim(), c: Math.round((+(x && x.c) || 0) * 100) / 100 })).filter(x => x.n && x.c > 0); if (src.length) o.sources = src; }
   return ok ? o : null;
 }
 async function addProducts(k, list) {
@@ -834,7 +845,7 @@ function blankCosts(k, p) {
 }
 function convertProduct(m, src) {
   const c = blankCosts(src.k, src.p), p = src.p;
-  const o = { code:p.code, name:p.name, desc:p.desc || "", desc_en:p.desc_en || "", desc_es:p.desc_es || "", vendor:p.vendor || "", memo:p.memo || "" };
+  const o = { code:p.code, name:p.name, desc:p.desc || "", desc_en:p.desc_en || "", desc_es:p.desc_es || "", vendor:p.vendor || "", memo:p.memo || "", ...(p.sources ? { sources:p.sources } : {}) };
   if (m === "silk") Object.assign(o, { costStd:c.std, cost2xl:c.x2, cost3xl:c.x3 });
   else if (m === "emb") Object.assign(o, { cStd:c.std, c2xl:c.x2, c3xl:c.x3 });
   else if (m === "dtf") o.cost = c.std;
@@ -884,8 +895,8 @@ function productFormHTML(p) {
     + '<label class="lbl">Description (quote)</label><textarea id="pf_desc" rows="2">' + esc(p.desc) + '</textarea>'
     + '<div class="form-row"><div style="flex:1"><label class="lbl">Description EN (optional)</label><textarea id="pf_den" rows="2" placeholder="Leave empty to translate automatically">' + esc(p.desc_en||"") + '</textarea></div>'
     + '<div style="flex:1"><label class="lbl">Description ES (optional)</label><textarea id="pf_des" rows="2" placeholder="Leave empty to translate automatically">' + esc(p.desc_es||"") + '</textarea></div></div>'
-    + '<div class="int-box"><div class="int-head">Internal only · never shown to the client</div><div class="form-row"><div style="flex:0 0 180px"><label class="lbl">Vendor (where this price came from)</label><input id="pf_vendor" list="vendorList" value="' + esc(p.vendor||"") + '" placeholder="e.g. SanMar"></div>'
-    + '<div style="flex:1"><label class="lbl">Memo</label><textarea id="pf_memo" rows="2" placeholder="e.g. price checked 11/03, item #, contact…">' + esc(p.memo||"") + '</textarea></div></div></div>'
+    + '<div class="int-box"><div class="int-head">Internal only · never shown to the client</div>' + (method !== "v2" ? sourcesFormHTML(isNew ? null : p) : '<div class="form-row"><div style="flex:0 0 180px"><label class="lbl">Vendor (where this price came from)</label><input id="pf_vendor" list="vendorList" value="' + esc(p.vendor||"") + '" placeholder="e.g. SanMar"></div></div>')
+    + '<div class="form-row"><div style="flex:1"><label class="lbl">Memo</label><textarea id="pf_memo" rows="2" placeholder="e.g. price checked 11/03, item #, contact…">' + esc(p.memo||"") + '</textarea></div></div></div>'
     + '<datalist id="vendorList">' + allVendors().map(v => '<option value="' + esc(v) + '">').join("") + '</datalist>'
     + (method !== "v2" && !isNew ? siteBoxHTML(p.code) : '')
     + '<label class="lbl">' + CAT_HINT[method] + '</label><div class="form-row">'
@@ -894,9 +905,33 @@ function productFormHTML(p) {
     + (isNew ? '' : '<button class="del-btn" onclick="deleteProductForm(\'' + esc(p.code) + '\')">Delete</button>')
     + '<button class="cancel-btn" onclick="editProduct=null;siteDraft=null;renderCatalog()">Cancel</button></div></div>';
 }
+// ── Where to buy: the suppliers that carry this blank and their XS–XL cost ──
+const SRC_ROWS = ["SanMar", "S&S Activewear", "shirtsbargain"];
+function sourcesFormHTML(p) {
+  const have = p ? productSources(p, method) : [], rows = SRC_ROWS.slice();
+  have.forEach(x => { if (!rows.some(r => TBDPricing.supplierKey(r) === TBDPricing.supplierKey(x.n))) rows.push(x.n); });
+  rows.push("");   // Other
+  return '<label class="lbl">Where to buy <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">· XS–XL cost at each supplier (2XL/3XL keep the same difference)</span></label><div class="src-grid">'
+    + rows.map((r, i) => { const h = r && have.find(x => TBDPricing.supplierKey(x.n) === TBDPricing.supplierKey(r));
+      return '<label class="src-row"><input type="checkbox" class="pf_src_on"' + (h ? ' checked' : '') + '>'
+        + (r ? '<span class="src-name">' + esc(r) + '</span><input type="hidden" class="pf_src_n" value="' + esc(r) + '">' : '<input class="pf_src_n src-other" placeholder="Other supplier" oninput="this.closest(\'.src-row\').querySelector(\'.pf_src_on\').checked=!!this.value.trim()">')
+        + '<span class="src-cost"><span>$</span><input type="number" step="0.01" class="pf_src_c" value="' + (h ? h.c : "") + '" placeholder="0.00" oninput="if(this.value)this.closest(\'.src-row\').querySelector(\'.pf_src_on\').checked=true"></span></label>'; }).join("")
+    + '</div><div class="muted small" style="margin:2px 0 8px">The quote picks the cheapest mix (blanks + supplier shipping). The cheapest one also sets the XS–XL cost below and the website price.</div>';
+}
+function readSourcesForm() {
+  return [...document.querySelectorAll(".src-row")].map(r => ({ on: r.querySelector(".pf_src_on").checked, n: r.querySelector(".pf_src_n").value.trim(), c: parseFloat(r.querySelector(".pf_src_c").value) }))
+    .filter(x => x.on && x.n && x.c > 0).map(x => ({ n: x.n, c: Math.round(x.c * 100) / 100 }));
+}
 async function saveProductForm() {
-  const raw = { code:q("pf_code").value.trim(), name:q("pf_name").value.trim(), desc:q("pf_desc").value, desc_en:q("pf_den").value, desc_es:q("pf_des").value, vendor:q("pf_vendor").value, memo:q("pf_memo").value };
+  const srcs = method !== "v2" ? readSourcesForm() : null;
+  const raw = { code:q("pf_code").value.trim(), name:q("pf_name").value.trim(), desc:q("pf_desc").value, desc_en:q("pf_den").value, desc_es:q("pf_des").value, vendor: srcs ? srcs.map(x => x.n).join("/") : q("pf_vendor").value, memo:q("pf_memo").value };
   CAT_FIELDS[method].forEach(f => { raw[f.k] = parseFloat(q("pf_" + f.k).value); });
+  if (srcs && srcs.length) {
+    // the cheapest supplier sets the XS–XL cost; 2XL/3XL move with it (same difference as typed)
+    const min = Math.min(...srcs.map(x => x.c)), f = SIZE_COST[method] || { std: "cost" }, std0 = raw[f.std] || min;
+    raw.sources = srcs; raw[f.std] = min;
+    if (f.x2) { raw[f.x2] = raw[f.x2] > 0 ? Math.round((min + raw[f.x2] - std0) * 100) / 100 : min; raw[f.x3] = raw[f.x3] > 0 ? Math.round((min + raw[f.x3] - std0) * 100) / 100 : min; }
+  }
   const p = cleanProduct(method, raw); if (!p) return;
   if (!await saveProduct(method, p)) return;
   await syncBlankCost(method, p);
@@ -916,6 +951,7 @@ async function syncBlankCost(from, p) {
     else if (k === "emb") Object.assign(n, { cStd:c.std }, from !== "dtf" ? { c2xl:c.x2, c3xl:c.x3 } : {});
     else n.cost = c.std;
     if ((p.vendor || "").trim()) n.vendor = p.vendor;   // same blank, same supplier
+    if (p.sources) n.sources = p.sources; else delete n.sources;
     if (JSON.stringify(n) !== JSON.stringify(o)) await saveProduct(k, n);
   }
 }
@@ -1054,8 +1090,57 @@ function planSuppliers(entries) {   // entries: [{ id, raw, qty }] → Map id �
   return plan;
 }
 function rawSupplier(it, p) { p = p || prod(it); return (it.supplier || "").trim() || (p && p.vendor) || ""; }
-function orderSupplierPlan() { return planSuppliers(validItems().map(it => ({ id: String(it.id), raw: rawSupplier(it) || SUPPLIER_LIST[0], qty: itemQty(it) }))); }
+// Suppliers a product can come from, with the XS–XL cost at each. Products saved before "Where to buy":
+// every supplier in Vendor ("SanMar/S&S") at the saved cost.
+function productSources(p, k) {
+  if (!p) return [];
+  if (Array.isArray(p.sources) && p.sources.length) return p.sources.filter(x => x && x.n && x.c > 0);
+  const base = +blankCosts(k || method, p).std || 0;
+  return supplierChoices(p.vendor).map(n => ({ n, c: base }));
+}
+// cost of one piece of a size, bought from supplier `name` (2XL/3XL keep the product's own difference from XS–XL)
+function srcCost(p, k, name, size) {
+  const b = blankCosts(k, p), x = name && productSources(p, k).find(s => TBDPricing.supplierKey(s.n) === TBDPricing.supplierKey(name));
+  const std = +b.std || 0, z = +(b[size || "std"]) || std;
+  return x ? Math.round((x.c + (z - std)) * 100) / 100 : z;
+}
+// The supplier of each style. A style typed with one supplier (Supplier box) keeps it; otherwise the cheapest mix wins:
+// blanks + one supplier shipping per supplier used (free from $200 of blanks), tried for every combination when there are few.
+function itemOptions(it, k, p, qtys, forced) {
+  const src = productSources(p, k), names = forced ? supplierChoices(forced) : [];
+  let opts = names.length ? names.map(n => ({ n, c: (src.find(s => TBDPricing.supplierKey(s.n) === TBDPricing.supplierKey(n)) || {}).c })) : src.slice();
+  if (!opts.length) opts = [{ n: SUPPLIER_LIST[0] }];
+  return opts.map(o => ({ n: o.n, key: TBDPricing.supplierKey(o.n), blanks: Object.entries(qtys).reduce((a, [z, q]) => a + srcCost(p, k, o.n, z) * q, 0) }));
+}
+function bestSupplierMix(entries, shipAmt) {   // entries: [{ id, opts: [{ n, key, blanks }] }] → Map id → name
+  const sig = JSON.stringify([entries, shipAmt, shipMode, freeShipMin]); if (supPlanMemo.sig === sig) return supPlanMemo.plan;
+  const cost = pick => { const g = {}; let t = 0; pick.forEach((o, i) => { g[o.key] = (g[o.key] || 0) + o.blanks; t += o.blanks; }); Object.values(g).forEach(b => { if (!shipWaived(b)) t += shipAmt; }); return t; };
+  const n = entries.reduce((a, e) => a * e.opts.length, 1);
+  let best = entries.map(e => e.opts[0]), bestC = cost(best);
+  if (n <= 6000) {
+    const idx = entries.map(() => 0);
+    for (let c = 0; c < n; c++) {
+      const pick = entries.map((e, i) => e.opts[idx[i]]), v = cost(pick);
+      if (v < bestC - 1e-9) { best = pick; bestC = v; }
+      for (let i = 0; i < idx.length; i++) { if (++idx[i] < entries[i].opts.length) break; idx[i] = 0; }
+    }
+  } else {   // many styles: start from the plan that uses the fewest suppliers, then move single styles while it saves money
+    const fewest = planSuppliers(entries.map(e => ({ id: e.id, raw: e.opts.map(o => o.n).join("/"), qty: 1 })));
+    best = entries.map(e => e.opts.find(o => o.n === fewest.get(e.id)) || e.opts[0]); bestC = cost(best);
+    for (let pass = 0, moved = true; moved && pass < 5; pass++) { moved = false;
+      entries.forEach((e, i) => e.opts.forEach(o => { const t = best.slice(); t[i] = o; const v = cost(t); if (v < bestC - 1e-9) { best = t; bestC = v; moved = true; } })); }
+  }
+  const plan = new Map(entries.map((e, i) => [e.id, best[i].n]));
+  supPlanMemo = { sig, plan };
+  return plan;
+}
+const SUPP_SHIP = () => method === "emb" ? embSet.suppShip : method === "silk" ? SHIP_IN : 30;
+function orderSupplierPlan() {
+  return bestSupplierMix(validItems().map(it => { const p = prod(it); return { id: String(it.id), opts: itemOptions(it, method, p, sizeQtys(it), (it.supplier || "").trim()) }; }), SUPP_SHIP());
+}
 function supplierOf(it) { return orderSupplierPlan().get(String(it.id)) || supplierChoices(rawSupplier(it))[0] || SUPPLIER_LIST[0]; }
+// cost of one piece of a size from the supplier picked for this style
+function itemCost(it, size) { const p = prod(it); return p ? srcCost(p, method, supplierOf(it), size) : 0; }
 function supplierGroups() { const g = {}; validItems().forEach(it => { const k = TBDPricing.supplierKey(supplierOf(it)); g[k] = (g[k] || 0) + itemQty(it); }); return g; }
 // Split is automatic when the styles in the order come from 2+ suppliers (from each product's Vendor, or the Supplier box).
 // The checkbox can still force it on, or off ("off") when the detection is wrong.
@@ -1084,8 +1169,9 @@ function comboStats() {
       const p = cats[m][(it.code || "").toUpperCase()]; if (!p) return;
       const f = SIZE_COST[m], sz = f && it.sizes, n = { std: parseInt(it.qty) || 0, x2: sz ? parseInt(it.q2) || 0 : 0, x3: sz ? parseInt(it.q3) || 0 : 0 };
       const qn = n.std + n.x2 + n.x3; if (!qn) return;
-      const bl = f ? Object.entries(n).reduce((a, [z, k]) => a + ((p[f[z]] || p[f.std]) || 0) * k, 0) : (p.cost || 0) * qn;
-      const key = TBDPricing.supplierKey(st.plan.get(String(it.id)) || rawSupplier(it, p)) || "ss", g = st.groups[key] || (st.groups[key] = { qty: 0, blanks: 0 });
+      const sup = st.plan.get(String(it.id)) || supplierChoices(rawSupplier(it, p))[0] || "ss";
+      const bl = Object.entries(n).reduce((a, [z, k]) => a + srcCost(p, m, sup, f ? z : "std") * k, 0);
+      const key = TBDPricing.supplierKey(sup) || "ss", g = st.groups[key] || (st.groups[key] = { qty: 0, blanks: 0 });
       g.qty += qn; g.blanks += bl; st.total += qn; st.blanks += bl;
     });
   });
@@ -1096,10 +1182,11 @@ function comboSupplierPlan() {
   const entries = [];
   comboMembers().forEach(i => {
     const sq = i === activeQ ? snapshotQuote() : quotes[i], m = sq.method; if (m === "v2") return;
-    (sq.orderItems || []).forEach(it => { const p = cats[m][(it.code || "").toUpperCase()]; const qn = (parseInt(it.qty) || 0) + (parseInt(it.q2) || 0) + (parseInt(it.q3) || 0);
-      if (p && qn) entries.push({ id: String(it.id), raw: rawSupplier(it, p) || "ss", qty: qn }); });
+    (sq.orderItems || []).forEach(it => { const p = cats[m][(it.code || "").toUpperCase()]; const sz = SIZE_COST[m] && it.sizes;
+      const qtys = { std: parseInt(it.qty) || 0, x2: sz ? parseInt(it.q2) || 0 : 0, x3: sz ? parseInt(it.q3) || 0 : 0 };
+      if (p && qtys.std + qtys.x2 + qtys.x3) entries.push({ id: String(it.id), opts: itemOptions(it, m, p, qtys, (it.supplier || "").trim()) }); });
   });
-  return planSuppliers(entries);
+  return bestSupplierMix(entries, SUPP_SHIP());
 }
 function comboKey(it) { const st = comboStats(); return TBDPricing.supplierKey(st.plan.get(String(it.id)) || rawSupplier(it)) || "ss"; }
 // client shipping per piece = one delivery split over every piece of the combined order
@@ -1147,6 +1234,18 @@ function uncombine() {
   renderAll();
 }
 function onSupplier(id, v) { const it = itemById(id); if (it) { it.supplier = v; updateOrderResults(); } }
+// Supplier of a style in the order: a menu when the product lists 2+ suppliers (Auto = cheapest mix), else the old text box
+function supplierFieldHTML(it, M) {
+  if (method === "v2") return "";
+  const p = prod(it), src = productSources(p, method);
+  if (p && src.length > 1) {
+    const cur = (it.supplier || "").trim(), pick = supplierOf(it), auto = !src.some(s => TBDPricing.supplierKey(s.n) === TBDPricing.supplierKey(cur));
+    return '<div class="oi-supplier"><span>Supplier</span><select onchange="onSupplier(\'' + it.id + '\',this.value);renderOrderItems()">'
+      + '<option value=""' + (auto ? ' selected' : '') + '>Auto (cheapest) · ' + esc(pick) + '</option>'
+      + src.map(s => '<option value="' + esc(s.n) + '"' + (!auto && TBDPricing.supplierKey(s.n) === TBDPricing.supplierKey(cur) ? ' selected' : '') + '>' + esc(s.n) + ' · ' + fmt(s.c) + '</option>').join("") + '</select></div>';
+  }
+  return M.split && splitOn() ? '<div class="oi-supplier"><span>Supplier</span><input list="supplierList" value="' + esc(supplierOf(it)) + '" onfocus="this.select()" oninput="onSupplier(\'' + it.id + '\',this.value)"></div>' : '';
+}
 
 function validItems() { return orderItems.filter(it => cat()[(it.code||"").toUpperCase()]); }
 // Sizes: XS–XL in the Qty box; 2XL / 3XL boxes appear when "+ 2XL / 3XL" is turned on (Silk Screen and Embroidery).
@@ -1155,7 +1254,7 @@ const SIZE_LABEL = { std:"XS–XL", x2:"2XL", x3:"3XL" };
 function hasSizes(it) { return !!(SIZE_COST[method] && it.sizes); }
 function sizeQtys(it) { const o = { std: parseInt(it.qty) || 0 }; if (hasSizes(it)) { o.x2 = parseInt(it.q2) || 0; o.x3 = parseInt(it.q3) || 0; } return o; }
 function itemQty(it) { const z = sizeQtys(it); return z.std + (z.x2 || 0) + (z.x3 || 0); }
-function sizeCost(it, size) { const p = prod(it), f = SIZE_COST[method]; return f ? (p[f[size || "std"]] || p[f.std]) : 0; }
+function sizeCost(it, size) { return SIZE_COST[method] ? itemCost(it, size) : 0; }
 // Price per size that has pieces: [{ size, q, r }]
 function sizeLines(it) { return Object.entries(sizeQtys(it)).filter(([, n]) => n > 0).map(([size, n]) => ({ size, q:n, r: METHODS[method].price(it, size) })).filter(l => l.r); }
 function totalQty() { return validItems().reduce((s, it) => s + itemQty(it), 0); }
@@ -1163,7 +1262,7 @@ function prod(it) { return cat()[(it.code||"").toUpperCase()]; }
 // ── Free supplier shipping: blanks from one supplier at $200+ ship free (Silk, DTF Vendor 1, Embroidery) ──
 function blankSubtotal(it) {
   const p = prod(it); if (!p) return 0;
-  if (!SIZE_COST[method]) return (p.cost || 0) * itemQty(it);
+  if (!SIZE_COST[method]) return itemCost(it, "std") * itemQty(it);
   return Object.entries(sizeQtys(it)).reduce((s, [size, n]) => s + sizeCost(it, size) * n, 0);
 }
 // Blank subtotal of the supplier order this style ships in (its supplier group when suppliers are split).
@@ -1232,7 +1331,7 @@ function dtfUplift(t) {
   const its = validItems(), tq = totalQty(); if (!tq) return 0;
   const n = t || tq; let prof = 0;
   its.forEach(it => {
-    const c = prod(it).cost || 0, share = itemQty(it) / tq;
+    const c = itemCost(it, "std"), share = itemQty(it) / tq;
     const r = t ? dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, dtfExtraSize(it), tierSuppShip(c, t, 30))
                 : dtfCalc(c, dtfPl(it), tq, shipQtyFor(it), it.extraSpots || 0, dtfExtraSize(it), suppShipFor(it, 30));
     prof += (r.perPiece - r.unitCost) * share * n;
@@ -1334,11 +1433,11 @@ const METHODS = {
     get label() { return dtfLabel(); }, min:0, tiers:PCFG.dtf.tiers, split:true,
     views: it => dtfPl(it).views,
     print: it => T().dtf + " · " + placeText(dtfPl(it).views, it.extraSpots || 0, it) + dtfSizeText(it),
-    price(it) { const p = prod(it), pl = dtfPl(it), r0 = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, dtfExtraSize(it), suppShipFor(it, 30));
+    price(it) { const p = { cost: itemCost(it, "std") }, pl = dtfPl(it), r0 = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, dtfExtraSize(it), suppShipFor(it, 30));
       const up = dtfUplift(), r = up ? { ...r0, perPiece: Math.round((r0.perPiece + up) * 100) / 100 } : r0;
       const ex = dtfExtra()[dtfExtraSize(it)], R = dtfRates();
       return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() + (R.sheetShip ? " + $" + R.sheetShip + " sheet/" + Math.max(totalQty(), R.sheetMinQty || 1) : "") + (up ? " + " + fmt(up) + " (min $" + R.minProfit + " profit)" : "") }; },
-    tierPrice(it, t) { const c = prod(it).cost; return Math.round((dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, dtfExtraSize(it), tierSuppShip(c, t, 30)).perPiece + dtfUplift(t)) * 100) / 100; },
+    tierPrice(it, t) { const c = itemCost(it, "std"); return Math.round((dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, dtfExtraSize(it), tierSuppShip(c, t, 30)).perPiece + dtfUplift(t)) * 100) / 100; },
     setup: () => null, ship: () => T().ship(PCFG.dtf.days[0], PCFG.dtf.days[1], true), tierNote: () => T().tierNoteMix,
   },
   v2: {
@@ -1695,7 +1794,7 @@ function renderOrderItems() {
     + '</div>'
     + '<div class="oi-suggest" id="oiac-' + it.id + '" hidden></div>'
     + itemControlsHTML(it)
-    + (M.split && splitOn() ? '<div class="oi-supplier"><span>Supplier</span><input list="supplierList" value="' + esc(supplierOf(it)) + '" onfocus="this.select()" oninput="onSupplier(\'' + it.id + '\',this.value)"></div>' : '')
+    + supplierFieldHTML(it, M)
     + '<div id="oiresult-' + it.id + '"></div></div>').join("");
   orderItems.forEach(updateItemInfo);
   updateOrderResults();
