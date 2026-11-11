@@ -1484,7 +1484,7 @@ function itemLogoHTML(it) {
   if (!it.logo) return '<div class="mk-status" style="margin-top:6px"><span>Uses the main client logo.</span><button class="mk-link" onclick="' + pick + '">Use a different logo for this style</button></div>';
   return '<div class="mk-logo" style="margin-top:8px" ondragover="event.preventDefault()" ondrop="dropItemLogo(event,\'' + it.id + '\')"><img src="' + it.logo.url + '" alt="">'
     + '<div class="grow"><b style="color:#1A1A1A">Logo for this style</b><br>Only ' + esc(it.code.toUpperCase()) + ' uses this file.'
-    + '<label class="mk-inline"><input type="checkbox" ' + (it.logo.removeWhite ? 'checked' : '') + ' onchange="setRemoveWhite(\'item:' + it.id + '\',this.checked)"> Remove white background</label>'
+    + '<label class="mk-inline"><input type="checkbox" ' + (it.logo.removeWhite ? 'checked' : '') + ' onchange="setRemoveWhite(\'item:' + it.id + '\',this.checked)"> Remove background</label>'
     + '<button class="mk-link" onclick="clearItemLogo(\'' + it.id + '\')">Use the main logo</button></div>'
     + '<button class="mk-link" onclick="' + pick + '">Change</button></div>';
 }
@@ -2428,7 +2428,7 @@ function renderLogos() {
   const zone = (which, title, lg, extra) => '<div class="mk-logo' + (mk.pasteTarget && mk.pasteTarget.kind==="logo" && mk.pasteTarget.side===which ? ' target':'') + '" tabindex="0" onfocus="mk.pasteTarget={kind:\'logo\',side:\'' + which + '\'};document.querySelectorAll(\'#mkLogos .mk-logo\').forEach(e=>e.classList.toggle(\'target\',e===this))" ondragover="event.preventDefault()" ondrop="dropLogo(event,\'' + which + '\')">'
     + (lg ? '<img src="' + lg.url + '" alt="">' : '<div class="mk-logo-empty">Logo</div>')
     + '<div class="grow"><b style="color:#1A1A1A">' + title + '</b><br>' + (lg ? 'Paste or drop another to swap it.' : 'Paste, drop, or choose the file. PNG with a transparent background works best.')
-    + (lg ? '<label class="mk-inline"><input type="checkbox" ' + (lg.removeWhite?'checked':'') + ' onchange="setRemoveWhite(\'' + which + '\',this.checked)"> Remove white background</label>' : '') + (extra||'') + '</div>'
+    + (lg ? '<label class="mk-inline"><input type="checkbox" ' + (lg.removeWhite?'checked':'') + ' onchange="setRemoveWhite(\'' + which + '\',this.checked)"> Remove background</label>' : '') + (extra||'') + '</div>'
     + '<button class="mk-link" onclick="mk.logoPick=\'' + which + '\';document.getElementById(\'mkLogoFile\').click()">' + (lg ? 'Change' : 'Choose') + '</button></div>';
   let h = '';
   if (extras.length) {
@@ -2467,18 +2467,60 @@ function setRemoveWhite(which, on) {
   clearBoxes(which); if (which === "front") clearFollowers();
   refreshViews(); renderEditor();
 }
+// Background removal, any color: the background is the color that fills most of the image border.
+// Everything of that color goes transparent (connected to the border, or closed in, like the inside of an "O" or a ring);
+// the anti-aliased rim fades out and loses the background tint, so the logo sits clean on any shirt color.
+function cutLogoBackground(p, w, h) {
+  const N = w * h, buckets = new Map(); let border = 0, clear = 0;
+  const look = j => { const i = j * 4; border++; if (p[i + 3] < 40) { clear++; return; }
+    const k = (p[i] >> 4) << 8 | (p[i + 1] >> 4) << 4 | (p[i + 2] >> 4), b = buckets.get(k) || { n: 0, r: 0, g: 0, b: 0 };
+    b.n++; b.r += p[i]; b.g += p[i + 1]; b.b += p[i + 2]; buckets.set(k, b); };
+  for (let x = 0; x < w; x++) { look(x); look((h - 1) * w + x); }
+  for (let y = 1; y < h - 1; y++) { look(y * w); look(y * w + w - 1); }
+  if (clear > border * 0.5) return;   // already a transparent PNG
+  let best = null; buckets.forEach(b => { if (!best || b.n > best.n) best = b; });
+  if (!best || best.n < border * 0.25) return;   // no single background color (a photo): leave it
+  const bg = [best.r / best.n, best.g / best.n, best.b / best.n];
+  const dist = j => { const i = j * 4; return Math.max(Math.abs(p[i] - bg[0]), Math.abs(p[i + 1] - bg[1]), Math.abs(p[i + 2] - bg[2])); };
+  const T1 = 34, T2 = 90, state = new Uint8Array(N);   // 1 = background, 2 = edge
+  const near = new Uint8Array(N); for (let j = 0; j < N; j++) near[j] = p[j * 4 + 3] > 0 && dist(j) <= T1 ? 1 : 0;
+  // fill from the border
+  const stack = [];
+  const seed = j => { if (near[j] && !state[j]) { state[j] = 1; stack.push(j); } };
+  for (let x = 0; x < w; x++) { seed(x); seed((h - 1) * w + x); }
+  for (let y = 0; y < h; y++) { seed(y * w); seed(y * w + w - 1); }
+  const grow = () => { while (stack.length) { const j = stack.pop(), x = j % w;
+    if (x > 0) seed(j - 1); if (x < w - 1) seed(j + 1); if (j >= w) seed(j - w); if (j < N - w) seed(j + w); } };
+  grow();
+  // closed areas of the background color too (inside letters, inside a ring): the same color as the background is background
+  const seen = new Uint8Array(N), limit = Infinity;
+  for (let j = 0; j < N; j++) {
+    if (!near[j] || state[j] || seen[j]) continue;
+    const comp = [j], q = [j]; seen[j] = 1;
+    while (q.length) { const k = q.pop(), x = k % w;
+      for (const n of [x > 0 ? k - 1 : -1, x < w - 1 ? k + 1 : -1, k >= w ? k - w : -1, k < N - w ? k + w : -1])
+        if (n >= 0 && near[n] && !seen[n] && !state[n]) { seen[n] = 1; q.push(n); comp.push(n); } }
+    if (comp.length < limit) comp.forEach(k => state[k] = 1);
+  }
+  for (let j = 0; j < N; j++) if (state[j] === 1) p[j * 4 + 3] = 0;
+  // soft rim: pixels touching the background fade by how close they are to its color, and lose its tint
+  for (let j = 0; j < N; j++) {
+    if (state[j] || !p[j * 4 + 3]) continue;
+    const x = j % w, nb = (x > 0 && state[j - 1] === 1) || (x < w - 1 && state[j + 1] === 1) || (j >= w && state[j - w] === 1) || (j < N - w && state[j + w] === 1);
+    if (!nb) continue;
+    const d = dist(j); if (d >= T2) continue;
+    const a = Math.max(0.05, (d - T1) / (T2 - T1)), i = j * 4;
+    for (let c = 0; c < 3; c++) p[i + c] = Math.max(0, Math.min(255, Math.round((p[i + c] - bg[c] * (1 - a)) / a)));
+    p[i + 3] = Math.round(p[i + 3] * a);
+  }
+}
 function buildLogo(lg) {
   const r = lg.raw, s = Math.min(1, 3000 / Math.max(r.naturalWidth, r.naturalHeight));
   const w = Math.max(1, Math.round(r.naturalWidth*s)), h = Math.max(1, Math.round(r.naturalHeight*s));
   const c = document.createElement("canvas"); c.width = w; c.height = h;
   const cx = c.getContext("2d"); cx.drawImage(r,0,0,w,h);
   const d = cx.getImageData(0,0,w,h), p = d.data;
-  if (lg.removeWhite) {
-    for (let i=0;i<p.length;i+=4) {
-      const m = Math.min(p[i],p[i+1],p[i+2]);
-      if (m >= 240) p[i+3] = 0; else if (m > 212) p[i+3] = Math.round(p[i+3] * (240-m) / 28);
-    }
-  }
+  if (lg.removeWhite) cutLogoBackground(p, w, h);   // (named removeWhite in saved quotes; works for any background color)
   // Trim empty margins so the art itself fits the print area.
   let x0=w, y0=h, x1=-1, y1=-1;
   for (let y=0;y<h;y++) for (let x=0;x<w;x++) if (p[(y*w+x)*4+3] > 8) { if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
