@@ -279,6 +279,78 @@ async function syncReviews() {
   return changed;
 }
 
+// only someone logged in to the calculators (Supabase auth) can use the staff modes
+async function isStaff(req: Request) {
+  const auth = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (!auth) return false;
+  const who = await fetch(`${SB_URL}/auth/v1/user`, { headers: { apikey: SB_KEY, Authorization: `Bearer ${auth}` } });
+  return who.ok;
+}
+
+// ── Products made in the Pricing calculator: a Shopify product with one variant per quantity (and per option label).
+// New products are created as DRAFT (title, description, type, tags, mockups). With shopifyId: only the prices are updated
+// (missing quantities are added), so anything edited in Shopify (description, YMQ options, photos) stays.
+async function printProduct(req: Request, body: any) {
+  if (!await isStaff(req)) return json({ error: "Log in to the calculator first." }, 401);
+  const p = body.product || {};
+  const optNames: string[] = (Array.isArray(p.options) ? p.options : []).slice(0, 3).map((o: unknown) => clip(o, 40).trim()).filter(Boolean);
+  if (!optNames.length) return json({ error: "No quantities to create." }, 400);
+  const seen = new Set<string>(), variants: { values: string[]; price: string }[] = [];
+  for (const v of (Array.isArray(p.variants) ? p.variants : []).slice(0, 100)) {
+    const values = (v.values || []).slice(0, optNames.length).map((x: unknown) => clip(x, 60).trim());
+    const price = +v.price;
+    if (values.length !== optNames.length || values.some((x: string) => !x) || !(price > 0 && price < 100000)) continue;
+    const key = values.join("|"); if (seen.has(key)) continue; seen.add(key);
+    variants.push({ values, price: money(price) });
+  }
+  if (!variants.length) return json({ error: "Fill in the quantities and prices first." }, 400);
+  const store = SHOP.replace(/\.myshopify\.com$/, "");
+  const adminUrl = (gid: string) => `https://admin.shopify.com/store/${store}/products/${String(gid).split("/").pop()}`;
+  const vInput = (v: { values: string[]; price: string }) => ({ optionValues: v.values.map((name, i) => ({ optionName: optNames[i], name })), price: v.price,
+    taxable: true, inventoryPolicy: "CONTINUE", inventoryItem: { tracked: false, requiresShipping: true } });
+
+  // update prices of a product made before
+  if (p.shopifyId && /^gid:\/\/shopify\/Product\/\d+$/.test(p.shopifyId)) {
+    const d = await gql(`query($id: ID!) { product(id: $id) { id title options { name } variants(first: 250) { nodes { id price selectedOptions { name value } } } } }`, { id: p.shopifyId });
+    const prod = d.product;
+    if (!prod) return json({ error: "gone", detail: "This product is no longer in Shopify." }, 404);
+    const have = prod.options.map((o: any) => o.name);
+    if (have.join("|") !== optNames.join("|")) return json({ error: `The product in Shopify has the options "${have.join(", ")}" and the calculator has "${optNames.join(", ")}". Change it in Shopify, or create a new product.` }, 409);
+    const upd: any[] = [], add: any[] = []; let same = 0;
+    for (const v of variants) {
+      const ex = prod.variants.nodes.find((n: any) => optNames.every((o, i) => (n.selectedOptions.find((s: any) => s.name === o) || {}).value === v.values[i]));
+      if (!ex) add.push(vInput(v));
+      else if (Number(ex.price) !== Number(v.price)) upd.push({ id: ex.id, price: v.price });
+      else same++;
+    }
+    if (upd.length) { const r = await gql(`mutation($p: ID!, $v: [ProductVariantsBulkInput!]!) { productVariantsBulkUpdate(productId: $p, variants: $v) { userErrors { field message } } }`, { p: prod.id, v: upd });
+      if (r.productVariantsBulkUpdate.userErrors.length) return json({ error: r.productVariantsBulkUpdate.userErrors.map((e: any) => e.message).join("; ") }, 400); }
+    if (add.length) { const r = await gql(`mutation($p: ID!, $v: [ProductVariantsBulkInput!]!) { productVariantsBulkCreate(productId: $p, variants: $v) { userErrors { field message } } }`, { p: prod.id, v: add });
+      if (r.productVariantsBulkCreate.userErrors.length) return json({ error: r.productVariantsBulkCreate.userErrors.map((e: any) => e.message).join("; ") }, 400); }
+    return json({ ok: true, updated: true, id: prod.id, adminUrl: adminUrl(prod.id), changed: upd.length, added: add.length, same });
+  }
+
+  // new product (draft)
+  const files: any[] = [];
+  for (const [i, id] of (Array.isArray(p.images) ? p.images.slice(0, 10) : []).entries()) {
+    if (!/^[\w-]{4,60}$/.test(String(id))) continue;
+    try { const u = await stagePhoto(`print/${id}.img`, `${clip(p.title, 40).replace(/[^\w\-]+/g, "_")}-${i + 1}`); if (u) files.push({ originalSource: u, contentType: "IMAGE", alt: clip(p.title, 120) }); }
+    catch (e) { console.log("mockup upload failed", id, String((e as Error).message || e)); }
+  }
+  const values = optNames.map((_, i) => [...new Set(variants.map(v => v.values[i]))]);
+  const d = await gql(`mutation($input: ProductSetInput!) { productSet(synchronous: true, input: $input) { product { id handle } userErrors { field message } } }`, {
+    input: {
+      title: clip(p.title, 200) || "New product", descriptionHtml: clip(p.descriptionHtml, 20000), status: "DRAFT", vendor: "TBDezign",
+      productType: clip(p.productType, 120), tags: (Array.isArray(p.tags) ? p.tags : []).slice(0, 10).map((t: unknown) => clip(t, 60)).filter(Boolean),
+      productOptions: optNames.map((name, i) => ({ name, values: values[i].map(v => ({ name: v })) })),
+      variants: variants.map(vInput), ...(files.length ? { files } : {}),
+    },
+  });
+  const ps = d.productSet;
+  if (ps.userErrors && ps.userErrors.length) return json({ error: ps.userErrors.map((e: any) => e.message).join("; ") }, 400);
+  return json({ ok: true, created: true, id: ps.product.id, handle: ps.product.handle, adminUrl: adminUrl(ps.product.id), images: files.length });
+}
+
 // ── Orders made in Apparel Quotes: a draft order with the quote's own prices (any method, caps, bags…).
 // Only for someone logged in to the calculator (the prices come from the browser, so the caller must be us).
 async function quoteDraft(req: Request, body: any) {
@@ -380,6 +452,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "use POST" }, 405);
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "invalid JSON" }, 400); }
+  if (body && body.mode === "product") { try { return await printProduct(req, body); } catch (e) { return json({ error: String((e as Error).message || e).slice(0, 300) }, 500); } }
   if (body && body.mode === "quote") { try { return await quoteDraft(req, body); } catch (e) { return json({ error: String((e as Error).message || e).slice(0, 300) }, 500); } }
   const order = body && body.order, d = (body && body.details) || {};
   if (!order || !Array.isArray(order.items) || !order.items.length || order.items.length > 50) return json({ error: "items required" }, 400);

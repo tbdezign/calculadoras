@@ -47,6 +47,11 @@
   .q-actions button:hover { border-color: #999; }
   .q-actions .danger:hover { border-color: #ef4444; color: #ef4444; }
   .q-actions .primary { background: #051024; color: #fff; border-color: #051024; }
+  .shop-msg { margin: 10px 0 0; padding: 10px 12px; border-radius: 8px; background: #f3f4f6; font-size: 13px; line-height: 1.6; }
+  .shop-msg.ok { background: #eef7e6; color: #2f5410; }
+  .shop-msg.err { background: #fdecec; color: #9b1c1c; }
+  .shop-msg a { color: inherit; font-weight: 600; }
+  .shop-ymq { margin-top: 6px; color: #444; font-size: 12px; }
   .q-actions .primary:hover { background: #13294a; border-color: #13294a; }
   .q-actions .x-btn { border: none; background: none; padding: 0 4px; font-size: 20px; }
   .in-cat { font-size: 11px; font-weight: 600; color: #051024; background: #ddeff6; padding: 2px 8px; border-radius: 10px; margin-left: 8px; text-transform: none; letter-spacing: 0; }
@@ -515,7 +520,7 @@ const DICT = [
   ['adesivos', 'stickers', 'adhesivos'], ['adesivo', 'sticker', 'adhesivo'], ['etiquetas', 'labels', 'etiquetas'], ['etiqueta', 'label', 'etiqueta'],
   ['folhas', 'sheets', 'hojas'], ['folha', 'sheet', 'hoja'], ['unidades', 'pieces', 'unidades'], ['unidade', 'piece', 'unidad'], ['peças', 'pieces', 'piezas'], ['peça', 'piece', 'pieza'],
   ['vinil', 'vinyl', 'vinilo'], ['transparente', 'clear', 'transparente'], ['branco', 'white', 'blanco'], ['branca', 'white', 'blanca'], ['preto', 'black', 'negro'], ['preta', 'black', 'negra'],
-  ['ímã', 'magnet', 'imán'], ['imã', 'magnet', 'imán'], ['magnético', 'magnetic', 'magnético'], ['lona', 'vinyl banner', 'lona'], ['ilhoses', 'grommets', 'ojales'], ['ilhós', 'grommets', 'ojales'], ['bainha', 'hem', 'dobladillo'],
+  ['magnéticos', 'magnetic', 'magnéticos'], ['magnéticas', 'magnetic', 'magnéticas'], ['magnética', 'magnetic', 'magnética'], ['ímã', 'magnet', 'imán'], ['imã', 'magnet', 'imán'], ['magnético', 'magnetic', 'magnético'], ['lona', 'vinyl banner', 'lona'], ['ilhoses', 'grommets', 'ojales'], ['ilhós', 'grommets', 'ojales'], ['bainha', 'hem', 'dobladillo'],
   ['suporte', 'stand', 'soporte'], ['redondo', 'round', 'redondo'], ['redonda', 'round', 'redonda'], ['círculo', 'circle', 'círculo'], ['quadrado', 'square', 'cuadrado'], ['retangular', 'rectangular', 'rectangular'], ['formato', 'shape', 'forma'],
   ['arte inclusa', 'artwork included', 'arte incluido'], ['design incluso', 'design included', 'diseño incluido'], ['incluso', 'included', 'incluido'], ['inclusa', 'included', 'incluida'],
   ['alta resolução', 'high resolution', 'alta resolución'], ['arquivo', 'file', 'archivo'], ['arte', 'artwork', 'arte'], ['cliente', 'client', 'cliente'],
@@ -864,6 +869,7 @@ function quoteHTML(q, qi) {
       </div>`
     : `<div class="q-actions">
         <button data-act="catsave" class="primary">${inCat ? 'Update catalog' : 'Save to catalog'}</button>
+        <button data-act="shopify" title="${q.shopify ? 'Update the prices of the product made in Shopify' : 'Create a draft product in Shopify'}">${q.shopify ? 'Update Shopify prices' : 'Create in Shopify'}</button>
         <button data-act="dup">Duplicate</button>
         ${quotes.length > 1 ? '<button data-act="delq" class="danger">Remove</button>' : ''}
       </div>`;
@@ -882,6 +888,7 @@ function quoteHTML(q, qi) {
       ${actions}
     </div>
     <div class="q-body">
+      <div data-shopmsg></div>
       <div class="grid2 cat-row">
         <div class="field"><label>Main category</label>
           <input type="text" data-f="cat" list="dl-cats" value="${esc(q.cat)}" placeholder="e.g. Business Cards"></div>
@@ -1129,11 +1136,12 @@ wrap.addEventListener('click', e => {
   if (act === 'save') return saveQuote(q, b);
   if (act === 'addl') return addLine(qi);
   if (act === 'catsave') return saveToCatalog(qi);
+  if (act === 'shopify') return shopifyProduct(qi);
 
   let focusSel = null;
   if (act === 'dup') {
     const copy = JSON.parse(JSON.stringify(q));
-    delete copy.catalogId;
+    delete copy.catalogId; delete copy.shopify;
     quotes.forEach(o => o.collapsed = true);
     copy.collapsed = false;
     quotes.splice(qi + 1, 0, copy);
@@ -1364,6 +1372,77 @@ function saveToCatalog(qi) {
   persistCatalog();
   render();
   renderCatalog();
+}
+
+/* ---------- Shopify product ----------
+   "Create in Shopify": a DRAFT product with one variant per quantity (and per option label), in English,
+   with the mockups. Options with prices (corners, foil…) stay for YMQ: the add-on prices are listed after.
+   Once made, the button updates the prices of that product (and adds missing quantities). */
+const escH = s => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function shopifyPayload(q) {
+  const was = qLang; qLang = 'en';
+  try {
+    const T = s => tr(s, q), X = LT();
+    const groups = [...new Set(q.lines.filter(l => calcLine(l) && qtyNum(l) > 0).map(l => l.group.trim()))];
+    const useGroup = groups.length > 1 || (groups.length === 1 && groups[0]);
+    const per = perUnit(q);
+    const qtyValue = l => per > 0 ? qtyLabel(l, q) : String(l.qty).trim();
+    const variants = q.lines.filter(l => calcLine(l) && qtyNum(l) > 0).map(l => ({ values: useGroup ? [qtyValue(l), T(l.group.trim()) || 'Standard'] : [qtyValue(l)], price: calcLine(l).price }));
+    const li = [];
+    OUT_ORDER.forEach(k => { if ((q[k] || '').trim()) li.push('<li><strong>' + escH(X[k]) + ':</strong> ' + escH(T(q[k].trim())) + '</li>'); });
+    q.custom.forEach(c => { const v = c.value.trim(), lb = c.label.trim(); if (v) li.push('<li>' + (lb ? '<strong>' + escH(T(lb)) + ':</strong> ' : '') + escH(T(v)) + '</li>'); });
+    infoOptions(q).forEach(o => li.push('<li><strong>' + escH(T(o.name.trim())) + ':</strong> ' + escH(o.choices.map(c => c.name.trim()).filter(Boolean).map(T).join(' / ')) + '</li>'));
+    const notes = q.notes.filter(n => !n.internal && n.text.trim()).map(n => '<p>' + escH(T(n.text.trim())) + '</p>');
+    const tail = []; if (q.freeShip) tail.push(X.free);
+    const t = q.turnaround.trim(); if (t) tail.push(X.due + (/^[\d\s\-–a]+$/.test(t) ? t.replace(/\s+a\s+/g, '-') + X.suffix : T(t)));
+    const descriptionHtml = (li.length ? '<ul>' + li.join('') + '</ul>' : '') + notes.join('') + (tail.length ? '<p>' + tail.map(escH).join('<br>') + '</p>' : '');
+    // add-on prices for YMQ (not variants)
+    const ymq = [];
+    pricedOptions(q).forEach(o => o.choices.slice(1).forEach(c => {
+      if (!c.name.trim()) return;
+      const by = {}; q.lines.filter(l => calcLine(l) && qtyNum(l) > 0).forEach(l => { const r = addon(c, l.id).r; (by[r] = by[r] || []).push(String(l.qty).trim()); });
+      ymq.push(T(o.name.trim()) + ': ' + T(c.name.trim()) + ' → ' + Object.entries(by).map(([r, qs]) => (+r ? moneyAdd(+r) : '$0') + ' (' + qs.join(', ') + ')').join(' · '));
+    }));
+    return { title: T(q.title.trim()), descriptionHtml, productType: (q.sub || q.cat || '').trim(), tags: [q.cat, q.sub].map(x => (x || '').trim()).filter(Boolean),
+      options: useGroup ? ['Quantity', 'Option'] : ['Quantity'], variants, images: q.images.map(im => im.id), shopifyId: (q.shopify && q.shopify.id) || '', ymq };
+  } finally { qLang = was; }
+}
+async function shopifyProduct(qi) {
+  if (needLogin()) return;
+  const q = quotes[qi];
+  if (!q.title.trim()) { alert('Give the product a name first.'); return; }
+  const p = shopifyPayload(q);
+  if (!p.variants.length) { alert('Fill in at least one quantity with a price.'); return; }
+  const list = p.variants.map(v => '  ' + v.values.join(' / ') + ' — $' + v.price.toFixed(2)).join('\n');
+  const isNew = !p.shopifyId;
+  if (!confirm((isNew ? 'Create a DRAFT product in Shopify:\n\n' + p.title + '\n' : 'Update the prices of "' + p.title + '" in Shopify:\n') + list
+    + (isNew && p.images.length ? '\n\n+ ' + p.images.length + ' mockup' + (p.images.length > 1 ? 's' : '') : '')
+    + (isNew ? '\n\nIt stays hidden (Draft) until you publish it.' : '\n\nOnly the prices change (and missing quantities are added).'))) return;
+  const box = wrap.querySelector(`[data-q="${qi}"] [data-shopmsg]`);
+  if (box) box.innerHTML = '<div class="shop-msg">Working…</div>';
+  try {
+    if (isNew && p.images.length && !(await uploadCatalogImages([{ data: q }]))) throw new Error('Couldn\'t upload the mockups — try again.');
+    const { data, error } = await TBDCloud.sb.functions.invoke('apparel-checkout', { body: { mode: 'product', product: p } });
+    let j = data;
+    if (error) { try { j = await error.context.json(); } catch (e) { j = { error: error.message }; } }
+    if (j && j.error === 'gone') {
+      if (confirm('This product is no longer in Shopify. Create it again?')) { delete q.shopify; update(); return shopifyProduct(qi); }
+      throw new Error('Not changed.');
+    }
+    if (!j || !j.ok) throw new Error((j && j.error) || 'Couldn\'t reach Shopify.');
+    q.shopify = { id: j.id, url: j.adminUrl, at: Date.now() };
+    const item = q.catalogId && catalog.find(c => c.id === q.catalogId);
+    if (item) { item.data.shopify = q.shopify; persistCatalog(); }
+    const what = j.created ? 'Draft product created' + (j.images ? ' with ' + j.images + ' mockup' + (j.images > 1 ? 's' : '') : '') + '.'
+      : (j.changed || j.added ? 'Prices updated: ' + j.changed + ' changed' + (j.added ? ', ' + j.added + ' added' : '') + '.' : 'Prices were already up to date.');
+    render();
+    const nb = wrap.querySelector(`[data-q="${qi}"] [data-shopmsg]`);
+    if (nb) nb.innerHTML = '<div class="shop-msg ok">✓ ' + escH(what) + ' <a href="' + escH(j.adminUrl) + '" target="_blank" rel="noopener">Open in Shopify</a>'
+      + (p.ymq.length ? '<div class="shop-ymq"><b>Add in YMQ (not created as variants):</b><br>' + p.ymq.map(escH).join('<br>') + '</div>' : '') + '</div>';
+  } catch (e) {
+    const nb = wrap.querySelector(`[data-q="${qi}"] [data-shopmsg]`);
+    if (nb) nb.innerHTML = '<div class="shop-msg err">' + escH(e.message || String(e)) + '</div>';
+  }
 }
 
 function loadFromCatalog(id, openIt) {
