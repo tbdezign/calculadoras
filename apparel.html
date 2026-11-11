@@ -1035,11 +1035,31 @@ function spotWhereHTML(it, n) {
 // SUPPLIER SHIPPING SPLIT (Silk Screen + DTF Vendor 1)
 // ════════════════════════════════════════════
 const SUPPLIER_LIST = ["S&S Activewear", "SanMar"];
-function supplierOf(it) { const p = cat()[(it.code || "").toUpperCase()]; return (it.supplier || "").trim() || (p && p.vendor) || SUPPLIER_LIST[0]; }
+// "SanMar/S&S" = a style more than one supplier carries. Each style is bought from ONE of them: the plan picks the supplier
+// that covers the most styles first (then the most pieces, then the one written first), so the order pays as few
+// supplier shipping fees as possible and the blanks add up toward free shipping.
+function supplierChoices(raw) { return String(raw || "").split(/\s*[\/,|]\s*|\s+or\s+|\s+ou\s+/i).map(x => x.trim()).filter(Boolean); }
+let supPlanMemo = { sig: "", plan: null };
+function planSuppliers(entries) {   // entries: [{ id, raw, qty }] → Map id → supplier name
+  const sig = JSON.stringify(entries); if (supPlanMemo.sig === sig) return supPlanMemo.plan;
+  const opts = entries.map(e => supplierChoices(e.raw)), plan = new Map(), left = new Set(entries.map((_, i) => i));
+  while (left.size) {
+    const score = {};
+    left.forEach(i => opts[i].forEach((name, j) => { const k = TBDPricing.supplierKey(name); if (!k) return; const sc = score[k] || (score[k] = { n: 0, q: 0, first: 99 }); sc.n++; sc.q += entries[i].qty; sc.first = Math.min(sc.first, j); }));
+    const best = Object.entries(score).sort((a, b) => b[1].n - a[1].n || b[1].q - a[1].q || a[1].first - b[1].first)[0];
+    if (!best) { left.forEach(i => plan.set(entries[i].id, entries[i].raw)); break; }
+    [...left].forEach(i => { const hit = opts[i].find(n => TBDPricing.supplierKey(n) === best[0]); if (hit) { plan.set(entries[i].id, hit); left.delete(i); } });
+  }
+  supPlanMemo = { sig, plan };
+  return plan;
+}
+function rawSupplier(it, p) { p = p || prod(it); return (it.supplier || "").trim() || (p && p.vendor) || ""; }
+function orderSupplierPlan() { return planSuppliers(validItems().map(it => ({ id: String(it.id), raw: rawSupplier(it) || SUPPLIER_LIST[0], qty: itemQty(it) }))); }
+function supplierOf(it) { return orderSupplierPlan().get(String(it.id)) || supplierChoices(rawSupplier(it))[0] || SUPPLIER_LIST[0]; }
 function supplierGroups() { const g = {}; validItems().forEach(it => { const k = TBDPricing.supplierKey(supplierOf(it)); g[k] = (g[k] || 0) + itemQty(it); }); return g; }
 // Split is automatic when the styles in the order come from 2+ suppliers (from each product's Vendor, or the Supplier box).
 // The checkbox can still force it on, or off ("off") when the detection is wrong.
-function knownSupplier(it) { const p = prod(it); return TBDPricing.supplierKey((it.supplier || "").trim() || (p && p.vendor)); }
+function knownSupplier(it) { return rawSupplier(it) ? TBDPricing.supplierKey(supplierOf(it)) : ""; }
 function autoSplit() { return new Set(validItems().map(knownSupplier).filter(Boolean)).size > 1; }
 function splitOn() { return splitSuppliers === true || (splitSuppliers !== "off" && autoSplit()); }
 function shipQtyFor(it) { const t = totalQty(); if (inCombo()) return (comboStats().groups[comboKey(it)] || {}).qty || t; if (!splitOn() || !METHODS[method].split) return t; return supplierGroups()[TBDPricing.supplierKey(supplierOf(it))] || t; }
@@ -1056,7 +1076,7 @@ function inCombo() { return method !== "v2" && comboMembers().length > 1; }
 const OUT_SHIP = { silk: () => PCFG.silk.shipOut, dtf: () => PCFG.dtf.shipOut };
 function comboStats() {
   if (comboFrozen) return comboFrozen;
-  const st = { total: 0, groups: {}, maxOut: 0, blanks: 0 };
+  const st = { total: 0, groups: {}, maxOut: 0, blanks: 0, plan: comboSupplierPlan() };
   comboMembers().forEach(i => {
     const sq = i === activeQ ? snapshotQuote() : quotes[i], m = sq.method; if (m === "v2") return;
     st.maxOut = Math.max(st.maxOut, m === "emb" ? (sq.embSet || embSet).clientShip : OUT_SHIP[m]());
@@ -1065,13 +1085,23 @@ function comboStats() {
       const f = SIZE_COST[m], sz = f && it.sizes, n = { std: parseInt(it.qty) || 0, x2: sz ? parseInt(it.q2) || 0 : 0, x3: sz ? parseInt(it.q3) || 0 : 0 };
       const qn = n.std + n.x2 + n.x3; if (!qn) return;
       const bl = f ? Object.entries(n).reduce((a, [z, k]) => a + ((p[f[z]] || p[f.std]) || 0) * k, 0) : (p.cost || 0) * qn;
-      const key = TBDPricing.supplierKey((it.supplier || "").trim() || p.vendor) || "ss", g = st.groups[key] || (st.groups[key] = { qty: 0, blanks: 0 });
+      const key = TBDPricing.supplierKey(st.plan.get(String(it.id)) || rawSupplier(it, p)) || "ss", g = st.groups[key] || (st.groups[key] = { qty: 0, blanks: 0 });
       g.qty += qn; g.blanks += bl; st.total += qn; st.blanks += bl;
     });
   });
   return st;
 }
-function comboKey(it) { const p = prod(it); return TBDPricing.supplierKey((it.supplier || "").trim() || (p && p.vendor)) || "ss"; }
+// the same supplier plan over every style of the combined order (all decorations)
+function comboSupplierPlan() {
+  const entries = [];
+  comboMembers().forEach(i => {
+    const sq = i === activeQ ? snapshotQuote() : quotes[i], m = sq.method; if (m === "v2") return;
+    (sq.orderItems || []).forEach(it => { const p = cats[m][(it.code || "").toUpperCase()]; const qn = (parseInt(it.qty) || 0) + (parseInt(it.q2) || 0) + (parseInt(it.q3) || 0);
+      if (p && qn) entries.push({ id: String(it.id), raw: rawSupplier(it, p) || "ss", qty: qn }); });
+  });
+  return planSuppliers(entries);
+}
+function comboKey(it) { const st = comboStats(); return TBDPricing.supplierKey(st.plan.get(String(it.id)) || rawSupplier(it)) || "ss"; }
 // client shipping per piece = one delivery split over every piece of the combined order
 function comboOut(tq) { const st = comboStats(); return st.maxOut * tq / Math.max(1, tq + st.total - totalQty()); }
 // Run something as if another quote were open (no screen updates), e.g. to price it for the combined message.
@@ -1713,7 +1743,8 @@ function updateOrderResults() {
     let extra = "";
     if (method !== "v2") {
       const split = splitOn() && M.split, groups = {};
-      validItems().forEach(it => { const k = split ? supplierOf(it) : "Supplier"; groups[k] = (groups[k] || 0) + blankSubtotal(it); });
+      const names = {};
+      validItems().forEach(it => { const nm = split ? supplierOf(it) : "Supplier", key = split ? TBDPricing.supplierKey(nm) : nm; const k = names[key] || (names[key] = nm); groups[k] = (groups[k] || 0) + blankSubtotal(it); });
       extra = Object.entries(groups).map(([k, v]) => '<div class="sum-sub">' + esc(k) + ' blanks: ' + fmt(v) + ' · ' + (shipWaived(v) ? '<b style="color:#2E7D32">free supplier shipping</b>' + (shipMode === "off" ? ' (set to Free)' : '') : shipMode === "on" ? 'supplier shipping charged (set to Charge)' : fmt(freeShipMin - v) + ' more for free shipping') + '</div>').join("");
     }
     if (method === "v2") { const o = v2Order(); extra = '<div class="sum-sub">Your cost: ' + fmt(o.vendorSub + o.fees) + ' · Fees: ' + fmt(o.fees) + ' (' + fmt(o.fpu) + '/unit)</div>'; cost = o.vendorSub + o.fees; }
