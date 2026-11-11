@@ -88,6 +88,10 @@
     font-size: 20px; line-height: 1; padding: 0 4px; font-family: inherit;
   }
   .x-btn:hover { color: #ef4444; }
+  .mv-btn { background: none; border: 1px solid #e5e5e5; border-radius: 6px; cursor: pointer; color: #666; font-size: 13px; line-height: 1; padding: 5px 7px; font-family: inherit; }
+  .mv-btn:hover:not(:disabled) { background: #f3f3f3; color: #051024; }
+  .mv-btn:disabled { opacity: .3; cursor: default; }
+  .sort-btn { display: block; margin: 6px 0 0; }
   .q-tools { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
   .text-btn {
     font-size: 13px; font-weight: 600; color: #051024; background: none;
@@ -775,11 +779,13 @@ const allText = () => quotes.map(quoteText).filter(Boolean).join('\n\n___\n\n');
 
 /* ---------- Render ---------- */
 function lineHTML(l, li, qi) {
+  const n = quotes[qi].lines.length;
   return `
   <div class="line" data-l="${li}">
     <div class="line-top">
       <input type="text" data-lf="group" list="groups-${qi}" value="${esc(l.group)}"
         placeholder="Option label (optional) — e.g. Spot UV só na frente">
+      ${n > 1 ? `<button class="mv-btn" data-act="mvl" data-d="-1" title="Move up"${li === 0 ? ' disabled' : ''}>↑</button><button class="mv-btn" data-act="mvl" data-d="1" title="Move down"${li === n - 1 ? ' disabled' : ''}>↓</button>` : ''}
       <button class="x-btn" data-act="dell" title="Remove line">×</button>
     </div>
     <div class="line-row">
@@ -926,6 +932,7 @@ function quoteHTML(q, qi) {
       <datalist id="groups-${qi}"></datalist>
       ${q.lines.map((l, li) => lineHTML(l, li, qi)).join('')}
       <button class="add-line" data-act="addl">+ Add price line</button>
+      ${q.lines.filter(l => qtyNum(l) > 0).length > 1 ? '<button class="text-btn sort-btn" data-act="sortl">↕ Sort by quantity (low → high)</button>' : ''}
 
       <div class="section-title">Price options (variants)</div>
       <div class="section-hint">Ex: Cantos, Foil coverage. A primeira escolha é o padrão ($0). Opções sem valor (ex: cor do foil) viram uma linha de spec.</div>
@@ -1145,6 +1152,20 @@ wrap.addEventListener('click', e => {
   if (act === 'delch') {
     q.options[oi].choices.splice(+b.closest('[data-ch]').dataset.ch, 1);
     if (q.options[oi].choices.length < 2) q.options[oi].choices.push(newChoice());
+  }
+  if (act === 'mvl') {
+    const i = +b.closest('[data-l]').dataset.l, j = i + +b.dataset.d;
+    if (j < 0 || j >= q.lines.length) return;
+    [q.lines[i], q.lines[j]] = [q.lines[j], q.lines[i]];
+  }
+  if (act === 'sortl') {
+    // keeps option labels together (in the order they first appear), smallest quantity first; lines without a number stay last
+    const gi = {}; q.lines.forEach(l => { const g = l.group.trim(); if (!(g in gi)) gi[g] = Object.keys(gi).length; });
+    q.lines = q.lines.map((l, i) => ({ l, i })).sort((a, b) => {
+      const ga = gi[a.l.group.trim()], gb = gi[b.l.group.trim()]; if (ga !== gb) return ga - gb;
+      const na = qtyNum(a.l), nb = qtyNum(b.l), va = na > 0 ? na : Infinity, vb = nb > 0 ? nb : Infinity;
+      return va - vb || a.i - b.i;
+    }).map(x => x.l);
   }
   if (act === 'dell') {
     q.lines.splice(+b.closest('[data-l]').dataset.l, 1);
