@@ -80,6 +80,21 @@
     background-color:#fff;background-image:linear-gradient(45deg,#e3e6ea 25%,transparent 25%),linear-gradient(-45deg,#e3e6ea 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e3e6ea 75%),linear-gradient(-45deg,transparent 75%,#e3e6ea 75%);
     background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
   .meta{font-size:12px;color:var(--muted);margin-top:10px;height:16px}
+  .tabs{display:flex;gap:3px;background:#dde2ea;border-radius:9px;padding:3px;margin-bottom:12px}
+  .tabs button{border:0;background:transparent;font:500 12.5px 'Poppins';color:var(--ink);padding:6px 16px;border-radius:7px;cursor:pointer}
+  .tabs button.on{background:#fff;box-shadow:0 1px 3px rgba(5,16,36,.15);color:var(--navy);font-weight:600}
+  .tabs button .n{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:9px;background:#d64545;color:#fff;font-size:10.5px;margin-left:6px;padding:0 5px}
+  .tabs button .n.ok{background:#4f9d5b}
+  .chk{list-style:none;margin:0;padding:0}
+  .chk li{display:flex;gap:8px;font-size:12px;line-height:1.4;padding:4px 0;color:var(--ink)}
+  .chk li .dot{flex:none;width:9px;height:9px;border-radius:50%;margin-top:4px}
+  .chk li b{font-weight:600}
+  .chk li span.d{color:var(--muted)}
+  .chk .side{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding-top:6px}
+  .btn2{width:100%;border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px;font:500 12.5px 'Poppins';color:var(--navy);cursor:pointer;margin-top:8px}
+  .btn2:hover{border-color:var(--accent)}
+  .btn2:disabled{opacity:.5;cursor:default}
+  .btn2.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
   .hidden{display:none!important}
   @media (max-width:820px){
     body{overflow:auto}
@@ -106,6 +121,7 @@
     <div class="dlwrap"><button class="dl" id="dl">Download PNG · 1200×1200</button></div>
   </aside>
   <main class="stage">
+    <div class="tabs" id="tabs"><button data-tab="mockup" class="on">Mockup</button><button data-tab="report">Artwork check<span class="n hidden" id="tabN"></span></button></div>
     <canvas id="c" width="2400" height="2400"></canvas>
     <div class="meta" id="meta"></div>
   </main>
@@ -168,7 +184,7 @@
   }
 
   // ---------- Branded frame (same on every material) ----------
-  function drawBrandedFrame(x) {
+  function drawBrandedFrame(x, title, right) {
     x.fillStyle = '#f0f0f0';
     x.fillRect(0, 0, CW, CH);
     const grad = x.createLinearGradient(0, 0, CW, 0);
@@ -183,12 +199,12 @@
     x.textBaseline = 'middle';
     x.textAlign = 'left';
     try { x.letterSpacing = `${0.12 * 26 * S}px`; } catch (e) {}
-    x.fillText('ARTWORK PROOF', 40 * S, 36 * S);
+    x.fillText(title || 'ARTWORK PROOF', 40 * S, 36 * S);
     try { x.letterSpacing = '0px'; } catch (e) {}
     x.font = `400 ${20 * S}px Poppins`;
     x.fillStyle = '#999999';
     x.textAlign = 'right';
-    x.fillText('For review only', 1160 * S, 36 * S);
+    x.fillText(right || 'For review only', 1160 * S, 36 * S);
 
     x.fillStyle = '#051024';
     x.fillRect(0, FOOTER_TOP, CW, 80 * S);
@@ -252,7 +268,8 @@
       styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D'], ['stacked', 'Stacked']],
       opts: [{ id: 'corners', label: 'Corners', type: 'seg', def: '0', choices: [['0', 'Sharp'], ['0.125', '⅛″'], ['0.25', '¼″']] }],
       scene: 'desk',
-      radius: st => +st.corners
+      radius: st => +st.corners,
+      check: { dpi: [300, 200], safe: 0.125, minPt: 7 }, names: { pt: 'Cartão de visita', es: 'Tarjeta de presentación' }
     },
     flyer: {
       name: 'Flyer', sub: '4×6 to 8.5×11',
@@ -267,14 +284,16 @@
       styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D'], ['stacked', 'Stacked']],
       opts: [{ id: 'rounded', label: 'Rounded corners', type: 'toggle', def: false }],
       scene: 'desk',
-      radius: st => st.rounded ? 0.125 : 0
+      radius: st => st.rounded ? 0.125 : 0,
+      check: { dpi: [300, 200], safe: 0.125, minPt: 7 }, names: { pt: 'Flyer', es: 'Volante' }
     },
     letterhead: {
       name: 'Letterhead', sub: '8.5″ × 11″',
       sizes: [{ id: 'letter', w: 8.5, h: 11, label: '8.5″ × 11″' }],
       sides: ['front'], bleed: 0.0625, dimsDef: true,
       styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D'], ['stacked', 'Stacked']],
-      opts: [], scene: 'desk', radius: () => 0
+      opts: [], scene: 'desk', radius: () => 0,
+      check: { dpi: [300, 200], safe: 0.25, minPt: 7 }, names: { pt: 'Papel timbrado', es: 'Hoja membretada' }
     },
     doorhanger: {
       name: 'Door Hanger', sub: '3.5×8.5 · 4.25×11',
@@ -287,7 +306,8 @@
       opts: [{ id: 'rounded', label: 'Rounded corners', type: 'toggle', def: false }],
       scene: 'desk',
       radius: st => st.rounded ? 0.125 : 0,
-      decorate: dieCutHanger
+      decorate: dieCutHanger,
+      check: { dpi: [300, 200], safe: 0.125, minPt: 7 }, names: { pt: 'Door hanger', es: 'Colgador de puerta' }
     },
     magnet: {
       name: 'Car Magnet', sub: '24×18 · 24×12',
@@ -299,7 +319,8 @@
       orient: 'h', sides: ['front'], bleed: 0.125, dimsDef: true,
       styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D']],
       opts: [], scene: 'desk', note: '½″ rounded corners · one side print',
-      radius: () => 0.5
+      radius: () => 0.5,
+      check: { dpi: [150, 100], safe: 0.5, minIn: 0.75 }, names: { pt: 'Ímã de carro', es: 'Magneto para auto' }
     },
     yard: {
       name: 'Yard Sign', sub: 'Coroplast + H-stake',
@@ -318,7 +339,8 @@
       radius: () => 0.06,
       extent: (d, st, style) => ({ w: d.w, h: d.h + (st.stake || style === 'lawn' ? stakeLen(d) : 0) }),
       ground: (d, st) => d.h + stakeLen(d) * 0.55,
-      build: buildYardSign
+      build: buildYardSign,
+      check: { dpi: [150, 100], safe: 0.75, minIn: 0.75 }, names: { pt: 'Placa de jardim', es: 'Letrero de jardín' }
     },
     hframe: {
       name: 'H-Frame Sign', sub: '24×18 + 24×6 rider',
@@ -335,7 +357,8 @@
       artDims: side => side === 'rider' ? { w: 24, h: 6 } : { w: 24, h: 18 },
       extent: () => HF.size(),
       ground: () => HF.size().h - HF.post * 0.45,
-      build: buildHFrame
+      build: buildHFrame,
+      check: { dpi: [150, 100], safe: 0.5, minIn: 0.75 }, names: { pt: 'Placa com moldura H', es: 'Letrero con marco H' }
     },
     banner: {
       name: 'Vinyl Banner', sub: '2×4 ft to 4×10 ft',
@@ -357,7 +380,8 @@
       ],
       scene: 'wall',
       radius: () => 0,
-      decorate: decorateBanner
+      decorate: decorateBanner,
+      check: { dpi: [100, 60], safe: 1.5, minIn: 1 }, names: { pt: 'Banner de lona', es: 'Banner de vinil' }
     }
   };
   const ORDER = ['card', 'flyer', 'letterhead', 'doorhanger', 'magnet', 'yard', 'hframe', 'banner'];
@@ -368,7 +392,7 @@
     const p = P[key], st = {
       size: p.def || p.sizes[0].id, orient: p.orient || null,
       view: p.sides[0], style: 'flat', bg: 'white', bgColor: '#e6edf3', door: 'white',
-      cmyk: true, shadow: true, dims: !!p.dimsDef, bleed: 'auto'
+      cmyk: true, shadow: true, dims: !!p.dimsDef, bleed: 'auto', lang: 'pt'
     };
     if (p.custom) { st.cw = p.custom.w; st.ch = p.custom.h; }
     p.opts.forEach(o => { st[o.id] = o.def; });
@@ -455,7 +479,7 @@
   const itemCache = new Map();
   function getItem(side, ppi, style) {
     const p = mat(), s = st();
-    const sKey = Object.assign({}, s); ['bg', 'bgColor', 'view', 'shadow', 'dims', 'door'].forEach(k => delete sKey[k]);
+    const sKey = Object.assign({}, s); ['bg', 'bgColor', 'view', 'shadow', 'dims', 'door', 'lang'].forEach(k => delete sKey[k]);
     const key = [cur, side, ppi.toFixed(2), style === 'lawn', JSON.stringify(sKey), JSON.stringify(VER[cur])].join('|');
     if (itemCache.has(key)) return itemCache.get(key);
     if (itemCache.size > 24) itemCache.clear();
@@ -999,6 +1023,8 @@
   function render() {
     const p = mat(), s = st();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
+    updateTabs();
+    if (tab === 'report') { drawReport(); return; }
     drawBrandedFrame(ctx);
     (SPECIAL[s.style] || renderProducts)(p, s);
     ctx.clearRect(0, HEADER_TOP, CW, ZONE_H);
@@ -1062,6 +1088,7 @@
       <option value="yes" ${s.bleed === 'yes' ? 'selected' : ''}>Artwork includes bleed</option>
       <option value="no" ${s.bleed === 'no' ? 'selected' : ''}>Trim size (no bleed)</option></select></div>`);
     h.push(`<p class="note">${bleedNote(p, s)}</p></section>`);
+    h.push(checkSection(p, s));
     // Show (front / back)
     if (p.sides.length > 1 && !p.oneView) {
       const single = !!SPECIAL[s.style] || s.style === 'stacked';
@@ -1150,6 +1177,8 @@
       buildPanel(); render();
       return;
     }
+    const ab = e.target.closest('[data-act]');
+    if (ab) { checkAction(ab.dataset.act, ab); return; }
     const sw = e.target.closest('.sw');
     if (sw) { s[sw.closest('[data-sw]').dataset.sw] = sw.dataset.v; buildPanel(); render(); return; }
     const clr = e.target.closest('.clr');
@@ -1246,6 +1275,494 @@
     if (key === cur) { buildPanel(); render(); }
   }
 
+  // ---------- Artwork check (proportion, resolution, bleed, small text, text near the cut) ----------
+  let tab = 'mockup';
+  const OCR = {};                                     // `${material}|${side}` -> { ver, status, pct, words }
+  const SEV = { bad: '#d64545', warn: '#e0912f', ok: '#4f9d5b' };
+  const TESS = {
+    js: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
+    worker: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js',
+    core: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1',
+    lang: 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int'
+  };
+  const FRAC = { 0.0625: '1/16″', 0.125: '1/8″', 0.25: '1/4″', 0.5: '1/2″', 0.75: '3/4″' };
+  const fin = v => FRAC[v] || `${+v.toFixed(v < 1 ? 2 : 1)}″`;
+  function ratioStr(r) {
+    let best = [1, 1], err = 9;
+    for (let b = 1; b <= 16; b++) { const a = Math.round(r * b); if (a < 1) continue; const e = Math.abs(a / b - r) / r; if (e < err - 1e-9) { err = e; best = [a, b]; } if (e < 0.01) break; }
+    return best.join(':');
+  }
+
+  // Client-facing text in three languages
+  const L = {
+    pt: {
+      title: 'REVISÃO DA ARTE', ready: 'Pronta para impressão', fix: n => n === 1 ? '1 ajuste necessário' : `${n} ajustes necessários`,
+      sides: { front: 'Frente', back: 'Verso', sign: 'Placa', rider: 'Rider' },
+      legTrim: 'Linha de corte', legSafe: 'Margem de segurança', legCut: 'Área que será cortada', empty: 'Envie a arte para conferir',
+      where: { sides: 'de cada lateral', tb: 'em cima e embaixo' }, withBleed: 'com sangria',
+      t: { lowres: 'Resolução baixa', ratio: 'Proporção diferente do tamanho', bleed: 'Falta sangria', small: 'Texto pequeno demais', edge: 'Texto perto da borda', ok: 'Tudo certo' },
+      lowres_bad: o => `A imagem tem ${o.px} px. No tamanho ${o.size} isso dá ${o.dpi} DPI e vai imprimir borrada. O mínimo é ${o.min} DPI: envie a arte com ${o.need} px ou mais.`,
+      lowres_warn: o => `A imagem tem ${o.px} px, o que dá ${o.dpi} DPI no tamanho ${o.size}. Pode imprimir um pouco sem nitidez. O ideal é ${o.target} DPI (${o.need} px).`,
+      ratio: o => `A arte está no formato ${o.ar} e o produto é ${o.size} (${o.pr}). Para encaixar, serão cortados cerca de ${o.cut} ${o.where}. Ajuste a arte para ${o.fit}.`,
+      bleed: o => `A arte vai até a borda, mas não tem sangria. Estenda o fundo ${o.b} além do corte em cada lado (arte final ${o.full}) para não aparecer filete branco.`,
+      small_pt: o => `${o.n === 1 ? 'O trecho marcado fica' : `Os ${o.n} trechos marcados ficam`} com cerca de ${o.pt} pt impresso${o.n === 1 ? '' : 's'}. Use no mínimo ${o.min} pt para ficar legível.`,
+      small_in: o => `${o.n === 1 ? 'O trecho marcado tem' : `Os ${o.n} trechos marcados têm`} letras de cerca de ${o.h} de altura. Para ler de longe, use pelo menos ${o.min}.`,
+      edge: o => `${o.n === 1 ? 'O trecho marcado fica' : `Os ${o.n} trechos marcados ficam`} a menos de ${o.safe} do corte e ${o.n === 1 ? 'pode' : 'podem'} ser cortado${o.n === 1 ? '' : 's'}. Mantenha textos e logos dentro da margem de segurança.`,
+      ok: () => 'Resolução, proporção e margens estão corretas para impressão.',
+      closing: 'Envie a arte ajustada ou responda esta mensagem que a gente ajuda com os ajustes.',
+      waIntro: 'Antes de imprimir, encontramos alguns pontos para ajustar:', waOk: 'Sua arte está pronta para impressão: resolução, proporção e margens corretas.'
+    },
+    en: {
+      title: 'ARTWORK REVIEW', ready: 'Ready to print', fix: n => n === 1 ? '1 adjustment needed' : `${n} adjustments needed`,
+      sides: { front: 'Front', back: 'Back', sign: 'Sign', rider: 'Rider' },
+      legTrim: 'Trim line', legSafe: 'Safe zone', legCut: 'Area that will be cut off', empty: 'Upload artwork to check it',
+      where: { sides: 'on each side', tb: 'at the top and bottom' }, withBleed: 'with bleed',
+      t: { lowres: 'Low resolution', ratio: 'Proportions don’t match the size', bleed: 'Missing bleed', small: 'Text too small', edge: 'Text too close to the edge', ok: 'All good' },
+      lowres_bad: o => `The image is ${o.px} px. At ${o.size} that is ${o.dpi} DPI and it will print blurry. The minimum is ${o.min} DPI: please send the artwork at ${o.need} px or larger.`,
+      lowres_warn: o => `The image is ${o.px} px, which gives ${o.dpi} DPI at ${o.size}. It may print slightly soft. ${o.target} DPI (${o.need} px) is ideal.`,
+      ratio: o => `The artwork is ${o.ar} and the product is ${o.size} (${o.pr}). To fit, about ${o.cut} will be cut off ${o.where}. Please resize the artwork to ${o.fit}.`,
+      bleed: o => `The artwork runs to the edge but has no bleed. Extend the background ${o.b} past the trim on every side (final artwork ${o.full}) to avoid a white sliver after cutting.`,
+      small_pt: o => `The ${o.n === 1 ? 'marked text prints' : `${o.n} marked spots print`} at about ${o.pt} pt. Use at least ${o.min} pt so it stays readable.`,
+      small_in: o => `The ${o.n === 1 ? 'marked text has' : `${o.n} marked spots have`} letters about ${o.h} tall. To read from a distance, use at least ${o.min}.`,
+      edge: o => `The ${o.n === 1 ? 'marked text is' : `${o.n} marked spots are`} less than ${o.safe} from the trim and may be cut. Keep text and logos inside the safe zone.`,
+      ok: () => 'Resolution, proportions and margins are correct for printing.',
+      closing: 'Send the adjusted artwork or reply to this message and we’ll help with the changes.',
+      waIntro: 'Before printing, we found a few things to adjust:', waOk: 'Your artwork is ready to print: resolution, proportions and margins are correct.'
+    },
+    es: {
+      title: 'REVISIÓN DEL ARTE', ready: 'Listo para imprimir', fix: n => n === 1 ? '1 ajuste necesario' : `${n} ajustes necesarios`,
+      sides: { front: 'Frente', back: 'Reverso', sign: 'Letrero', rider: 'Rider' },
+      legTrim: 'Línea de corte', legSafe: 'Margen de seguridad', legCut: 'Área que se cortará', empty: 'Sube el arte para revisarlo',
+      where: { sides: 'de cada lado', tb: 'arriba y abajo' }, withBleed: 'con sangrado',
+      t: { lowres: 'Resolución baja', ratio: 'Proporción distinta al tamaño', bleed: 'Falta sangrado', small: 'Texto demasiado pequeño', edge: 'Texto muy cerca del borde', ok: 'Todo bien' },
+      lowres_bad: o => `La imagen tiene ${o.px} px. En ${o.size} eso da ${o.dpi} DPI y se imprimirá borrosa. El mínimo es ${o.min} DPI: envía el arte en ${o.need} px o más.`,
+      lowres_warn: o => `La imagen tiene ${o.px} px, lo que da ${o.dpi} DPI en ${o.size}. Puede imprimirse un poco sin nitidez. Lo ideal es ${o.target} DPI (${o.need} px).`,
+      ratio: o => `El arte tiene formato ${o.ar} y el producto es ${o.size} (${o.pr}). Para que encaje se cortarán unos ${o.cut} ${o.where}. Ajusta el arte a ${o.fit}.`,
+      bleed: o => `El arte llega al borde pero no tiene sangrado. Extiende el fondo ${o.b} más allá del corte en cada lado (arte final ${o.full}) para que no quede un filo blanco.`,
+      small_pt: o => `${o.n === 1 ? 'El texto marcado queda' : `Los ${o.n} textos marcados quedan`} en unos ${o.pt} pt impresos. Usa al menos ${o.min} pt para que se lea bien.`,
+      small_in: o => `${o.n === 1 ? 'El texto marcado tiene' : `Los ${o.n} textos marcados tienen`} letras de unos ${o.h} de alto. Para leer de lejos, usa al menos ${o.min}.`,
+      edge: o => `${o.n === 1 ? 'El texto marcado queda' : `Los ${o.n} textos marcados quedan`} a menos de ${o.safe} del corte y ${o.n === 1 ? 'puede' : 'pueden'} cortarse. Mantén textos y logos dentro del margen de seguridad.`,
+      ok: () => 'La resolución, la proporción y los márgenes están correctos para imprimir.',
+      closing: 'Envía el arte ajustado o responde este mensaje y te ayudamos con los cambios.',
+      waIntro: 'Antes de imprimir, encontramos algunos puntos para ajustar:', waOk: 'Tu arte está listo para imprimir: resolución, proporción y márgenes correctos.'
+    }
+  };
+  const matName = (p, lang) => lang === 'en' ? p.name : (p.names || {})[lang] || p.name;
+  const sideName = (p, side, lang) => L[lang].sides[side] || side;
+
+  // Where the printed area sits inside the uploaded image (image pixels)
+  function geo(p, s, side, img) {
+    const ad = artDims(p, s, side), iw = img.naturalWidth, ih = img.naturalHeight;
+    const hasBleed = detectBleed(p, s, img, ad);
+    let sx = 0, sy = 0, sw = iw, sh = ih;
+    if (hasBleed) { sx = iw * p.bleed / (ad.w + 2 * p.bleed); sy = ih * p.bleed / (ad.h + 2 * p.bleed); sw = iw - 2 * sx; sh = ih - 2 * sy; }
+    const pr = ad.w / ad.h, ir = sw / sh;
+    let tw = sw, th = sh;
+    if (ir > pr) tw = sh * pr; else th = sw / pr;
+    const trim = { x: sx + (sw - tw) / 2, y: sy + (sh - th) / 2, w: tw, h: th };
+    return { ad, iw, ih, hasBleed, trim, dpi: tw / ad.w, ir, pr, off: Math.abs(ir - pr) / pr };
+  }
+
+  // Does the artwork have ink right up to the trim? (then it needs bleed)
+  const edgeCache = new WeakMap();
+  function reachesEdge(img, t) {
+    const key = [t.x, t.y, t.w, t.h].map(v => v | 0).join(',');
+    const memo = edgeCache.get(img) || {};
+    if (key in memo) return memo[key];
+    const sc = Math.min(1, 600 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = mk(img.naturalWidth * sc, img.naturalHeight * sc), x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, c.width, c.height);
+    const d = x.getImageData(0, 0, c.width, c.height).data;
+    const X0 = Math.round(t.x * sc), Y0 = Math.round(t.y * sc), X1 = Math.round((t.x + t.w) * sc) - 1, Y1 = Math.round((t.y + t.h) * sc) - 1;
+    const band = Math.max(1, Math.round(Math.min(t.w, t.h) * sc * 0.012));
+    let ink = 0, all = 0;
+    const px = (xx, yy) => { if (xx < 0 || yy < 0 || xx >= c.width || yy >= c.height) return; const i = (yy * c.width + xx) * 4; all++; if (d[i + 3] > 40 && (d[i] < 232 || d[i + 1] < 232 || d[i + 2] < 232)) ink++; };
+    for (let b = 0; b < band; b++) {
+      for (let xx = X0; xx <= X1; xx++) { px(xx, Y0 + b); px(xx, Y1 - b); }
+      for (let yy = Y0; yy <= Y1; yy++) { px(X0 + b, yy); px(X1 - b, yy); }
+    }
+    memo[key] = all > 0 && ink / all > 0.15;
+    edgeCache.set(img, memo);
+    return memo[key];
+  }
+
+  // Share of the font size a word's box covers: tall letters reach ~0.73 em, descenders add ~0.2 em, plain lowercase ~0.53 em
+  function emShare(t) {
+    const up = /[A-Zbdfhklt0-9À-ÖØ-Þ!?&%$#@\/]/.test(t), down = /[gjpqy,;]/.test(t);
+    return up && down ? 0.93 : up ? 0.73 : down ? 0.72 : 0.53;
+  }
+  // Merge words that sit on the same line into one marked box
+  function lines(ws) {
+    const out = [];
+    ws.slice().sort((a, b) => a.y0 - b.y0 || a.x0 - b.x0).forEach(w => {
+      const h = w.y1 - w.y0;
+      const l = out.find(o => {
+        const vo = Math.min(o.y1, w.y1) - Math.max(o.y0, w.y0), oh = o.y1 - o.y0;
+        const gap = Math.max(w.x0 - o.x1, o.x0 - w.x1);
+        return vo > 0.5 * Math.min(h, oh) && gap < 1.6 * Math.max(h, oh) && Math.max(h, oh) < 2.2 * Math.min(h, oh);
+      });
+      const em = (w.y1 - w.y0) / emShare(w.text);
+      if (l) { l.x0 = Math.min(l.x0, w.x0); l.y0 = Math.min(l.y0, w.y0); l.x1 = Math.max(l.x1, w.x1); l.y1 = Math.max(l.y1, w.y1); l.text += ' ' + w.text; l.ems.push(em); }
+      else out.push(Object.assign({}, w, { ems: [em] }));
+    });
+    // second pass: join pieces of the same line that were started separately
+    const near = (o, w) => {
+      const h = w.y1 - w.y0, oh = o.y1 - o.y0, vo = Math.min(o.y1, w.y1) - Math.max(o.y0, w.y0);
+      return vo > 0.5 * Math.min(h, oh) && Math.max(w.x0 - o.x1, o.x0 - w.x1) < 1.6 * Math.max(h, oh);
+    };
+    for (let i = 0; i < out.length; i++) for (let j = i + 1; j < out.length; j++) {
+      const a = out[i], b = out[j];
+      if (!near(a, b)) continue;
+      a.x0 = Math.min(a.x0, b.x0); a.y0 = Math.min(a.y0, b.y0); a.x1 = Math.max(a.x1, b.x1); a.y1 = Math.max(a.y1, b.y1);
+      a.text += ' ' + b.text; a.ems = a.ems.concat(b.ems); out.splice(j, 1); j = i;
+    }
+    out.forEach(l => { const e = l.ems.slice().sort((a, b) => a - b); l.em = e[e.length >> 1]; });
+    return out;
+  }
+  // Issues per side: { side, img, g, issues: [{ sev, k, o, marks }] }
+  function analyze(p, s) {
+    const C = p.check;
+    return p.sides.filter(side => ART[cur][side] && !(p.oneView && side === 'rider' && !s.rider)).map(side => {
+      const img = ART[cur][side], g = geo(p, s, side, img), ad = g.ad, b = p.bleed || 0, issues = [];
+      const size = `${num(ad.w)}″ × ${num(ad.h)}″`, full = b ? `${num(ad.w + 2 * b)}″ × ${num(ad.h + 2 * b)}″` : size;
+      const need = t => `${Math.ceil((ad.w + 2 * b) * t)}×${Math.ceil((ad.h + 2 * b) * t)}`;
+      const dpi = Math.round(g.dpi), [good, min] = C.dpi;
+      if (dpi < min) issues.push({ sev: 'bad', k: 'lowres', o: { px: `${g.iw}×${g.ih}`, dpi, size, min, target: good, need: need(good) } });
+      else if (dpi < good * 0.95) issues.push({ sev: 'warn', k: 'lowres', o: { px: `${g.iw}×${g.ih}`, dpi, size, min, target: good, need: need(good) } });
+      if (g.off > 0.03) {
+        const wide = g.ir > g.pr, cut = wide ? (ad.h * g.ir - ad.w) / 2 : (ad.w / g.ir - ad.h) / 2;
+        issues.push({ sev: g.off > 0.12 ? 'bad' : 'warn', k: 'ratio', o: { ar: ratioStr(g.ir), pr: ratioStr(g.pr), size, cut: fin(Math.round(cut * 8) / 8 || 0.125), wide, fit: full, bleedFit: !!b } });
+      }
+      if (b && !g.hasBleed && reachesEdge(img, g.trim)) issues.push({ sev: 'warn', k: 'bleed', o: { b: fin(b), full } });
+      const o = OCR[cur + '|' + side];
+      if (o && o.status === 'done' && o.ver === VER[cur][side]) {
+        const small = [], edge = [];
+        let minPt = 99, minH = 99;
+        lines(o.words).forEach(w => {                                     // judge whole lines, not single words
+          const hIn = w.em / g.dpi;                                       // font size (em) in inches
+          const l = (w.x0 - g.trim.x) / g.dpi, r = (g.trim.x + g.trim.w - w.x1) / g.dpi, t = (w.y0 - g.trim.y) / g.dpi, bt = (g.trim.y + g.trim.h - w.y1) / g.dpi;
+          if (Math.min(l, r, t, bt) < C.safe) { edge.push(w); return; }
+          if (C.minPt) { const pt = hIn * 72; if (pt < C.minPt) { small.push(w); minPt = Math.min(minPt, pt); } }
+          else { const cap = hIn * 0.72; if (cap < C.minIn) { small.push(w); minH = Math.min(minH, cap); } }
+        });
+        const sm = small, ed = edge;
+        if (sm.length) issues.push({ sev: 'bad', k: 'small', marks: sm, o: C.minPt ? { n: sm.length, pt: Math.max(1, Math.round(minPt * 2) / 2), min: C.minPt } : { n: sm.length, h: fin(Math.max(0.0625, Math.round(minH * 16) / 16)), min: fin(C.minIn) } });
+        if (ed.length) issues.push({ sev: 'warn', k: 'edge', marks: ed, o: { n: ed.length, safe: fin(C.safe) } });
+      }
+      if (!issues.length) issues.push({ sev: 'ok', k: 'ok', o: {} });
+      return { side, img, g, issues };
+    });
+  }
+  function msg(lang, it) {
+    const T = L[lang];
+    if (it.k === 'lowres') return T[it.sev === 'bad' ? 'lowres_bad' : 'lowres_warn'](it.o);
+    if (it.k === 'ratio') return T.ratio(Object.assign({}, it.o, { where: T.where[it.o.wide ? 'sides' : 'tb'], fit: it.o.fit + (it.o.bleedFit ? ` (${T.withBleed})` : '') }));
+    if (it.k === 'small') return it.o.pt ? T.small_pt(it.o) : T.small_in(it.o);
+    return T[it.k](it.o);
+  }
+  // Short line for the side panel (English, like the rest of the tool)
+  function shortLine(it) {
+    const o = it.o;
+    return {
+      lowres: () => `${o.dpi} DPI at ${o.size} — ${it.sev === 'bad' ? `needs ${o.min}+` : `${o.target} is ideal`}`,
+      ratio: () => `art is ${o.ar}, product ${o.pr} · ~${o.cut} cut ${o.wide ? 'on each side' : 'top & bottom'}`,
+      bleed: () => `art reaches the edge with no bleed (${o.b})`,
+      small: () => o.pt ? `${o.n} spot${o.n > 1 ? 's' : ''} ~${o.pt} pt (min ${o.min} pt)` : `${o.n} spot${o.n > 1 ? 's' : ''} ~${o.h} letters (min ${o.min})`,
+      edge: () => `${o.n} spot${o.n > 1 ? 's' : ''} within ${o.safe} of the trim`,
+      ok: () => 'resolution, proportions and bleed OK'
+    }[it.k]();
+  }
+  const countIssues = res => res.reduce((n, r) => n + r.issues.filter(i => i.sev !== 'ok').length, 0);
+
+  function ocrState(p) {
+    const sides = p.sides.filter(sd => ART[cur][sd]);
+    const st = sides.map(sd => OCR[cur + '|' + sd]).map((o, i) => o && o.ver === VER[cur][sides[i]] ? o : null);
+    if (st.some(o => o && o.status === 'busy')) return { busy: true, pct: Math.round(100 * (st.reduce((a, o) => a + (o ? (o.status === 'done' ? 1 : o.pct || 0) : 0), 0) / sides.length)) };
+    if (st.length && st.every(o => o && o.status === 'done')) return { done: true, words: st.reduce((a, o) => a + o.words.length, 0) };
+    if (st.some(o => o && o.status === 'error')) return { error: true };
+    return {};
+  }
+
+  function checkSection(p, s) {
+    const res = analyze(p, s);
+    if (!res.length) return '';
+    const multi = p.sides.filter(sd => ART[cur][sd]).length > 1;
+    const h = ['<section><span class="lbl">Artwork check</span><ul class="chk">'];
+    res.forEach(r => {
+      if (multi) h.push(`<li class="side">${(p.sideNames || { front: 'Front', back: 'Back' })[r.side] || r.side}</li>`);
+      r.issues.forEach(it => h.push(`<li><span class="dot" style="background:${SEV[it.sev]}"></span><span><b>${L.en.t[it.k]}</b><br><span class="d">${esc(shortLine(it))}</span></span></li>`));
+    });
+    h.push('</ul>');
+    const o = ocrState(p);
+    if (o.busy) h.push(`<button class="btn2" disabled id="ocrBtn">Reading text… ${o.pct}%</button>`);
+    else if (o.done) h.push(`<p class="note">Text scan: ${o.words} word${o.words === 1 ? '' : 's'} read. Stylized lettering may be missed, so take a quick look too.</p>`);
+    else h.push(`<button class="btn2" data-act="ocr">${o.error ? 'Text scan failed · try again' : 'Scan for small text'}</button>`);
+    h.push(`<div style="font-size:12px;color:var(--muted);margin:12px 0 6px">Client report language</div>${seg('lang', [['pt', 'Português'], ['en', 'English'], ['es', 'Español']], s.lang)}`);
+    h.push(`<button class="btn2 primary" data-act="report">${tab === 'report' ? 'Showing client report' : 'See client report'}</button>`);
+    h.push(`<button class="btn2" data-act="wa">Copy WhatsApp text</button></section>`);
+    return h.join('');
+  }
+
+  function whatsappText(p, s) {
+    const lang = s.lang || 'pt', T = L[lang], res = analyze(p, s), d = dims(p, s);
+    const multi = res.length > 1, lines = [`*${T.title.charAt(0) + T.title.slice(1).toLowerCase()} · ${matName(p, lang)} ${sizeLabel(p, d)}*`, ''];
+    const list = res.flatMap(r => r.issues.filter(i => i.sev !== 'ok').map(i => [r, i]));
+    if (!list.length) { lines.push(T.waOk); return lines.join('\n'); }
+    lines.push(T.waIntro, '');
+    list.forEach(([r, i], n) => { lines.push(`${n + 1}. *${T.t[i.k]}*${multi ? ` (${sideName(p, r.side, lang)})` : ''}`, msg(lang, i), ''); });
+    lines.push(T.closing);
+    return lines.join('\n');
+  }
+
+  async function checkAction(act, btn) {
+    const p = mat(), s = st();
+    if (act === 'ocr') runOCRAll();
+    else if (act === 'report') { tab = 'report'; runOCRAll(); buildPanel(); render(); }
+    else if (act === 'wa') {
+      const text = whatsappText(p, s);
+      try { await navigator.clipboard.writeText(text); }
+      catch (e) { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (er) {} ta.remove(); }
+      btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = 'Copy WhatsApp text'; }, 1400);
+    }
+  }
+
+  // OCR (Tesseract.js, loaded on first use)
+  let tessP = null, workerP = null, progressCb = null;
+  function loadTess() {
+    return tessP = tessP || new Promise((res, rej) => {
+      const sc = document.createElement('script');
+      sc.src = TESS.js;
+      sc.onload = () => res(window.Tesseract);
+      sc.onerror = () => { tessP = null; rej(new Error('Text reader failed to load')); };
+      document.head.appendChild(sc);
+    });
+  }
+  function getWorker() {
+    if (workerP) return workerP;
+    workerP = loadTess().then(T => T.createWorker('eng', 1, {
+      workerPath: TESS.worker, corePath: TESS.core, langPath: TESS.lang,
+      logger: m => { if (progressCb && m.status === 'recognizing text') progressCb(m.progress); }
+    }));
+    workerP.catch(() => { workerP = null; });
+    return workerP;
+  }
+  let ocrRunning = false;
+  async function runOCRAll() {
+    if (ocrRunning) return;
+    ocrRunning = true;
+    try {
+      for (const key of [cur]) for (const side of P[key].sides) if (ART[key][side]) await ocrSide(key, side);
+    } finally { ocrRunning = false; }
+  }
+  async function ocrSide(key, side) {
+    const img = ART[key][side], id = key + '|' + side, ver = VER[key][side], o = OCR[id];
+    if (o && o.ver === ver && o.status === 'done') return;
+    OCR[id] = { ver, status: 'busy', pct: 0 };
+    if (key === cur) buildPanel();
+    try {
+      const w = await getWorker();
+      const sc = Math.min(3, 2600 / Math.max(img.naturalWidth, img.naturalHeight));   // small images are enlarged so tiny text can be read
+      const c = mk(img.naturalWidth * sc, img.naturalHeight * sc), x = c.getContext('2d');
+      x.imageSmoothingQuality = 'high';
+      x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+      x.drawImage(img, 0, 0, c.width, c.height);
+      // grayscale + contrast stretch: the reader finds small text on colored backgrounds much better
+      const gd = x.getImageData(0, 0, c.width, c.height), pd = gd.data;
+      let lo = 255, hi = 0;
+      for (let i = 0; i < pd.length; i += 4) { const l = 0.299 * pd[i] + 0.587 * pd[i + 1] + 0.114 * pd[i + 2]; pd[i] = l; if (l < lo) lo = l; if (l > hi) hi = l; }
+      const k = hi > lo ? 255 / (hi - lo) : 1;
+      for (let i = 0; i < pd.length; i += 4) { const v = (pd[i] - lo) * k; pd[i] = pd[i + 1] = pd[i + 2] = v; }
+      x.putImageData(gd, 0, 0);
+      // Pass 1: whole image (big text). Pass 2: four overlapping tiles, so small lines aren't dropped next to big type.
+      const W = c.width, H = c.height, ov = Math.round(Math.min(W, H) * 0.06), rects = [null];
+      for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
+        const left = Math.max(0, Math.round(j * W / 2) - ov), top = Math.max(0, Math.round(i * H / 2) - ov);
+        rects.push({ left, top, width: Math.min(W - left, Math.round(W / 2) + 2 * ov), height: Math.min(H - top, Math.round(H / 2) + 2 * ov) });
+      }
+      const words = [];
+      const overlap = (a, b) => {
+        const ix = Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)), iy = Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
+        return ix * iy / Math.max(1, Math.min((a.x1 - a.x0) * (a.y1 - a.y0), (b.x1 - b.x0) * (b.y1 - b.y0)));
+      };
+      for (let pi = 0; pi < rects.length; pi++) {
+        progressCb = pct => { if (OCR[id]) OCR[id].pct = (pi + pct) / rects.length; const b = document.getElementById('ocrBtn'); if (b && key === cur) b.textContent = `Reading text… ${ocrState(P[cur]).pct || 0}%`; };
+        const { data } = await w.recognize(c, rects[pi] ? { rectangle: rects[pi] } : {});
+        (data.words || [])
+          .filter(wd => wd.confidence >= 60 && /[A-Za-z0-9À-ÿ]{2,}/.test(wd.text))
+          .map(wd => ({ text: wd.text, x0: wd.bbox.x0 / sc, y0: wd.bbox.y0 / sc, x1: wd.bbox.x1 / sc, y1: wd.bbox.y1 / sc }))
+          .filter(wd => wd.y1 - wd.y0 >= 4)
+          .forEach(wd => {
+            const k2 = words.findIndex(o => overlap(o, wd) > 0.5);
+            if (k2 < 0) words.push(wd);
+            else if (wd.x1 - wd.x0 > words[k2].x1 - words[k2].x0 + 2) words[k2] = wd;   // keep the more complete reading
+          });
+      }
+      if (VER[key][side] === ver) OCR[id] = { ver, status: 'done', words };
+    } catch (e) {
+      console.error(e);
+      OCR[id] = { ver, status: 'error' };
+    }
+    progressCb = null;
+    if (key === cur) { buildPanel(); render(); }
+  }
+
+  function updateTabs() {
+    const p = mat(), s = st(), res = analyze(p, s), n = countIssues(res), el = document.getElementById('tabN');
+    document.querySelectorAll('#tabs [data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
+    el.classList.toggle('hidden', !res.length);
+    el.classList.toggle('ok', !n);
+    el.textContent = n ? n : '✓';
+  }
+  document.getElementById('tabs').addEventListener('click', e => {
+    const b = e.target.closest('[data-tab]');
+    if (!b || b.dataset.tab === tab) return;
+    tab = b.dataset.tab;
+    if (tab === 'report') runOCRAll();
+    buildPanel(); render();
+  });
+
+  function wrap(x, text, maxW) {
+    const out = [];
+    text.split('\n').forEach(par => {
+      let line = '';
+      par.split(' ').forEach(wd => {
+        const t = line ? line + ' ' + wd : wd;
+        if (x.measureText(t).width > maxW && line) { out.push(line); line = wd; } else line = t;
+      });
+      out.push(line);
+    });
+    return out;
+  }
+
+  // Client report image: artwork with trim / safe zone / problems marked + numbered list
+  function drawReport() {
+    const p = mat(), s = st(), lang = s.lang || 'pt', T = L[lang], U = v => v * S;
+    const res = analyze(p, s), n = countIssues(res);
+    drawBrandedFrame(ctx, T.title, res.length ? (n ? T.fix(n) : T.ready) : '');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, HEADER_TOP, CW, ZONE_H);
+    ctx.textBaseline = 'alphabetic';
+    if (!res.length) {
+      ctx.fillStyle = '#9aa3b2'; ctx.textAlign = 'center';
+      ctx.font = `500 ${U(26)}px Poppins`;
+      ctx.fillText(T.empty, CW / 2, HEADER_TOP + ZONE_H / 2);
+      ctx.textAlign = 'left';
+      return;
+    }
+    // Title
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#051024';
+    ctx.font = `700 ${U(30)}px Montserrat`;
+    ctx.fillText(`${matName(p, lang)} · ${sizeLabel(p, dims(p, s))}`, U(50), U(122));
+    ctx.font = `600 ${U(18)}px Poppins`;
+    ctx.fillStyle = n ? SEV.bad : SEV.ok;
+    ctx.fillText(n ? T.fix(n) : T.ready, U(50), U(154));
+
+    // Numbered issue list (shared numbering with the marks on the artwork)
+    const list = [];
+    res.forEach(r => r.issues.forEach(it => { if (it.sev !== 'ok') list.push({ r, it, no: list.length + 1 }); }));
+
+    // Artwork panels
+    const box = { x: U(50), y: U(190), w: U(560), h: U(790) }, cells = [];
+    let artBottom = box.y;
+    const wide = res[0].g.iw / res[0].g.ih > 1.15;
+    res.forEach((r, i) => {
+      const k = res.length;
+      const cell = wide || k === 1 ? { x: box.x, y: box.y + i * box.h / k, w: box.w, h: box.h / k } : { x: box.x + i * box.w / k, y: box.y, w: box.w / k, h: box.h };
+      cells.push(cell);
+      const lab = res.length > 1 ? U(30) : 0, pad = U(14);
+      const avW = cell.w - 2 * pad, avH = cell.h - lab - 2 * pad;
+      const k2 = Math.min(avW / r.g.iw, avH / r.g.ih), dw = r.g.iw * k2, dh = r.g.ih * k2;
+      const ox = cell.x + (cell.w - dw) / 2, oy = cell.y + lab + pad + (avH - dh) / 2;
+      if (lab) { ctx.fillStyle = '#7a8597'; ctx.font = `600 ${U(15)}px Poppins`; try { ctx.letterSpacing = `${U(1.5)}px`; } catch (e) {} ctx.fillText(sideName(p, r.side, lang).toUpperCase(), ox, cell.y + U(20)); try { ctx.letterSpacing = '0px'; } catch (e) {} }
+      ctx.save();
+      ctx.shadowColor = 'rgba(5,16,36,0.18)'; ctx.shadowBlur = U(18); ctx.shadowOffsetY = U(6);
+      ctx.fillStyle = '#fff'; ctx.fillRect(ox, oy, dw, dh);
+      ctx.restore();
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(r.img, ox, oy, dw, dh);
+      artBottom = Math.max(artBottom, oy + dh);
+      const tr = r.g.trim, M = (x, y) => [ox + x * k2, oy + y * k2];
+      const [tx, ty] = M(tr.x, tr.y), tw = tr.w * k2, th = tr.h * k2;
+      // shade what gets cut off
+      ctx.save();
+      ctx.beginPath(); ctx.rect(ox, oy, dw, dh); ctx.rect(tx, ty, tw, th);
+      ctx.fillStyle = 'rgba(214,69,69,0.32)'; ctx.fill('evenodd');
+      ctx.restore();
+      // trim + safe lines
+      const safe = p.check.safe * r.g.dpi * k2;
+      ctx.save();
+      ctx.lineWidth = U(2);
+      ctx.setLineDash([U(9), U(6)]);
+      ctx.strokeStyle = '#d64545'; ctx.strokeRect(tx, ty, tw, th);
+      if (safe * 2 < Math.min(tw, th)) { ctx.strokeStyle = '#41a9cc'; ctx.strokeRect(tx + safe, ty + safe, tw - 2 * safe, th - 2 * safe); }
+      ctx.restore();
+      // text marks
+      list.filter(L2 => L2.r === r && L2.it.marks).forEach(({ it, no }) => {
+        const col = SEV[it.sev];
+        it.marks.forEach((w, j) => {
+          const [x0, y0] = M(w.x0, w.y0), pd = U(3), mw = (w.x1 - w.x0) * k2 + 2 * pd, mh = (w.y1 - w.y0) * k2 + 2 * pd;
+          ctx.save();
+          ctx.strokeStyle = col; ctx.lineWidth = U(2.5);
+          ctx.strokeRect(x0 - pd, y0 - pd, mw, mh);
+          ctx.restore();
+          if (j === 0) badge(x0 - pd, y0 - pd, no, col, U(11));
+        });
+      });
+    });
+    // Legend
+    let ly = artBottom + U(44), lx2 = box.x;
+    ctx.font = `400 ${U(14)}px Poppins`;
+    [[T.legTrim, 'dash', '#d64545'], [T.legSafe, 'dash', '#41a9cc'], [T.legCut, 'fill', 'rgba(214,69,69,0.32)']].forEach(([t, kind, c]) => {
+      if (kind === 'dash') { ctx.save(); ctx.strokeStyle = c; ctx.lineWidth = U(2); ctx.setLineDash([U(6), U(4)]); ctx.beginPath(); ctx.moveTo(lx2, ly - U(5)); ctx.lineTo(lx2 + U(26), ly - U(5)); ctx.stroke(); ctx.restore(); }
+      else { ctx.fillStyle = c; ctx.fillRect(lx2, ly - U(13), U(26), U(16)); }
+      ctx.fillStyle = '#5b6575'; ctx.fillText(t, lx2 + U(34), ly);
+      lx2 += U(34) + ctx.measureText(t).width + U(22);
+    });
+
+    // List on the right, shrinking the font if needed
+    const LX = U(670), LW = U(480), top = U(200), bottom = U(1085);
+    const multi = res.length > 1;
+    const items = list.length ? list.map(({ r, it, no }) => ({ no, col: SEV[it.sev], title: T.t[it.k] + (multi ? ` · ${sideName(p, r.side, lang)}` : ''), body: msg(lang, it) }))
+      : [{ no: '✓', col: SEV.ok, title: T.t.ok, body: L[lang].ok() }];
+    let f = 1, layout;
+    for (; f > 0.6; f -= 0.05) {
+      let y = top; layout = [];
+      items.forEach(itm => {
+        ctx.font = `600 ${U(20 * f)}px Poppins`;
+        const tl = wrap(ctx, itm.title, LW - U(46));
+        ctx.font = `400 ${U(16 * f)}px Poppins`;
+        const bl = wrap(ctx, itm.body, LW - U(46));
+        layout.push({ itm, y, tl, bl });
+        y += tl.length * U(27 * f) + bl.length * U(24 * f) + U(26 * f);
+      });
+      ctx.font = `italic 400 ${U(15 * f)}px Poppins`;
+      const cl = list.length ? wrap(ctx, T.closing, LW) : [];
+      if (y + cl.length * U(22 * f) <= bottom) { layout.closing = { y: y + U(6), lines: cl }; break; }
+    }
+    layout.forEach(({ itm, y, tl, bl }) => {
+      badge(LX, y - U(19 * f), itm.no, itm.col, U(14 * f));
+      ctx.fillStyle = '#051024'; ctx.font = `600 ${U(20 * f)}px Poppins`;
+      tl.forEach((t, i) => ctx.fillText(t, LX + U(46), y + i * U(27 * f)));
+      ctx.fillStyle = '#4a5363'; ctx.font = `400 ${U(16 * f)}px Poppins`;
+      const by = y + tl.length * U(27 * f) - U(3);
+      bl.forEach((t, i) => ctx.fillText(t, LX + U(46), by + i * U(24 * f)));
+    });
+    if (layout.closing) {
+      ctx.fillStyle = '#7a8597'; ctx.font = `italic 400 ${U(15 * f)}px Poppins`;
+      layout.closing.lines.forEach((t, i) => ctx.fillText(t, LX, layout.closing.y + i * U(22 * f)));
+    }
+    document.getElementById('meta').textContent = [matName(p, 'en'), 'Artwork check', `${n} issue${n === 1 ? '' : 's'}`, `${s.lang.toUpperCase()}`, '1200×1200 PNG'].join(' · ');
+
+    function badge(x, y, label, col, r) {
+      ctx.save();
+      ctx.beginPath(); ctx.arc(x + r, y + r, r, 0, PI2); ctx.fillStyle = col; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.font = `700 ${Math.round(r * 1.15)}px Poppins`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(String(label), x + r, y + r + r * 0.06);
+      ctx.restore();
+    }
+  }
+
   // ---------- Download ----------
   document.getElementById('dl').addEventListener('click', () => {
     render();
@@ -1254,7 +1771,7 @@
     o.imageSmoothingQuality = 'high';
     o.drawImage(canvas, 0, 0, 1200, 1200);
     const p = mat(), s = st(), d = dims(p, s);
-    const name = [cur, 'mockup', `${num(d.w)}x${num(d.h)}`, (viewName(p, s) || '').toLowerCase().replace(/[^a-z]+/g, '-'), s.style].filter(Boolean).join('-').replace(/-+/g, '-');
+    const name = [cur, tab === 'report' ? 'artwork-check' : 'mockup', `${num(d.w)}x${num(d.h)}`, (viewName(p, s) || '').toLowerCase().replace(/[^a-z]+/g, '-'), s.style].filter(Boolean).join('-').replace(/-+/g, '-');
     try {
       out.toBlob(b => {
         const a = document.createElement('a');
