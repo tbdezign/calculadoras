@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Mockup Generator — TBDezign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#051024; --ink:#1d2738; --muted:#7a8597; --line:#e3e7ee; --soft:#f4f6f9;
+    --g1:#91bc4d; --g2:#41a9cc; --g3:#b5b5f7; --accent:#41a9cc;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:'Poppins',system-ui,sans-serif;color:var(--ink);background:#e9ecf1;overflow:hidden}
+  .app{display:flex;height:100vh}
+  .panel{width:330px;flex:none;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto}
+  .brand{position:relative;padding:22px 22px 16px;border-bottom:1px solid var(--line)}
+  .brand .bar{position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--g1),var(--g2),var(--g3))}
+  .brand .home{display:inline-block;font-size:11px;color:var(--muted);text-decoration:none;margin-bottom:6px}
+  .brand .home:hover{color:var(--accent)}
+  .brand h1{font-family:'Montserrat';font-weight:700;font-size:17px;letter-spacing:.06em;text-transform:uppercase;color:var(--navy)}
+  .brand p{font-size:12px;color:var(--muted);margin-top:2px}
+  section{padding:14px 22px;border-bottom:1px solid var(--line)}
+  .lbl{display:block;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .mats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .mats button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 10px;font:500 12.5px 'Poppins';color:var(--ink);cursor:pointer;text-align:left;line-height:1.25}
+  .mats button small{display:block;font-size:10px;color:var(--muted);font-weight:400}
+  .mats button:hover{border-color:#c9d1dc}
+  .mats button.on{border-color:var(--accent);background:#eef8fc;color:var(--navy);font-weight:600}
+  .seg{display:flex;background:var(--soft);border-radius:9px;padding:3px;gap:3px}
+  .seg+.seg{margin-top:6px}
+  .seg button{flex:1;border:0;background:transparent;font:500 12.5px 'Poppins';color:var(--ink);padding:7px 4px;border-radius:7px;cursor:pointer;line-height:1.2}
+  .seg button small{display:block;font-size:10px;color:var(--muted);font-weight:400}
+  .seg button.on{background:#fff;box-shadow:0 1px 3px rgba(5,16,36,.15);color:var(--navy);font-weight:600}
+  .seg button.on small{color:var(--accent)}
+  .seg button:disabled{opacity:.35;cursor:default}
+  .drops{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .drops.one{grid-template-columns:1fr}
+  .drop{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:132px;border:1.5px dashed #c9d1dc;border-radius:10px;cursor:pointer;background:var(--soft);overflow:hidden;transition:border-color .15s,background .15s}
+  .drop:hover,.drop.over{border-color:var(--accent);background:#eef8fc}
+  .drop input{display:none}
+  .drop .thumb{position:absolute;inset:0;background-size:contain;background-position:center;background-repeat:no-repeat;background-color:#fff;display:none}
+  .drop.has .thumb{display:block}
+  .drop.has{border-style:solid;border-color:#c9d1dc}
+  .drop .dt{font-weight:600;font-size:13px;color:var(--navy);position:relative}
+  .drop .ds{font-size:11px;color:var(--muted);position:relative}
+  .drop.has .dt,.drop.has .ds{display:none}
+  .drop .tag{position:absolute;left:6px;bottom:6px;background:rgba(5,16,36,.8);color:#fff;font-size:10px;padding:2px 7px;border-radius:20px;display:none}
+  .drop.has .tag{display:block}
+  .drop .clr{position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(5,16,36,.8);color:#fff;font-size:14px;line-height:22px;cursor:pointer;display:none}
+  .drop.has .clr{display:block}
+  .drop.loading::after{content:'Loading…';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(244,246,249,.92);font-size:12px;color:var(--navy);font-weight:600}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;font-size:13px}
+  select,input[type=color],input[type=number]{font:400 12.5px 'Poppins';border:1px solid var(--line);border-radius:7px;padding:5px 8px;background:#fff;color:var(--ink)}
+  select.full{width:100%;padding:8px 10px}
+  input[type=number]{width:72px;text-align:center}
+  input[type=color]{padding:2px;width:44px;height:30px;cursor:pointer}
+  .custom{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--muted)}
+  .note{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.45}
+  .note .warn{color:#c2581a}
+  .swatches{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .sw{width:38px;height:38px;border-radius:8px;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .sw.on{border-color:var(--accent)}
+  .toggle{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:5px 0;cursor:pointer}
+  .toggle.disabled{opacity:.4;pointer-events:none}
+  .toggle input{display:none}
+  .toggle .sl{width:36px;height:20px;border-radius:20px;background:#cfd6e0;position:relative;transition:background .15s;flex:none}
+  .toggle .sl::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .toggle input:checked+.sl{background:var(--accent)}
+  .toggle input:checked+.sl::after{transform:translateX(16px)}
+  .toggle small{color:var(--muted);font-size:11px}
+  .dlwrap{padding:16px 22px 22px;margin-top:auto}
+  .dl{width:100%;border:0;border-radius:10px;padding:13px;background:var(--navy);color:#fff;font:600 14px 'Poppins';cursor:pointer;letter-spacing:.02em}
+  .dl:hover{background:#0d2045}
+  .stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;min-width:0}
+  .stage canvas{display:block;height:auto;aspect-ratio:1/1;width:min(100%, calc(100vh - 64px));border-radius:6px;box-shadow:0 10px 40px rgba(5,16,36,.18);
+    background-color:#fff;background-image:linear-gradient(45deg,#e3e6ea 25%,transparent 25%),linear-gradient(-45deg,#e3e6ea 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e3e6ea 75%),linear-gradient(-45deg,transparent 75%,#e3e6ea 75%);
+    background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+  .meta{font-size:12px;color:var(--muted);margin-top:10px;height:16px}
+  .hidden{display:none!important}
+  @media (max-width:820px){
+    body{overflow:auto}
+    .app{flex-direction:column-reverse;height:auto}
+    .panel{width:100%;border-right:0}
+    .stage canvas{width:100%}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel">
+    <div class="brand">
+      <div class="bar"></div>
+      <a class="home" href="index.html">← Calculadoras</a>
+      <h1>Mockup Generator</h1>
+      <p>TBDezign artwork proof</p>
+    </div>
+    <section>
+      <span class="lbl">Material</span>
+      <div class="mats" id="mats"></div>
+    </section>
+    <div id="controls"></div>
+    <div class="dlwrap"><button class="dl" id="dl">Download PNG · 1200×1200</button></div>
+  </aside>
+  <main class="stage">
+    <canvas id="c" width="2400" height="2400"></canvas>
+    <div class="meta" id="meta"></div>
+  </main>
+</div>
+
+<script>
+(() => {
+  // ---------- Constants ----------
+  const S = 2;                                  // internal 2x for crisp export
+  const CW = 1200 * S, CH = 1200 * S;
+  const HEADER_TOP = 66 * S, FOOTER_TOP = 1120 * S;
+  const ZONE_H = FOOTER_TOP - HEADER_TOP;
+  const LOGO_URL = 'https://cdn.shopify.com/s/files/1/0730/9158/0092/files/logo-png.png?v=1773444846';
+  const PI2 = Math.PI * 2;
+
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const zc = mk(CW, ZONE_H), zx = zc.getContext('2d');       // mockup zone
+  const layer = mk(CW, ZONE_H), lx = layer.getContext('2d');  // product layer (for shadows)
+
+  function mk(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; }
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function pathRect(p, x, y, w, h, r) {
+    if (p.beginPath) p.beginPath();
+    r = Math.min(r || 0, w / 2, h / 2);
+    if (!r) { p.rect(x, y, w, h); return; }
+    p.moveTo(x + r, y);
+    p.arcTo(x + w, y, x + w, y + h, r);
+    p.arcTo(x + w, y + h, x, y + h, r);
+    p.arcTo(x, y + h, x, y, r);
+    p.arcTo(x, y, x + w, y, r);
+    p.closePath();
+  }
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const num = n => +(+n).toFixed(3);
+
+  // ---------- Logo ----------
+  let logoImg = null, whiteLogo = null;
+  const li = new Image();
+  li.crossOrigin = 'anonymous';
+  li.onload = () => { logoImg = li; whiteLogo = null; render(); };
+  li.onerror = () => { logoImg = null; };
+  li.src = LOGO_URL;
+  function getWhiteLogo() {
+    if (!logoImg) return null;
+    if (whiteLogo) return whiteLogo;
+    const lc = mk(logoImg.naturalWidth, logoImg.naturalHeight), l = lc.getContext('2d');
+    l.drawImage(logoImg, 0, 0);
+    l.globalCompositeOperation = 'source-in';
+    l.fillStyle = '#ffffff';
+    l.fillRect(0, 0, lc.width, lc.height);
+    return whiteLogo = lc;
+  }
+
+  // ---------- Branded frame (same on every material) ----------
+  function drawBrandedFrame(x) {
+    x.fillStyle = '#f0f0f0';
+    x.fillRect(0, 0, CW, CH);
+    const grad = x.createLinearGradient(0, 0, CW, 0);
+    grad.addColorStop(0, '#91bc4d'); grad.addColorStop(0.5, '#41a9cc'); grad.addColorStop(1, '#b5b5f7');
+    x.fillStyle = grad;
+    x.fillRect(0, 0, CW, 6 * S);
+    x.fillStyle = '#f0f0f0';
+    x.fillRect(0, 6 * S, CW, 60 * S);
+
+    x.font = `700 ${26 * S}px Montserrat`;
+    x.fillStyle = '#051024';
+    x.textBaseline = 'middle';
+    x.textAlign = 'left';
+    try { x.letterSpacing = `${0.12 * 26 * S}px`; } catch (e) {}
+    x.fillText('ARTWORK PROOF', 40 * S, 36 * S);
+    try { x.letterSpacing = '0px'; } catch (e) {}
+    x.font = `400 ${20 * S}px Poppins`;
+    x.fillStyle = '#999999';
+    x.textAlign = 'right';
+    x.fillText('For review only', 1160 * S, 36 * S);
+
+    x.fillStyle = '#051024';
+    x.fillRect(0, FOOTER_TOP, CW, 80 * S);
+    const wl = getWhiteLogo();
+    if (wl) {
+      const lh = 24 * S, lw = (wl.width / wl.height) * lh;
+      x.drawImage(wl, 40 * S, FOOTER_TOP + (80 * S - lh) / 2, lw, lh);
+    } else {
+      x.fillStyle = '#ffffff';
+      x.textAlign = 'left';
+      x.font = `700 ${22 * S}px Montserrat`;
+      try { x.letterSpacing = `${0.3 * 22 * S}px`; } catch (e) {}
+      x.fillText('TBDEZIGN', 40 * S, FOOTER_TOP + 40 * S);
+      const tw = x.measureText('TBDEZIGN').width;
+      try { x.letterSpacing = '0px'; } catch (e) {}
+      x.font = `400 ${20 * S}px Poppins`;
+      x.fillText('print', 40 * S + tw + 6 * S, FOOTER_TOP + 41 * S);
+    }
+    x.font = `400 ${22 * S}px Poppins`;
+    x.fillStyle = '#7a95b0';
+    x.textAlign = 'right';
+    x.textBaseline = 'middle';
+    const urlY = FOOTER_TOP + 40 * S;
+    x.fillText('tbdezign.com', 1160 * S, urlY);
+    const urlW = x.measureText('tbdezign.com').width;
+    const as = 14 * S, gap = 8 * S, ax = 1160 * S - urlW - gap - as, ay = urlY - as / 2;
+    x.beginPath();
+    x.strokeStyle = '#7a95b0'; x.lineWidth = 2 * S; x.lineCap = 'round';
+    x.moveTo(ax, ay + as); x.lineTo(ax + as, ay);
+    x.moveTo(ax + as - 5 * S, ay); x.lineTo(ax + as, ay); x.lineTo(ax + as, ay + 5 * S);
+    x.stroke();
+    x.textAlign = 'left';
+    x.textBaseline = 'alphabetic';
+  }
+
+  // ---------- CMYK simulation: darkens shadows more than highlights + gamut compression ----------
+  const LUT = new Uint8ClampedArray(256);
+  for (let i = 0; i < 256; i++) { const n = i / 255; LUT[i] = Math.round(255 * n * (1 - 0.13 * (1 - n))); }
+  function applyCMYK(x, w, h) {
+    const d = x.getImageData(0, 0, w, h), p = d.data;
+    for (let i = 0; i < p.length; i += 4) {
+      let r = p[i], g = p[i + 1], b = p[i + 2];
+      const sat = (Math.max(r, g, b) - Math.min(r, g, b)) / 255;
+      const l = 0.299 * r + 0.587 * g + 0.114 * b;
+      const k = 0.05 + 0.10 * sat;
+      r += (l - r) * k; g += (l - g) * k; b += (l - b) * k;
+      p[i] = LUT[r | 0]; p[i + 1] = LUT[g | 0]; p[i + 2] = LUT[b | 0];
+    }
+    x.putImageData(d, 0, 0);
+  }
+
+  // ---------- Materials ----------
+  // Sizes are inches. Each material builds a flat "item" canvas (artwork + die cut / hardware);
+  // the shared styles (flat, angled, 3D, stacked) and scenes place it in the proof.
+  const FEET = n => n % 12 === 0 ? `${n / 12}′` : `${n}″`;
+  const P = {
+    card: {
+      name: 'Business Card', sub: '3.5″ × 2″',
+      sizes: [{ id: 'std', w: 3.5, h: 2, label: '3.5″ × 2″' }],
+      orient: 'h', sides: ['front', 'back'], bleed: 0.0625,
+      styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D'], ['stacked', 'Stacked']],
+      opts: [{ id: 'corners', label: 'Corners', type: 'seg', def: '0', choices: [['0', 'Sharp'], ['0.125', '⅛″'], ['0.25', '¼″']] }],
+      scene: 'desk',
+      radius: st => +st.corners
+    },
+    flyer: {
+      name: 'Flyer', sub: '4×6 to 8.5×11',
+      sizes: [
+        { id: '4x6', w: 4, h: 6, label: '4″ × 6″' },
+        { id: '5x7', w: 5, h: 7, label: '5″ × 7″' },
+        { id: '5.5x8.5', w: 5.5, h: 8.5, label: '5.5″ × 8.5″ (Half Letter)' },
+        { id: '8.5x11', w: 8.5, h: 11, label: '8.5″ × 11″ (Letter)' }
+      ],
+      custom: { w: 4, h: 6, min: 2, max: 24, step: 0.25 },
+      orient: 'v', sides: ['front', 'back'], bleed: 0.0625,
+      styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D'], ['stacked', 'Stacked']],
+      opts: [{ id: 'rounded', label: 'Rounded corners', type: 'toggle', def: false }],
+      scene: 'desk',
+      radius: st => st.rounded ? 0.125 : 0
+    },
+    letterhead: {
+      name: 'Letterhead', sub: '8.5″ × 11″',
+      sizes: [{ id: 'letter', w: 8.5, h: 11, label: '8.5″ × 11″' }],
+      sides: ['front'], bleed: 0.0625, dimsDef: true,
+      styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D'], ['stacked', 'Stacked']],
+      opts: [], scene: 'desk', radius: () => 0
+    },
+    doorhanger: {
+      name: 'Door Hanger', sub: '3.5×8.5 · 4.25×11',
+      sizes: [
+        { id: 'sm', w: 3.5, h: 8.5, label: '3.5″ × 8.5″', note: 'Most common' },
+        { id: 'lg', w: 4.25, h: 11, label: '4.25″ × 11″', note: 'Large' }
+      ],
+      sides: ['front', 'back'], bleed: 0.0625,
+      styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D'], ['door', 'On door']],
+      opts: [{ id: 'rounded', label: 'Rounded corners', type: 'toggle', def: false }],
+      scene: 'desk',
+      radius: st => st.rounded ? 0.125 : 0,
+      decorate: dieCutHanger
+    },
+    magnet: {
+      name: 'Car Magnet', sub: '24×18 · 24×12',
+      sizes: [
+        { id: '24x18', w: 24, h: 18, label: '24″ × 18″' },
+        { id: '24x12', w: 24, h: 12, label: '24″ × 12″' }
+      ],
+      custom: { w: 24, h: 18, min: 1, max: 60, step: 0.5 },
+      orient: 'h', sides: ['front'], bleed: 0.125, dimsDef: true,
+      styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D']],
+      opts: [], scene: 'desk', note: '½″ rounded corners · one side print',
+      radius: () => 0.5
+    },
+    yard: {
+      name: 'Yard Sign', sub: 'Coroplast + H-stake',
+      sizes: [
+        { id: '24x18', w: 24, h: 18, label: '24″ × 18″' },
+        { id: '36x24', w: 36, h: 24, label: '36″ × 24″' }
+      ],
+      custom: { w: 24, h: 18, min: 6, max: 96, step: 0.5 },
+      orient: 'h', sides: ['front', 'back'], bleed: 0.125,
+      styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D'], ['lawn', 'In lawn']],
+      opts: [
+        { id: 'stake', label: 'H-stake', type: 'toggle', def: true },
+        { id: 'grommets', label: 'Grommets', type: 'seg', def: 'none', choices: [['none', 'None'], ['4corners', '4 corners'], ['2top', '2 top']] }
+      ],
+      scene: 'lawn',
+      radius: () => 0.06,
+      extent: (d, st, style) => ({ w: d.w, h: d.h + (st.stake || style === 'lawn' ? stakeLen(d) : 0) }),
+      ground: (d, st) => d.h + stakeLen(d) * 0.55,
+      build: buildYardSign
+    },
+    hframe: {
+      name: 'H-Frame Sign', sub: '24×18 + 24×6 rider',
+      sizes: [{ id: 'std', w: 24, h: 18, label: '24″ × 18″ + 24″ × 6″ rider' }],
+      sides: ['sign', 'rider'], sideNames: { sign: 'Sign', rider: 'Rider' }, sideNotes: { sign: '24″ × 18″', rider: '24″ × 6″ · optional' },
+      oneView: true, bleed: 0.125,
+      styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D'], ['lawn', 'In lawn']],
+      opts: [
+        { id: 'rider', label: 'Show rider', type: 'toggle', def: false },
+        { id: 'frame', label: 'Frame color', type: 'swatch', def: '#1c1c1c', choices: [['#1c1c1c', 'Black'], ['#3a3a3a', 'Dark gray'], ['#f0f0f0', 'White']], custom: true }
+      ],
+      scene: 'lawn',
+      radius: () => 0,
+      artDims: side => side === 'rider' ? { w: 24, h: 6 } : { w: 24, h: 18 },
+      extent: () => HF.size(),
+      ground: () => HF.size().h - HF.post * 0.45,
+      build: buildHFrame
+    },
+    banner: {
+      name: 'Vinyl Banner', sub: '2×4 ft to 4×10 ft',
+      sizes: [
+        { id: '48x24', w: 48, h: 24, label: '2′ × 4′' },
+        { id: '72x24', w: 72, h: 24, label: '2′ × 6′' },
+        { id: '72x36', w: 72, h: 36, label: '3′ × 6′' },
+        { id: '96x36', w: 96, h: 36, label: '3′ × 8′' },
+        { id: '96x48', w: 96, h: 48, label: '4′ × 8′' },
+        { id: '120x48', w: 120, h: 48, label: '4′ × 10′' }
+      ],
+      def: '72x36', feet: true,
+      custom: { w: 72, h: 36, min: 12, max: 240, step: 1 },
+      orient: 'h', sides: ['front'], bleed: 0.125,
+      styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D'], ['hanging', 'Hanging']],
+      opts: [
+        { id: 'grommets', label: 'Grommets', type: 'seg', def: 'auto', choices: [['none', 'None'], ['auto', 'Every 2 ft'], ['corners', '4 corners']] },
+        { id: 'hem', label: 'Hem', type: 'toggle', def: true }
+      ],
+      scene: 'wall',
+      radius: () => 0,
+      decorate: decorateBanner
+    }
+  };
+  const ORDER = ['card', 'flyer', 'letterhead', 'doorhanger', 'magnet', 'yard', 'hframe', 'banner'];
+
+  // ---------- State (one per material, kept while switching) ----------
+  const ST = {}, ART = {}, VER = {};
+  function defaults(key) {
+    const p = P[key], st = {
+      size: p.def || p.sizes[0].id, orient: p.orient || null,
+      view: p.sides[0], style: 'flat', bg: 'white', bgColor: '#e6edf3', door: 'white',
+      cmyk: true, shadow: true, dims: !!p.dimsDef, bleed: 'auto'
+    };
+    if (p.custom) { st.cw = p.custom.w; st.ch = p.custom.h; }
+    p.opts.forEach(o => { st[o.id] = o.def; });
+    return st;
+  }
+  ORDER.forEach(k => { ST[k] = defaults(k); ART[k] = {}; VER[k] = {}; P[k].sides.forEach(s => { ART[k][s] = null; VER[k][s] = 0; }); });
+  let cur = 'doorhanger';
+  try { const h = location.hash.slice(1); const saved = localStorage.getItem('tbd-mockup-material'); cur = P[h] ? h : P[saved] ? saved : cur; } catch (e) {}
+  const mat = () => P[cur], st = () => ST[cur];
+
+  function baseSize(p, s) {
+    if (s.size === 'custom') return { w: Math.max(p.custom.min, +s.cw || p.custom.w), h: Math.max(p.custom.min, +s.ch || p.custom.h) };
+    const z = p.sizes.find(z => z.id === s.size) || p.sizes[0];
+    return { w: z.w, h: z.h };
+  }
+  // Printed size after orientation
+  function dims(p, s) {
+    let { w, h } = baseSize(p, s);
+    if (p.orient && ((s.orient === 'h') !== (w >= h))) [w, h] = [h, w];
+    return { w, h };
+  }
+  const sizeLabel = (p, d) => p.feet ? `${FEET(d.w)} × ${FEET(d.h)}` : `${num(d.w)}″ × ${num(d.h)}″`;
+  const artDims = (p, s, side) => p.artDims ? p.artDims(side) : dims(p, s);
+
+  // ---------- Artwork ----------
+  function detectBleed(p, s, img, ad) {
+    if (s.bleed === 'yes') return true;
+    if (s.bleed === 'no' || !p.bleed) return false;
+    const r = img.naturalWidth / img.naturalHeight;
+    const tr = ad.w / ad.h, br = (ad.w + 2 * p.bleed) / (ad.h + 2 * p.bleed);
+    return Math.abs(r - br) < Math.abs(r - tr);
+  }
+  function drawArt(p, s, x, img, w, h, ad) {
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    let sx = 0, sy = 0, sw = iw, sh = ih;
+    if (detectBleed(p, s, img, ad)) {
+      sx = iw * p.bleed / (ad.w + 2 * p.bleed);
+      sy = ih * p.bleed / (ad.h + 2 * p.bleed);
+      sw = iw - 2 * sx; sh = ih - 2 * sy;
+    }
+    const sc = Math.max(w / sw, h / sh), dw = sw * sc, dh = sh * sc;
+    x.imageSmoothingEnabled = true;
+    x.imageSmoothingQuality = 'high';
+    x.drawImage(img, sx, sy, sw, sh, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  }
+  function drawPlaceholder(x, w, h, label) {
+    const u = Math.min(w, h);
+    x.fillStyle = '#fbfcfd';
+    x.fillRect(0, 0, w, h);
+    x.fillStyle = '#c3cad4';
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.font = `600 ${Math.round(u * 0.11)}px Poppins`;
+    try { x.letterSpacing = `${u * 0.012}px`; } catch (e) {}
+    x.fillText(label.toUpperCase(), w / 2, h * 0.5 - u * 0.04);
+    try { x.letterSpacing = '0px'; } catch (e) {}
+    x.font = `400 ${Math.round(u * 0.055)}px Poppins`;
+    x.fillText('Upload artwork', w / 2, h * 0.5 + u * 0.08);
+  }
+  // Printed panel: white stock + artwork (or placeholder) + CMYK + edge line, clipped to the corner radius
+  function panel(p, s, side, wIn, hIn, ppi, radIn) {
+    const w = Math.max(2, Math.round(wIn * ppi)), h = Math.max(2, Math.round(hIn * ppi));
+    const c = mk(w, h), x = c.getContext('2d'), rad = (radIn || 0) * ppi;
+    const img = ART[cur][side];
+    x.save();
+    pathRect(x, 0, 0, w, h, rad);
+    x.clip();
+    x.fillStyle = '#fff';
+    x.fillRect(0, 0, w, h);
+    if (img) drawArt(p, s, x, img, w, h, { w: wIn, h: hIn }); else drawPlaceholder(x, w, h, (p.sideNames || {})[side] || side);
+    x.restore();
+    if (s.cmyk && img) applyCMYK(x, w, h);
+    const elw = Math.max(1.2, ppi * 0.006, w * 0.0012);
+    x.save();
+    x.strokeStyle = 'rgba(0,0,0,0.13)';
+    x.lineWidth = elw;
+    pathRect(x, elw / 2, elw / 2, w - elw, h - elw, rad);
+    x.stroke();
+    x.restore();
+    return c;
+  }
+
+  // Item = { c: canvas, art: printed area inside the canvas (for dimension lines) }
+  const itemCache = new Map();
+  function getItem(side, ppi, style) {
+    const p = mat(), s = st();
+    const sKey = Object.assign({}, s); ['bg', 'bgColor', 'view', 'shadow', 'dims', 'door'].forEach(k => delete sKey[k]);
+    const key = [cur, side, ppi.toFixed(2), style === 'lawn', JSON.stringify(sKey), JSON.stringify(VER[cur])].join('|');
+    if (itemCache.has(key)) return itemCache.get(key);
+    if (itemCache.size > 24) itemCache.clear();
+    let it;
+    if (p.build) it = p.build(p, s, side, ppi, style);
+    else {
+      const d = dims(p, s), c = panel(p, s, side, d.w, d.h, ppi, p.radius(s));
+      if (p.decorate) p.decorate(p, s, side, c, ppi, d);
+      it = { c, art: { x: 0, y: 0, w: c.width, h: c.height } };
+    }
+    itemCache.set(key, it);
+    return it;
+  }
+
+  // Door hanger die cut: hole + slit (mirrored on the back)
+  const HOLE = { cy: 1.0, r: 0.595 };
+  const SLIT = { dirX: -0.377, dirY: -0.926, topDx: -0.46 };
+  function dieCutHanger(p, s, side, c, ppi) {
+    const x = c.getContext('2d'), w = c.width;
+    const cx = w / 2, cy = HOLE.cy * ppi, r = HOLE.r * ppi;
+    const elw = Math.max(1.2, ppi * 0.006);
+    x.save();
+    x.strokeStyle = 'rgba(0,0,0,0.13)';
+    x.lineWidth = elw;
+    x.beginPath(); x.arc(cx, cy, r + elw / 2, 0, PI2); x.stroke();
+    x.restore();
+    let dx = SLIT.dirX, tdx = SLIT.topDx;
+    const dy = SLIT.dirY;
+    if (side === 'back') { dx = -dx; tdx = -tdx; }
+    const px = cx + dx * r * 0.9, py = cy + dy * r * 0.9;
+    const ex = cx + tdx * ppi, ey = 0;
+    const vx = ex - px, vy = ey - py, L = Math.hypot(vx, vy);
+    x.save();
+    x.globalCompositeOperation = 'destination-out';
+    x.fillStyle = '#000'; x.strokeStyle = '#000';
+    x.beginPath(); x.arc(cx, cy, r, 0, PI2); x.fill();
+    x.lineWidth = Math.max(2.5, ppi * 0.018);
+    x.lineCap = 'butt';
+    x.beginPath(); x.moveTo(px, py); x.lineTo(ex + vx / L * 30, ey + vy / L * 30); x.stroke();
+    x.restore();
+  }
+
+  // Metal grommet with a real hole punched through the material
+  function grommet(x, cx, cy, outerIn, innerIn, ppi) {
+    const R = Math.max(3, outerIn / 2 * ppi), r = Math.max(1.5, innerIn / 2 * ppi);
+    const g = x.createRadialGradient(cx - R * 0.35, cy - R * 0.35, R * 0.1, cx, cy, R);
+    g.addColorStop(0, '#f4f5f6'); g.addColorStop(0.5, '#c3c6cb'); g.addColorStop(1, '#868b92');
+    x.beginPath(); x.arc(cx, cy, R, 0, PI2); x.fillStyle = g; x.fill();
+    x.lineWidth = Math.max(1, R * 0.08); x.strokeStyle = 'rgba(0,0,0,0.28)'; x.stroke();
+    x.beginPath(); x.arc(cx, cy, r + R * 0.14, 0, PI2); x.strokeStyle = 'rgba(0,0,0,0.22)'; x.stroke();
+    x.save();
+    x.globalCompositeOperation = 'destination-out';
+    x.beginPath(); x.arc(cx, cy, r, 0, PI2); x.fill();
+    x.restore();
+  }
+
+  // Vinyl banner: hem + stitching + grommets
+  function bannerGrommets(d, mode) {
+    if (mode === 'none') return [];
+    if (mode === 'corners') return [[0, 0], [1, 0], [0, 1], [1, 1]];
+    const pts = [], nx = Math.max(2, Math.floor(d.w / 24) + 1), ny = Math.max(2, Math.floor(d.h / 24) + 1);
+    for (let i = 0; i < nx; i++) { pts.push([i / (nx - 1), 0]); pts.push([i / (nx - 1), 1]); }
+    for (let i = 1; i < ny - 1; i++) { pts.push([0, i / (ny - 1)]); pts.push([1, i / (ny - 1)]); }
+    return pts;
+  }
+  function decorateBanner(p, s, side, c, ppi, d) {
+    const x = c.getContext('2d'), w = c.width, h = c.height;
+    if (s.hem) {
+      const hw = 1 * ppi;
+      x.save();
+      x.fillStyle = 'rgba(0,0,0,0.07)';
+      x.fillRect(0, 0, w, hw); x.fillRect(0, h - hw, w, hw);
+      x.fillRect(0, hw, hw, h - 2 * hw); x.fillRect(w - hw, hw, hw, h - 2 * hw);
+      x.strokeStyle = 'rgba(0,0,0,0.22)';
+      x.lineWidth = Math.max(1, ppi * 0.03);
+      x.setLineDash([Math.max(3, ppi * 0.18), Math.max(2, ppi * 0.12)]);
+      const si = hw * 0.85;
+      x.strokeRect(si, si, w - 2 * si, h - 2 * si);
+      x.restore();
+    }
+    const ins = 0.5 * ppi;
+    bannerGrommets(d, s.grommets).forEach(([u, v]) => grommet(x, ins + u * (w - 2 * ins), ins + v * (h - 2 * ins), 0.75, 0.375, ppi));
+  }
+
+  // Yard sign: coroplast panel + optional wire H-stake behind it
+  const stakeLen = d => Math.min(d.h * 0.62, 16);
+  function buildYardSign(p, s, side, ppi, style) {
+    const d = dims(p, s), withStake = s.stake || style === 'lawn';
+    const sl = withStake ? stakeLen(d) : 0;
+    const W = Math.round(d.w * ppi), Hs = Math.round(d.h * ppi), H = Math.round((d.h + sl) * ppi);
+    const c = mk(W, H + (withStake ? Math.round(0.6 * ppi) : 0)), x = c.getContext('2d');
+    if (withStake) {
+      const span = Math.min(d.w * 0.74, 10 + d.w * 0.3), lxp = (d.w - span) / 2 * ppi, rxp = lxp + span * ppi;
+      const wire = Math.max(3, 0.16 * ppi), top = Hs * 0.55, bot = H;
+      x.save();
+      x.lineCap = 'round';
+      x.strokeStyle = '#9da2a8';
+      x.lineWidth = wire;
+      [lxp, rxp].forEach(px => { x.beginPath(); x.moveTo(px, top); x.lineTo(px, bot); x.stroke(); });
+      x.beginPath(); x.moveTo(lxp, Hs + sl * 0.3 * ppi); x.lineTo(rxp, Hs + sl * 0.3 * ppi); x.stroke();
+      x.lineWidth = wire * 0.8;
+      [lxp, rxp].forEach(px => { x.beginPath(); x.moveTo(px - wire * 0.6, bot); x.lineTo(px, bot + 0.5 * ppi); x.lineTo(px + wire * 0.6, bot); x.closePath(); x.fillStyle = '#9da2a8'; x.fill(); });
+      x.strokeStyle = 'rgba(255,255,255,0.35)';
+      x.lineWidth = Math.max(1, wire * 0.25);
+      [lxp, rxp].forEach(px => { x.beginPath(); x.moveTo(px - wire * 0.2, top); x.lineTo(px - wire * 0.2, bot); x.stroke(); });
+      x.restore();
+    }
+    const pn = panel(p, s, side, d.w, d.h, ppi, p.radius(s)), px = pn.getContext('2d');
+    const gi = 1 * ppi, pts = s.grommets === '4corners' ? [[gi, gi], [pn.width - gi, gi], [gi, pn.height - gi], [pn.width - gi, pn.height - gi]]
+      : s.grommets === '2top' ? [[gi, gi], [pn.width - gi, gi]] : [];
+    pts.forEach(([gx, gy]) => grommet(px, gx, gy, 0.55, 0.28, ppi));
+    x.drawImage(pn, 0, 0);
+    return { c, art: { x: 0, y: 0, w: pn.width, h: pn.height } };
+  }
+
+  // H-frame: metal frame with sign slot, rider slot, posts and feet
+  const HF = { T: 0.55, gap: 0.12, rider: 6, post: 9, postW: 0.5, footW: 1.6, footH: 0.35,
+    size() { return { w: 24 + 2 * this.T, h: this.T + 18 + this.T + this.gap + this.rider + this.T + this.post }; } };
+  function buildHFrame(p, s, side, ppi) {
+    const { T, gap, rider, post, postW, footW, footH } = HF, sz = HF.size();
+    const c = mk(sz.w * ppi, sz.h * ppi), x = c.getContext('2d');
+    const f = v => v * ppi, col = s.frame || '#1c1c1c';
+    const sx = f(T), sy = f(T), sw = f(24), sh = f(18);
+    const rTop = sy + sh + f(T + gap), rBot = rTop + f(rider);
+    const bar = (X, Y, W, H) => {
+      x.fillStyle = col; x.fillRect(X, Y, W, H);
+      x.fillStyle = 'rgba(255,255,255,0.12)'; x.fillRect(X, Y, W, Math.max(1, Math.min(H, W) * 0.22));
+      x.fillStyle = 'rgba(0,0,0,0.18)'; x.fillRect(X, Y + H - Math.max(1, Math.min(H, W) * 0.18), W, Math.max(1, Math.min(H, W) * 0.18));
+    };
+    if (s.rider) x.drawImage(panel(p, s, 'rider', 24, rider, ppi, 0), sx, rTop, sw, f(rider));
+    x.drawImage(panel(p, s, 'sign', 24, 18, ppi, 0), sx, sy, sw, sh);
+    bar(0, 0, c.width, f(T));                       // top
+    bar(0, 0, f(T), sh + f(2 * T));                // left
+    bar(sx + sw, 0, f(T), sh + f(2 * T));          // right
+    bar(0, sy + sh, c.width, f(T));                // sign bottom
+    bar(0, rTop, f(T), f(rider));                  // rider sides
+    bar(sx + sw, rTop, f(T), f(rider));
+    bar(0, rBot, c.width, f(T));                   // rider bottom
+    const pTop = rBot + f(T), pBot = c.height;
+    bar(f(T - postW) / 2, pTop, f(postW), pBot - pTop);
+    bar(c.width - f(T) + f(T - postW) / 2, pTop, f(postW), pBot - pTop);
+    const fy = pTop + (pBot - pTop) * 0.42;
+    [f(T) / 2, c.width - f(T) / 2].forEach(cx => bar(cx - f(footW) / 2, fy, f(footW), f(footH)));
+    return { c, art: { x: sx, y: sy, w: sw, h: sh } };
+  }
+
+  // ---------- Backgrounds ----------
+  let noiseTile = null;
+  function getNoise() {
+    if (noiseTile) return noiseTile;
+    noiseTile = mk(256, 256);
+    const n = noiseTile.getContext('2d'), d = n.createImageData(256, 256), r = rng(7);
+    for (let i = 0; i < d.data.length; i += 4) {
+      const v = r() < 0.5 ? 0 : 255;
+      d.data[i] = d.data[i + 1] = d.data[i + 2] = v;
+      d.data[i + 3] = Math.floor(r() * 14);
+    }
+    n.putImageData(d, 0, 0);
+    return noiseTile;
+  }
+  const sceneCache = {};
+  function sceneCanvas(kind) {
+    if (sceneCache[kind]) return sceneCache[kind];
+    const c = mk(CW, ZONE_H), x = c.getContext('2d');
+    if (kind === 'desk') {
+      const g = x.createLinearGradient(0, 0, 0, ZONE_H);
+      g.addColorStop(0, '#d8cfc4'); g.addColorStop(0.4, '#c9bfb3'); g.addColorStop(1, '#b8ad9f');
+      x.fillStyle = g; x.fillRect(0, 0, CW, ZONE_H);
+      const v = x.createRadialGradient(CW * 0.45, ZONE_H * 0.35, CW * 0.1, CW * 0.5, ZONE_H * 0.5, CW * 0.8);
+      v.addColorStop(0, 'rgba(255,255,255,0.18)'); v.addColorStop(1, 'rgba(0,0,0,0.12)');
+      x.fillStyle = v; x.fillRect(0, 0, CW, ZONE_H);
+    } else if (kind === 'wall') {
+      x.fillStyle = '#9a7b62'; x.fillRect(0, 0, CW, ZONE_H);
+      const r = rng(11), bw = 120 * S, bh = 44 * S, m = 7 * S;
+      for (let row = 0, y = 0; y < ZONE_H; row++, y += bh + m) {
+        for (let xx = -(row % 2) * bw / 2; xx < CW; xx += bw + m) {
+          const t = r();
+          x.fillStyle = `rgb(${150 + t * 30 | 0},${96 + t * 22 | 0},${72 + t * 16 | 0})`;
+          x.fillRect(xx, y, bw, bh);
+        }
+      }
+      x.fillStyle = x.createPattern(getNoise(), 'repeat'); x.fillRect(0, 0, CW, ZONE_H);
+      const v = x.createRadialGradient(CW / 2, ZONE_H * 0.45, CW * 0.2, CW / 2, ZONE_H / 2, CW * 0.8);
+      v.addColorStop(0, 'rgba(255,255,255,0.10)'); v.addColorStop(1, 'rgba(0,0,0,0.38)');
+      x.fillStyle = v; x.fillRect(0, 0, CW, ZONE_H);
+    } else if (kind === 'lawn') {
+      const hz = ZONE_H * 0.5;
+      const sky = x.createLinearGradient(0, 0, 0, hz);
+      sky.addColorStop(0, '#9fd2ec'); sky.addColorStop(1, '#dcefF7');
+      x.fillStyle = sky; x.fillRect(0, 0, CW, hz);
+      const r = rng(5);
+      const cl = mk(CW, hz), cx2 = cl.getContext('2d');           // clouds drawn opaque, then faded as one
+      cx2.fillStyle = '#fff';
+      for (let i = 0; i < 5; i++) { const cx = r() * CW, cy = r() * hz * 0.6, s = (60 + r() * 90) * S; for (let k = 0; k < 4; k++) { cx2.beginPath(); cx2.ellipse(cx + (k - 1.5) * s * 0.55, cy + (k % 2) * s * 0.12, s * 0.5, s * 0.28, 0, 0, PI2); cx2.fill(); } }
+      x.save(); x.globalAlpha = 0.6; x.filter = `blur(${3 * S}px)`; x.drawImage(cl, 0, 0); x.restore();
+      x.fillStyle = '#7fa86a'; x.fillRect(0, hz - 26 * S, CW, 30 * S);           // far hedge line
+      const gr = x.createLinearGradient(0, hz, 0, ZONE_H);
+      gr.addColorStop(0, '#6c9a4c'); gr.addColorStop(0.35, '#5b8a3e'); gr.addColorStop(1, '#3f6d2a');
+      x.fillStyle = gr; x.fillRect(0, hz, CW, ZONE_H - hz);
+      x.lineWidth = 1.5 * S;
+      for (let i = 0; i < 2600; i++) {
+        const gx = r() * CW, gy = hz + Math.pow(r(), 0.7) * (ZONE_H - hz), len = (4 + (gy - hz) / (ZONE_H - hz) * 18) * S * (0.6 + r() * 0.7);
+        x.strokeStyle = r() < 0.5 ? 'rgba(40,75,25,0.35)' : 'rgba(150,190,110,0.30)';
+        x.beginPath(); x.moveTo(gx, gy); x.lineTo(gx + (r() - 0.5) * len * 0.5, gy - len); x.stroke();
+      }
+    }
+    if (kind !== 'wall') { x.fillStyle = x.createPattern(getNoise(), 'repeat'); x.fillRect(0, 0, CW, ZONE_H); }
+    return sceneCache[kind] = c;
+  }
+  function drawBg(x, s, p) {
+    x.clearRect(0, 0, CW, ZONE_H);
+    if (s.bg === 'transparent') return;
+    if (s.bg === 'white') { x.fillStyle = '#ffffff'; x.fillRect(0, 0, CW, ZONE_H); return; }
+    if (s.bg === 'color') { x.fillStyle = s.bgColor; x.fillRect(0, 0, CW, ZONE_H); return; }
+    x.drawImage(sceneCanvas(p.scene), 0, 0);
+  }
+
+  function shadowFrom(dst, src, blur, ox, oy, alpha) {
+    const OFF = CW * 2;
+    dst.save();
+    dst.shadowColor = `rgba(0,0,0,${alpha})`;
+    dst.shadowBlur = blur;
+    dst.shadowOffsetX = OFF + ox;
+    dst.shadowOffsetY = oy;
+    dst.drawImage(src, -OFF, 0);
+    dst.restore();
+  }
+
+  // ---------- 3D perspective (scanline, perspective-correct) ----------
+  function drawPerspective(x, item, cx, cy, W, H) {
+    const Wb = W, Wt = W * 0.82, Hs = H * 0.92, topY = cy - Hs / 2;
+    const tl = cx - Wt / 2, tr = cx + Wt / 2, bl = cx - Wb / 2, br = cx + Wb / 2;
+    const zt = Wb / Wt, persp = s => s / ((1 - s) / zt + s);
+    const sw = item.width, sh = item.height, steps = Math.ceil(Hs / 2);
+    for (let k = 0; k < steps; k++) {
+      const s0 = k / steps, s1 = (k + 1) / steps, v0 = persp(s0), v1 = persp(s1);
+      const y0 = topY + Hs * s0, y1 = topY + Hs * s1;
+      const lx0 = tl + (bl - tl) * s0, rx0 = tr + (br - tr) * s0, lx1 = tl + (bl - tl) * s1;
+      const srcY = v0 * sh, srcH = Math.max((v1 - v0) * sh, 0.01), take = Math.min(srcH + 0.6, sh - srcY);
+      if (take <= 0) continue;
+      x.setTransform((rx0 - lx0) / sw, 0, (lx1 - lx0) / srcH, (y1 - y0) / srcH, lx0, y0);
+      x.drawImage(item, 0, srcY, sw, take, 0, 0, sw, take);
+    }
+    x.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  // ---------- Dimension lines ----------
+  function drawDims(x, boxes, d, p) {
+    const col = '#5b6575';
+    x.save();
+    x.strokeStyle = col; x.fillStyle = col;
+    x.lineWidth = 2 * S; x.lineCap = 'round';
+    x.font = `500 ${21 * S}px Poppins`;
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    const tick = 9 * S, pad = 12 * S, lab = n => p.feet ? `${FEET(n)} (${num(n)}″)` : `${num(n)}″`;
+    const hline = (x0, x1, y, label) => {
+      const mid = (x0 + x1) / 2, tw = x.measureText(label).width;
+      x.beginPath();
+      x.moveTo(x0, y); x.lineTo(mid - tw / 2 - pad, y);
+      x.moveTo(mid + tw / 2 + pad, y); x.lineTo(x1, y);
+      x.moveTo(x0, y - tick); x.lineTo(x0, y + tick);
+      x.moveTo(x1, y - tick); x.lineTo(x1, y + tick);
+      x.stroke();
+      x.fillText(label, mid, y + 1 * S);
+    };
+    const vline = (y0, y1, xx, label) => {
+      const mid = (y0 + y1) / 2, tw = x.measureText(label).width;
+      x.beginPath();
+      x.moveTo(xx, y0); x.lineTo(xx, mid - tw / 2 - pad);
+      x.moveTo(xx, mid + tw / 2 + pad); x.lineTo(xx, y1);
+      x.moveTo(xx - tick, y0); x.lineTo(xx + tick, y0);
+      x.moveTo(xx - tick, y1); x.lineTo(xx + tick, y1);
+      x.stroke();
+      x.save(); x.translate(xx, mid); x.rotate(-Math.PI / 2); x.fillText(label, 0, 1 * S); x.restore();
+    };
+    boxes.forEach(b => hline(b.x, b.x + b.w, b.bottom + 36 * S, lab(d.w)));
+    const last = boxes[boxes.length - 1];
+    vline(last.y, last.y + last.h, last.right + 36 * S, lab(d.h));
+    x.restore();
+  }
+
+  // ---------- Standard styles: flat / angled / 3D / stacked ----------
+  function sidesToShow(p, s) {
+    if (p.oneView) return [p.sides[0]];
+    if (p.sides.length < 2) return [p.sides[0]];
+    if (s.view === 'both') return s.style === 'stacked' ? [p.sides[0]] : p.sides.slice();
+    return [s.view];
+  }
+  function renderProducts(p, s) {
+    drawBg(zx, s, p);
+    const d = dims(p, s), ext = p.extent ? p.extent(d, s, s.style) : d;
+    const sides = sidesToShow(p, s), n = sides.length;
+    const dimsOn = s.dims && s.style === 'flat';
+    const frac = dimsOn ? 0.72 : s.style === '3d' ? 0.80 : s.style === 'stacked' ? 0.66 : 0.82;
+    const gap = (s.style === '3d' ? 120 : 90) * S;
+    const col = n > 1 && ext.w > ext.h;                       // wide pieces stack top/bottom
+    const maxW = CW * (dimsOn ? 0.74 : s.style === 'stacked' ? 0.70 : 0.84), maxH = ZONE_H * frac;
+    const ppi = Math.min(
+      (maxW - (col ? 0 : (n - 1) * gap)) / (col ? ext.w : n * ext.w),
+      (maxH - (col ? (n - 1) * gap : 0)) / (col ? n * ext.h : ext.h));
+    const W = ext.w * ppi, H = ext.h * ppi;
+    const totW = col ? W : n * W + (n - 1) * gap, totH = col ? n * H + (n - 1) * gap : H;
+    const x0 = (CW - totW) / 2 - (dimsOn ? 20 * S : 0), y0 = (ZONE_H - totH) / 2 - (dimsOn ? 22 * S : 0);
+    const boxes = [];
+
+    lx.setTransform(1, 0, 0, 1, 0, 0);
+    lx.clearRect(0, 0, CW, ZONE_H);
+    sides.forEach((side, i) => {
+      const it = getItem(side, ppi, s.style), item = it.c;
+      const cx = col ? x0 + W / 2 : x0 + W / 2 + i * (W + gap);
+      const cy = col ? y0 + H / 2 + i * (H + gap) : y0 + H / 2;
+      lx.imageSmoothingQuality = 'high';
+      if (s.style === 'flat') {
+        const bx = Math.round(cx - W / 2), by = Math.round(cy - H / 2);
+        lx.drawImage(item, bx, by);
+        boxes.push({ x: bx + it.art.x, y: by + it.art.y, w: it.art.w, h: it.art.h, bottom: by + item.height, right: bx + item.width });
+      } else if (s.style === 'angled') {
+        const ang = n === 1 ? -5 : (i === 0 ? -4 : 4);
+        lx.save(); lx.translate(cx, cy); lx.rotate(ang * Math.PI / 180);
+        lx.drawImage(item, -item.width / 2, -item.height / 2);
+        lx.restore();
+      } else if (s.style === '3d') {
+        drawPerspective(lx, item, cx, cy, W, H);
+      } else if (s.style === 'stacked') {
+        [[0.07, 0.06, 6], [-0.03, -0.02, -3]].forEach(([ox, oy, a], k) => {
+          lx.save(); lx.translate(cx + ox * W, cy + oy * H); lx.rotate(a * Math.PI / 180);
+          if (k === 1 && s.shadow) {            // soft contact shadow between the two sheets
+            lx.save(); lx.shadowColor = 'rgba(0,0,0,0.22)'; lx.shadowBlur = 18 * S; lx.shadowOffsetY = 6 * S;
+            lx.drawImage(item, -item.width / 2, -item.height / 2); lx.restore();
+          }
+          lx.drawImage(item, -item.width / 2, -item.height / 2);
+          lx.restore();
+        });
+      }
+    });
+
+    if (s.style !== 'flat') {
+      lx.save();
+      lx.globalCompositeOperation = 'source-atop';
+      const g = lx.createLinearGradient(0, 0, CW, ZONE_H);
+      g.addColorStop(0, 'rgba(255,255,255,0.10)'); g.addColorStop(0.5, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,0.07)');
+      lx.fillStyle = g; lx.fillRect(0, 0, CW, ZONE_H);
+      lx.restore();
+    }
+    if (s.shadow) {
+      shadowFrom(zx, layer, 46 * S, 10 * S, 24 * S, 0.28);
+      shadowFrom(zx, layer, 7 * S, 2 * S, 4 * S, 0.16);
+    }
+    zx.drawImage(layer, 0, 0);
+    if (dimsOn) drawDims(zx, boxes, d, p);
+  }
+
+  // ---------- Lawn scene (yard sign / H-frame stuck in the grass) ----------
+  function renderLawn(p, s) {
+    zx.clearRect(0, 0, CW, ZONE_H);
+    zx.drawImage(sceneCanvas('lawn'), 0, 0);
+    const d = dims(p, s), ext = p.extent(d, s, 'lawn'), side = p.oneView ? p.sides[0] : (s.view === 'back' ? 'back' : p.sides[0]);
+    const ppi = Math.min(CW * 0.56 / ext.w, ZONE_H * 0.62 / ext.h);
+    const it = getItem(side, ppi, 'lawn'), item = it.c;
+    const groundY = ZONE_H * 0.86, top = groundY - p.ground(d, s) * ppi, left = (CW - item.width) / 2;
+    // contact shadow on the grass
+    const g = zx.createRadialGradient(CW / 2 + 30 * S, groundY, 0, CW / 2 + 30 * S, groundY, item.width * 0.6);
+    g.addColorStop(0, 'rgba(0,0,0,0.30)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+    zx.save(); zx.translate(0, groundY); zx.scale(1, 0.12); zx.translate(0, -groundY);
+    zx.fillStyle = g; zx.fillRect(0, groundY - item.width, CW, item.width * 2); zx.restore();
+    lx.setTransform(1, 0, 0, 1, 0, 0);
+    lx.clearRect(0, 0, CW, ZONE_H);
+    lx.drawImage(item, left, top);
+    if (s.shadow) shadowFrom(zx, layer, 30 * S, 22 * S, 8 * S, 0.22);
+    zx.drawImage(layer, 0, 0);
+    // grass in front hides the buried part of the stake
+    const r = rng(9);
+    zx.save();
+    zx.beginPath(); zx.rect(0, groundY, CW, ZONE_H - groundY); zx.clip();
+    zx.drawImage(sceneCanvas('lawn'), 0, 0);
+    zx.restore();
+    zx.lineWidth = 2 * S;
+    for (let i = 0; i < 900; i++) {
+      const gx = r() * CW, gy = groundY + r() * 14 * S, len = (10 + r() * 22) * S;
+      zx.strokeStyle = r() < 0.5 ? 'rgba(45,85,28,0.75)' : 'rgba(110,160,80,0.65)';
+      zx.beginPath(); zx.moveTo(gx, gy); zx.quadraticCurveTo(gx + (r() - 0.5) * len * 0.3, gy - len * 0.5, gx + (r() - 0.5) * len * 0.6, gy - len); zx.stroke();
+    }
+  }
+
+  // ---------- Hanging banner (rope, ties, fabric wave) ----------
+  function renderHanging(p, s) {
+    drawBg(zx, s, p);
+    const d = dims(p, s);
+    const ppi = Math.min(CW * 0.74 / d.w, ZONE_H * 0.55 / d.h);
+    const it = getItem('front', ppi, 'hanging'), item = it.c, bw = item.width, bh = item.height;
+    const bx = (CW - bw) / 2, top = ZONE_H * 0.5 - bh / 2 + 30 * S, amp = bh * 0.012, freq = 3;
+    const wave = t => Math.sin(t * Math.PI * freq) * amp;
+    const ropeY = top - 70 * S, ext = 120 * S;
+    zx.save();
+    zx.lineCap = 'round';
+    zx.strokeStyle = '#7d7468'; zx.lineWidth = 5 * S;
+    zx.beginPath(); zx.moveTo(bx - ext, ropeY); zx.lineTo(bx + bw + ext, ropeY); zx.stroke();
+    zx.strokeStyle = 'rgba(255,255,255,0.25)'; zx.lineWidth = 1.5 * S;
+    zx.beginPath(); zx.moveTo(bx - ext, ropeY - 1.5 * S); zx.lineTo(bx + bw + ext, ropeY - 1.5 * S); zx.stroke();
+    const ins = 0.5 * ppi;
+    zx.strokeStyle = '#8f877b'; zx.lineWidth = 2.5 * S;
+    bannerGrommets(d, s.grommets).filter(([, v]) => v === 0).forEach(([u]) => {
+      const gx = bx + ins + u * (bw - 2 * ins);
+      zx.beginPath(); zx.moveTo(gx, ropeY); zx.lineTo(gx, top + ins + wave((gx - bx) / bw)); zx.stroke();
+    });
+    zx.restore();
+    lx.setTransform(1, 0, 0, 1, 0, 0);
+    lx.clearRect(0, 0, CW, ZONE_H);
+    for (let col = 0; col < bw; col++) {
+      const t = col / bw, y = top + wave(t);
+      lx.drawImage(item, col, 0, 1, bh, bx + col, y, 1.6, bh);
+      const lv = Math.sin(t * Math.PI * freq + Math.PI / 4);
+      lx.fillStyle = lv > 0 ? `rgba(255,255,255,${lv * 0.05})` : `rgba(0,0,0,${-lv * 0.06})`;
+      lx.globalCompositeOperation = 'source-atop';
+      lx.fillRect(bx + col, y, 1.6, bh);
+      lx.globalCompositeOperation = 'source-over';
+    }
+    if (s.shadow) {
+      shadowFrom(zx, layer, 40 * S, 8 * S, 22 * S, 0.30);
+      shadowFrom(zx, layer, 6 * S, 1 * S, 3 * S, 0.18);
+    }
+    zx.drawImage(layer, 0, 0);
+  }
+
+  // ---------- Door scene (door hanger on a door knob) ----------
+  const DOORS = { white: { base: '#f1efea' }, wood: { base: '#94643f', wood: true }, gray: { base: '#7f8a93' }, navy: { base: '#22324a' }, black: { base: '#2a2a2c' } };
+  let doorCache = { key: '', canvas: null };
+  function bevelPanel(x, x0, y0, x1, y1, b) {
+    const quad = (pts, fill) => { x.beginPath(); x.moveTo(...pts[0]); for (let i = 1; i < 4; i++) x.lineTo(...pts[i]); x.closePath(); x.fillStyle = fill; x.fill(); };
+    quad([[x0, y0], [x1, y0], [x1 - b, y0 + b], [x0 + b, y0 + b]], 'rgba(0,0,0,0.17)');
+    quad([[x0, y0], [x0 + b, y0 + b], [x0 + b, y1 - b], [x0, y1]], 'rgba(0,0,0,0.09)');
+    quad([[x0, y1], [x0 + b, y1 - b], [x1 - b, y1 - b], [x1, y1]], 'rgba(255,255,255,0.20)');
+    quad([[x1, y0], [x1, y1], [x1 - b, y1 - b], [x1 - b, y0 + b]], 'rgba(255,255,255,0.13)');
+    x.save();
+    x.lineWidth = 1.5 * S;
+    x.strokeStyle = 'rgba(0,0,0,0.28)'; x.strokeRect(x0, y0, x1 - x0, y1 - y0);
+    x.strokeStyle = 'rgba(0,0,0,0.12)'; x.strokeRect(x0 + b, y0 + b, x1 - x0 - 2 * b, y1 - y0 - 2 * b);
+    x.restore();
+  }
+  function buildDoor(s, ppi, knobX, knobY) {
+    const c = mk(CW, ZONE_H), x = c.getContext('2d'), D = DOORS[s.door], edgeX = knobX + 2.375 * ppi;
+    x.fillStyle = D.base;
+    x.fillRect(0, 0, edgeX, ZONE_H);
+    if (D.wood) {
+      const r = rng(42);
+      for (let i = 0; i < 320; i++) {
+        const gx = r() * edgeX, amp = 2 + r() * 6, ph = r() * 10, freq = 0.002 + r() * 0.003;
+        x.beginPath();
+        for (let y = 0; y <= ZONE_H; y += 40) { const xx = gx + Math.sin(y * freq + ph) * amp; y === 0 ? x.moveTo(xx, y) : x.lineTo(xx, y); }
+        x.lineWidth = 1 + r() * 5;
+        x.strokeStyle = r() < 0.65 ? `rgba(55,28,10,${0.04 + r() * 0.10})` : `rgba(255,215,170,${0.03 + r() * 0.07})`;
+        x.stroke();
+      }
+    }
+    x.fillStyle = x.createPattern(getNoise(), 'repeat');
+    x.fillRect(0, 0, edgeX, ZONE_H);
+    const pEdge = edgeX - 4.75 * ppi, railTop = knobY - 4.25 * ppi, railBot = knobY + 4.75 * ppi, b = 1.15 * ppi;
+    bevelPanel(x, pEdge - 16 * ppi, -60 * ppi, pEdge, railTop, b);
+    bevelPanel(x, pEdge - 16 * ppi, railBot, pEdge, railBot + 60 * ppi, b);
+    const gapW = 0.11 * ppi;
+    x.fillStyle = 'rgba(0,0,0,0.55)';
+    x.fillRect(edgeX, 0, gapW, ZONE_H);
+    const cX = edgeX + gapW, cWd = 3.5 * ppi;
+    x.fillStyle = '#efeee9';
+    x.fillRect(cX, 0, cWd, ZONE_H);
+    const cg = x.createLinearGradient(cX, 0, cX + cWd, 0);
+    [[0, 'rgba(0,0,0,0.16)'], [0.06, 'rgba(255,255,255,0.35)'], [0.18, 'rgba(0,0,0,0.05)'], [0.22, 'rgba(0,0,0,0.12)'], [0.27, 'rgba(255,255,255,0.25)'], [0.85, 'rgba(0,0,0,0.03)'], [1, 'rgba(0,0,0,0.14)']].forEach(([o, cc]) => cg.addColorStop(o, cc));
+    x.fillStyle = cg;
+    x.fillRect(cX, 0, cWd, ZONE_H);
+    x.fillStyle = '#d6d0c6';
+    x.fillRect(cX + cWd, 0, CW, ZONE_H);
+    x.fillStyle = 'rgba(0,0,0,0.10)';
+    x.fillRect(cX + cWd, 0, 0.18 * ppi, ZONE_H);
+    const lg = x.createRadialGradient(CW * 0.3, ZONE_H * 0.15, CW * 0.05, CW * 0.45, ZONE_H * 0.5, CW * 0.95);
+    lg.addColorStop(0, 'rgba(255,255,255,0.12)'); lg.addColorStop(1, 'rgba(0,0,0,0.22)');
+    x.fillStyle = lg;
+    x.fillRect(0, 0, CW, ZONE_H);
+    return c;
+  }
+  function metalRadial(x, cx, cy, r) {
+    const g = x.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.05, cx, cy, r);
+    g.addColorStop(0, '#fbfbfc'); g.addColorStop(0.45, '#c9ccd1'); g.addColorStop(1, '#7d8289');
+    return g;
+  }
+  function drawRose(x, cx, cy, r) {
+    x.save();
+    x.shadowColor = 'rgba(0,0,0,0.35)'; x.shadowBlur = 14 * S; x.shadowOffsetX = 3 * S; x.shadowOffsetY = 7 * S;
+    x.beginPath(); x.arc(cx, cy, r, 0, PI2); x.fillStyle = metalRadial(x, cx, cy, r); x.fill();
+    x.restore();
+    x.beginPath(); x.arc(cx, cy, r * 0.82, 0, PI2);
+    x.strokeStyle = 'rgba(0,0,0,0.18)'; x.lineWidth = 2 * S; x.stroke();
+  }
+  function drawLever(x, s, cx, cy, ppi) {
+    const hubR = 0.5 * ppi, armL = 4.4 * ppi, armT = 0.56 * ppi;
+    const arm = new Path2D(); pathRect(arm, cx - armL, cy - armT / 2, armL + hubR * 0.3, armT, armT / 2);
+    const both = new Path2D(); pathRect(both, cx - armL, cy - armT / 2, armL + hubR * 0.3, armT, armT / 2);
+    both.moveTo(cx + hubR, cy); both.arc(cx, cy, hubR, 0, PI2);
+    if (s.shadow) {
+      x.save();
+      x.shadowColor = 'rgba(0,0,0,0.40)'; x.shadowBlur = 16 * S; x.shadowOffsetX = 8 * S; x.shadowOffsetY = 13 * S;
+      x.fillStyle = '#888'; x.fill(both);
+      x.restore();
+    }
+    const ag = x.createLinearGradient(0, cy - armT / 2, 0, cy + armT / 2);
+    ag.addColorStop(0, '#f4f5f6'); ag.addColorStop(0.3, '#d2d5d9'); ag.addColorStop(0.75, '#8d9197'); ag.addColorStop(1, '#b7bbc0');
+    x.fillStyle = ag; x.fill(arm);
+    x.strokeStyle = 'rgba(0,0,0,0.22)'; x.lineWidth = 1.5 * S; x.stroke(arm);
+    x.beginPath(); x.arc(cx, cy, hubR, 0, PI2); x.fillStyle = metalRadial(x, cx, cy, hubR); x.fill();
+    x.strokeStyle = 'rgba(0,0,0,0.22)'; x.stroke();
+    x.beginPath(); x.ellipse(cx - hubR * 0.35, cy - hubR * 0.42, hubR * 0.32, hubR * 0.16, -0.5, 0, PI2);
+    x.fillStyle = 'rgba(255,255,255,0.55)'; x.fill();
+  }
+  function renderDoor(p, s) {
+    const d = dims(p, s), side = s.view === 'back' ? 'back' : 'front';
+    const ppi = ZONE_H * 0.80 / d.h, knobX = CW * 0.44, hangerTop = ZONE_H * 0.075;
+    const holeCY = hangerTop + HOLE.cy * ppi, neckR = 0.31 * ppi, knobY = holeCY - (HOLE.r * ppi - neckR);
+    const key = s.door + '|' + s.size;
+    if (doorCache.key !== key) doorCache = { key, canvas: buildDoor(s, ppi, knobX, knobY) };
+    zx.clearRect(0, 0, CW, ZONE_H);
+    zx.drawImage(doorCache.canvas, 0, 0);
+    drawRose(zx, knobX, knobY, 1.25 * ppi);
+    const item = getItem(side, ppi, 'door').c;
+    lx.setTransform(1, 0, 0, 1, 0, 0);
+    lx.clearRect(0, 0, CW, ZONE_H);
+    lx.save();
+    lx.translate(knobX, knobY);
+    lx.rotate(1.2 * Math.PI / 180);
+    lx.imageSmoothingQuality = 'high';
+    lx.drawImage(item, -item.width / 2, hangerTop - knobY);
+    lx.restore();
+    if (s.shadow) {
+      shadowFrom(zx, layer, 24 * S, 5 * S, 12 * S, 0.34);
+      shadowFrom(zx, layer, 5 * S, 1 * S, 2 * S, 0.22);
+    }
+    zx.drawImage(layer, 0, 0);
+    drawLever(zx, s, knobX, knobY, ppi);
+  }
+
+  // ---------- Main render ----------
+  const SPECIAL = { door: renderDoor, lawn: renderLawn, hanging: renderHanging };
+  function render() {
+    const p = mat(), s = st();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    drawBrandedFrame(ctx);
+    (SPECIAL[s.style] || renderProducts)(p, s);
+    ctx.clearRect(0, HEADER_TOP, CW, ZONE_H);
+    ctx.drawImage(zc, 0, HEADER_TOP);
+    updateMeta();
+  }
+  function styleName(p, s) { return ((p.styles.find(x => x[0] === s.style) || [])[1]) || s.style; }
+  function viewName(p, s) {
+    if (p.oneView) return s.rider ? 'Sign + rider' : 'Sign';
+    if (p.sides.length < 2) return '';
+    const shown = sidesToShow(p, s);
+    if (SPECIAL[s.style]) return s.view === 'back' ? 'Back' : 'Front';
+    return shown.length > 1 ? 'Front & Back' : shown[0] === 'back' ? 'Back' : 'Front';
+  }
+  function updateMeta() {
+    const p = mat(), s = st();
+    document.getElementById('meta').textContent = [p.name, sizeLabel(p, dims(p, s)), viewName(p, s), styleName(p, s), '1200×1200 PNG'].filter(Boolean).join(' · ');
+  }
+
+  // ---------- Panel UI ----------
+  const seg = (key, choices, val, dis) => `<div class="seg" data-key="${key}">${choices.map(([v, l, sm]) =>
+    `<button data-v="${esc(v)}" class="${String(val) === String(v) ? 'on' : ''}"${dis && dis(v) ? ' disabled' : ''}>${l}${sm ? `<small>${sm}</small>` : ''}</button>`).join('')}</div>`;
+  const toggle = (id, label, on, disabled, small) => `<label class="toggle${disabled ? ' disabled' : ''}"><span>${label}${small ? ` <small>${small}</small>` : ''}</span><input type="checkbox" data-t="${id}" ${on ? 'checked' : ''}><span class="sl"></span></label>`;
+
+  function buildMats() {
+    document.getElementById('mats').innerHTML = ORDER.map(k => `<button data-mat="${k}" class="${k === cur ? 'on' : ''}">${P[k].name}<small>${P[k].sub}</small></button>`).join('');
+  }
+
+  function buildPanel() {
+    const p = mat(), s = st(), d = dims(p, s), h = [];
+    // Size
+    const sizeCount = p.sizes.length + (p.custom ? 1 : 0);
+    if (sizeCount > 1) {
+      h.push('<section><span class="lbl">Size</span>');
+      if (sizeCount <= 3) h.push(seg('size', p.sizes.map(z => [z.id, z.label, z.note]).concat(p.custom ? [['custom', 'Custom']] : []), s.size));
+      else h.push(`<select class="full" data-sel="size">${p.sizes.map(z => `<option value="${z.id}" ${s.size === z.id ? 'selected' : ''}>${z.label}${p.feet ? ` (${z.w}″ × ${z.h}″)` : ''}</option>`).join('')}${p.custom ? `<option value="custom" ${s.size === 'custom' ? 'selected' : ''}>Custom size</option>` : ''}</select>`);
+      if (s.size === 'custom') h.push(`<div class="custom">W <input type="number" data-n="cw" value="${s.cw}" min="${p.custom.min}" max="${p.custom.max}" step="${p.custom.step}"> × H <input type="number" data-n="ch" value="${s.ch}" min="${p.custom.min}" max="${p.custom.max}" step="${p.custom.step}"> inches</div>`);
+      if (p.orient) h.push(seg('orient', [['h', 'Horizontal'], ['v', 'Vertical']], s.orient));
+      h.push('</section>');
+    } else {
+      h.push(`<section><span class="lbl">Size</span><div style="font-size:13px;font-weight:500;color:var(--navy)">${p.sizes[0].label}</div>`);
+      if (p.orient) h.push(`<div style="margin-top:8px">${seg('orient', [['h', 'Horizontal'], ['v', 'Vertical']], s.orient)}</div>`);
+      h.push('</section>');
+    }
+    // Artwork
+    const names = p.sideNames || { front: 'Front', back: 'Back' };
+    const notes = p.sideNotes || {};
+    h.push(`<section><span class="lbl">Artwork</span><div class="drops${p.sides.length < 2 ? ' one' : ''}">`);
+    p.sides.forEach((side, i) => {
+      const img = ART[cur][side];
+      h.push(`<label class="drop${img ? ' has' : ''}" data-side="${side}">
+        <input type="file" accept="image/*,application/pdf,.pdf">
+        <div class="thumb" ${img ? `style="background-image:url(${img.src})"` : ''}></div>
+        <span class="dt">${names[side] || side}</span><span class="ds">${notes[side] || (i === 0 ? 'PNG, JPG or PDF' : 'Optional')}</span>
+        <span class="tag">${names[side] || side}</span>
+        <button class="clr" title="Remove">×</button></label>`);
+    });
+    h.push('</div>');
+    h.push(`<div class="row"><span>Bleed</span><select data-sel="bleed">
+      <option value="auto" ${s.bleed === 'auto' ? 'selected' : ''}>Auto-detect</option>
+      <option value="yes" ${s.bleed === 'yes' ? 'selected' : ''}>Artwork includes bleed</option>
+      <option value="no" ${s.bleed === 'no' ? 'selected' : ''}>Trim size (no bleed)</option></select></div>`);
+    h.push(`<p class="note">${bleedNote(p, s)}</p></section>`);
+    // Show (front / back)
+    if (p.sides.length > 1 && !p.oneView) {
+      const single = !!SPECIAL[s.style] || s.style === 'stacked';
+      h.push(`<section><span class="lbl">Show</span>${seg('view', [['front', 'Front'], ['back', 'Back'], ['both', 'Front &amp; Back']], s.view, v => v === 'both' && single)}`);
+      if (single && s.view === 'both') h.push(`<p class="note">${styleName(p, s)} shows one side at a time.</p>`);
+      h.push('</section>');
+    }
+    // Style
+    h.push(`<section><span class="lbl">Mockup style</span>${seg('style', p.styles, s.style)}</section>`);
+    // Material options
+    if (p.opts.length || p.note) {
+      h.push(`<section><span class="lbl">${p.name}</span>`);
+      p.opts.forEach(o => {
+        if (o.type === 'toggle') h.push(toggle(o.id, o.label, s[o.id], o.id === 'stake' && s.style === 'lawn', o.id === 'stake' && s.style === 'lawn' ? '(always in lawn)' : ''));
+        else if (o.type === 'seg') h.push(`<div style="font-size:12px;color:var(--muted);margin:6px 0 6px">${o.label}</div>${seg(o.id, o.choices, s[o.id])}`);
+        else if (o.type === 'swatch') {
+          const isCustom = !o.choices.some(c => c[0] === s[o.id]);
+          h.push(`<div style="font-size:12px;color:var(--muted);margin:6px 0 6px">${o.label}</div><div class="swatches" data-sw="${o.id}">${o.choices.map(([v, l]) =>
+            `<div class="sw${s[o.id] === v ? ' on' : ''}" data-v="${v}" title="${l}" style="background:${v}"></div>`).join('')}
+            <input type="color" data-c="${o.id}" value="${s[o.id]}" title="Custom color" style="${isCustom ? 'outline:2px solid var(--accent);' : ''}"></div>`);
+        }
+      });
+      if (p.note) h.push(`<p class="note">${p.note}</p>`);
+      h.push('</section>');
+    }
+    // Door finish / background
+    if (s.style === 'door') {
+      h.push(`<section><span class="lbl">Door finish</span><div class="swatches" data-sw="door">${[['white', '#f1efea', 'White'], ['wood', 'linear-gradient(90deg,#8a5b38,#a3734d,#8a5b38)', 'Wood'], ['gray', '#7f8a93', 'Gray'], ['navy', '#22324a', 'Navy'], ['black', '#2a2a2c', 'Black']]
+        .map(([v, bg, t]) => `<div class="sw${s.door === v ? ' on' : ''}" data-v="${v}" style="background:${bg}" title="${t}"></div>`).join('')}</div></section>`);
+    } else if (s.style === 'lawn') {
+      h.push(`<section><span class="lbl">Background</span><p class="note" style="margin:0">In lawn uses its own outdoor scene.</p></section>`);
+    } else {
+      const sceneName = { desk: 'Scene', wall: 'Wall', lawn: 'Outdoor' }[p.scene];
+      h.push(`<section><span class="lbl">Background</span>${seg('bg', [['white', 'White'], ['scene', sceneName], ['color', 'Color'], ['transparent', 'None']], s.bg)}`);
+      if (s.bg === 'color') h.push(`<div class="row"><span>Custom color</span><input type="color" data-c="bgColor" value="${s.bgColor}"></div>`);
+      h.push('</section>');
+    }
+    // Options
+    const dimsOk = s.style === 'flat';
+    h.push(`<section><span class="lbl">Options</span>${toggle('cmyk', 'CMYK color simulation', s.cmyk)}${toggle('shadow', 'Drop shadow', s.shadow)}${toggle('dims', 'Show dimensions', s.dims, !dimsOk, '(flat)')}</section>`);
+    document.getElementById('controls').innerHTML = h.join('');
+  }
+
+  function bleedNote(p, s) {
+    const lines = [];
+    p.sides.forEach(side => {
+      const img = ART[cur][side];
+      if (!img) return;
+      const ad = artDims(p, s, side), has = detectBleed(p, s, img, ad);
+      const r = img.naturalWidth / img.naturalHeight;
+      const expect = has ? (ad.w + 2 * p.bleed) / (ad.h + 2 * p.bleed) : ad.w / ad.h;
+      const off = Math.abs(r - expect) / expect;
+      const name = ((p.sideNames || {})[side]) || side[0].toUpperCase() + side.slice(1);
+      let t = `${name}: ${has ? 'bleed trimmed' : 'trim size'} (${img.naturalWidth}×${img.naturalHeight}px)`;
+      if (off > 0.04) t += ` — <span class="warn">proportions don't match ${num(ad.w)}″ × ${num(ad.h)}″, artwork will be cropped</span>`;
+      lines.push(t);
+    });
+    if (lines.length) return lines.join('<br>');
+    return p.sides.length > 1 && !p.oneView
+      ? 'PNG, JPG or PDF. Files with bleed are trimmed automatically. A 2-page PDF fills front and back.'
+      : 'PNG, JPG or PDF. Files with bleed are trimmed automatically.';
+  }
+
+  function refresh() {
+    try { localStorage.setItem('tbd-mockup-material', cur); } catch (e) {}
+    if (location.hash.slice(1) !== cur) history.replaceState(null, '', '#' + cur);
+    buildMats(); buildPanel(); render();
+  }
+
+  document.getElementById('mats').addEventListener('click', e => {
+    const b = e.target.closest('[data-mat]');
+    if (!b || b.dataset.mat === cur) return;
+    cur = b.dataset.mat;
+    document.querySelector('.panel').scrollTop = 0;
+    refresh();
+  });
+
+  const controls = document.getElementById('controls');
+  controls.addEventListener('click', e => {
+    const s = st(), p = mat();
+    const sb = e.target.closest('.seg button');
+    if (sb && !sb.disabled) {
+      const key = sb.closest('.seg').dataset.key;
+      s[key] = sb.dataset.v;
+      if (key === 'style' && (SPECIAL[s.style] || s.style === 'stacked') && s.view === 'both') s.view = 'front';
+      buildPanel(); render();
+      return;
+    }
+    const sw = e.target.closest('.sw');
+    if (sw) { s[sw.closest('[data-sw]').dataset.sw] = sw.dataset.v; buildPanel(); render(); return; }
+    const clr = e.target.closest('.clr');
+    if (clr) {
+      e.preventDefault(); e.stopPropagation();
+      const side = clr.closest('.drop').dataset.side;
+      ART[cur][side] = null; VER[cur][side]++;
+      buildPanel(); render();
+    }
+  });
+  controls.addEventListener('change', e => {
+    const t = e.target, s = st();
+    if (t.dataset.t) { s[t.dataset.t] = t.checked; buildPanel(); render(); }
+    else if (t.dataset.sel) { s[t.dataset.sel] = t.value; buildPanel(); render(); }
+    else if (t.type === 'file') { loadFile(t.closest('.drop').dataset.side, t.files[0]); t.value = ''; }
+    else if (t.dataset.c) { buildPanel(); }
+  });
+  controls.addEventListener('input', e => {
+    const t = e.target, s = st();
+    if (t.dataset.n) { const v = parseFloat(t.value); if (v > 0) { s[t.dataset.n] = v; render(); } }
+    else if (t.dataset.c) { s[t.dataset.c] = t.value; render(); }
+  });
+  controls.addEventListener('dragover', e => { const d = e.target.closest('.drop'); if (d) { e.preventDefault(); d.classList.add('over'); } });
+  controls.addEventListener('dragleave', e => { const d = e.target.closest('.drop'); if (d) d.classList.remove('over'); });
+  controls.addEventListener('drop', e => {
+    const d = e.target.closest('.drop');
+    if (!d) return;
+    e.preventDefault(); d.classList.remove('over');
+    loadFile(d.dataset.side, e.dataTransfer.files[0]);
+  });
+  // Paste an image (Ctrl+V) into the first empty artwork slot
+  document.addEventListener('paste', e => {
+    const f = [...(e.clipboardData ? e.clipboardData.files : [])].find(f => /^image\//.test(f.type));
+    if (!f) return;
+    e.preventDefault();
+    const p = mat();
+    loadFile(p.sides.find(sd => !ART[cur][sd]) || p.sides[0], f);
+  });
+
+  // ---------- PDF support (pdf.js, loaded on first use) ----------
+  const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+  let pdfjsReady = null;
+  function loadPdfJs() {
+    if (pdfjsReady) return pdfjsReady;
+    return pdfjsReady = new Promise((res, rej) => {
+      const sc = document.createElement('script');
+      sc.src = PDFJS + 'pdf.min.js';
+      sc.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; res(window.pdfjsLib); };
+      sc.onerror = () => { pdfjsReady = null; rej(new Error('pdf.js failed to load')); };
+      document.head.appendChild(sc);
+    });
+  }
+  async function pdfPageToImage(pdf, n) {
+    const page = await pdf.getPage(n), base = page.getViewport({ scale: 1 });
+    const vp = page.getViewport({ scale: 3600 / Math.max(base.width, base.height) });
+    const c = mk(vp.width, vp.height), x = c.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvasContext: x, viewport: vp }).promise;
+    return dataUrlToImage(c.toDataURL('image/png'));
+  }
+  function dataUrlToImage(url) {
+    return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+  }
+  function setArt(key, side, img) { ART[key][side] = img; VER[key][side]++; }
+  async function loadFile(side, file) {
+    if (!file) return;
+    const key = cur, p = P[key], s = ST[key];
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    if (!isPdf && !file.type.startsWith('image/')) { alert('Please upload a PNG, JPG or PDF file.'); return; }
+    const drop = controls.querySelector(`.drop[data-side="${side}"]`);
+    if (drop) drop.classList.add('loading');
+    try {
+      if (isPdf) {
+        const lib = await loadPdfJs();
+        const pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+        setArt(key, side, await pdfPageToImage(pdf, 1));
+        const other = p.sides[1];
+        if (side === p.sides[0] && other && pdf.numPages >= 2 && !ART[key][other]) setArt(key, other, await pdfPageToImage(pdf, 2));
+      } else {
+        const url = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(file); });
+        setArt(key, side, await dataUrlToImage(url));
+      }
+      // sensible view after upload
+      if (p.oneView) { if (side === 'rider') s.rider = true; }
+      else if (p.sides.length > 1) {
+        const [a, b] = p.sides;
+        if (side === b && s.view === a && !ART[key][a]) s.view = b;
+        if (ART[key][a] && ART[key][b] && s.view === a && !SPECIAL[s.style] && s.style !== 'stacked') s.view = 'both';
+      }
+    } catch (err) {
+      console.error(err);
+      alert(isPdf ? 'Could not read this PDF. Check your internet connection (the PDF reader loads online) or export the artwork as PNG/JPG.' : 'Could not read this image.');
+    }
+    if (key === cur) { buildPanel(); render(); }
+  }
+
+  // ---------- Download ----------
+  document.getElementById('dl').addEventListener('click', () => {
+    render();
+    const out = mk(1200, 1200), o = out.getContext('2d');
+    o.imageSmoothingEnabled = true;
+    o.imageSmoothingQuality = 'high';
+    o.drawImage(canvas, 0, 0, 1200, 1200);
+    const p = mat(), s = st(), d = dims(p, s);
+    const name = [cur, 'mockup', `${num(d.w)}x${num(d.h)}`, (viewName(p, s) || '').toLowerCase().replace(/[^a-z]+/g, '-'), s.style].filter(Boolean).join('-').replace(/-+/g, '-');
+    try {
+      out.toBlob(b => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(b);
+        a.download = name + '.png';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+      }, 'image/png');
+    } catch (err) {
+      alert('Export was blocked by the browser. Try reloading the page and downloading again.');
+    }
+  });
+
+  window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (P[h] && h !== cur) { cur = h; refresh(); } });
+
+  // ---------- Boot ----------
+  refresh();
+  Promise.all([
+    document.fonts.load(`700 ${26 * S}px Montserrat`),
+    document.fonts.load(`400 ${20 * S}px Poppins`),
+    document.fonts.load(`500 ${20 * S}px Poppins`),
+    document.fonts.load(`600 ${20 * S}px Poppins`)
+  ]).catch(() => {}).finally(() => { itemCache.clear(); render(); });
+})();
+</script>
+</body>
+</html>
