@@ -1191,6 +1191,7 @@
   });
   controls.addEventListener('change', e => {
     const t = e.target, s = st();
+    if (t.dataset.t === 'feeFree') { FEE_FREE = t.checked; buildPanel(); return; }
     if (t.dataset.t) { s[t.dataset.t] = t.checked; buildPanel(); render(); }
     else if (t.dataset.sel) { s[t.dataset.sel] = t.value; buildPanel(); render(); }
     else if (t.type === 'file') { loadFile(t.closest('.drop').dataset.side, t.files[0]); t.value = ''; }
@@ -1311,6 +1312,7 @@
       small_in: o => `Letras marcadas com ~${o.h} de altura (mínimo ${o.min}).`,
       edge: o => `Texto marcado fora da área segura (manter ${o.safe} da borda).`,
       intro: 'Pontos a ajustar antes da impressão:', closing: 'Envie a arte ajustada para seguirmos com a impressão.', allOk: 'Arte aprovada para impressão.',
+      waFree: 'Por favor, faça os ajustes e reenvie a arte. Se preferir, podemos fazer os ajustes necessários sem custo adicional.\nComo prefere seguir?',
       waClose: f => `Por favor, faça os ajustes e reenvie a arte. Se preferir, podemos fazer os ajustes necessários por $${+f.toFixed(2)}.\nComo prefere seguir?`
     },
     en: {
@@ -1328,6 +1330,7 @@
       small_in: o => `Marked letters are ~${o.h} tall (minimum ${o.min}).`,
       edge: o => `Marked text is outside the safe area (keep ${o.safe} from the edge).`,
       intro: 'Items to fix before printing:', closing: 'Send the adjusted artwork so we can move forward with printing.', allOk: 'Artwork approved for printing.',
+      waFree: 'Please make the adjustments and resend the artwork. If you prefer, we can make the necessary adjustments at no extra cost.\nHow would you like to proceed?',
       waClose: f => `Please make the adjustments and resend the artwork. If you prefer, we can make the necessary adjustments for $${+f.toFixed(2)}.\nHow would you like to proceed?`
     },
     es: {
@@ -1345,6 +1348,7 @@
       small_in: o => `Letras marcadas de ~${o.h} de alto (mínimo ${o.min}).`,
       edge: o => `Texto marcado fuera del área segura (mantener ${o.safe} del borde).`,
       intro: 'Puntos a ajustar antes de imprimir:', closing: 'Envía el arte ajustado para continuar con la impresión.', allOk: 'Arte aprobado para impresión.',
+      waFree: 'Por favor, haz los ajustes y reenvía el arte. Si prefieres, podemos hacer los ajustes necesarios sin costo adicional.\n¿Cómo prefieres seguir?',
       waClose: f => `Por favor, haz los ajustes y reenvía el arte. Si prefieres, podemos hacer los ajustes necesarios por $${+f.toFixed(2)}.\n¿Cómo prefieres seguir?`
     }
   };
@@ -1504,7 +1508,8 @@
     else h.push(`<button class="btn2" data-act="ocr">${o.error ? 'Text scan failed · try again' : 'Scan for small text'}</button>`);
     h.push(`<div style="font-size:12px;color:var(--muted);margin:12px 0 6px">Client report language</div>${seg('lang', [['pt', 'Português'], ['en', 'English'], ['es', 'Español']], s.lang)}`);
     h.push(`<button class="btn2 primary" data-act="report">${tab === 'report' ? 'Showing client report' : 'See client report'}</button>`);
-    h.push(`<div class="row"><span>Adjustment fee (WhatsApp)</span><span>$ <input type="number" id="feeIn" min="0" step="1" value="${ADJUST_FEE}" style="width:64px"></span></div>`);
+    h.push(`<div class="row"><span>Adjustment fee (WhatsApp)</span><span${FEE_FREE ? ' style="opacity:.4"' : ''}>$ <input type="number" id="feeIn" min="0" step="1" value="${ADJUST_FEE}" style="width:64px"${FEE_FREE ? ' disabled' : ''}></span></div>`);
+    h.push(toggle('feeFree', 'We cover the adjustments', FEE_FREE, false, '(no charge)'));
     h.push(`<button class="btn2" data-act="wa">Copy WhatsApp text</button></section>`);
     return h.join('');
   }
@@ -1530,13 +1535,14 @@
   }
   let ADJUST_FEE = 15;                                 // price to fix the artwork for the client (editable in the panel)
   try { const v = parseFloat(localStorage.getItem('tbd-adjust-fee')); if (v >= 0) ADJUST_FEE = v; } catch (e) {}
+  let FEE_FREE = false;                                // we cover the adjustments this time (not remembered)
   function whatsappText(p, s) {
     const lang = s.lang || 'pt', T = L[lang], res = analyze(p, s);
     const multi = res.length > 1, { items } = clientList(p, res, lang);
     if (!items.length) return '✓ ' + T.allOk;
     const lines = [T.intro, ''];
     items.forEach(x => lines.push(`*${x.title}*${multi ? ` (${sidesList(p, x.sides, lang)})` : ''}:`, x.text, ''));
-    lines.push(T.waClose(ADJUST_FEE));
+    lines.push(FEE_FREE || !ADJUST_FEE ? T.waFree : T.waClose(ADJUST_FEE));
     return lines.join('\n');
   }
 
