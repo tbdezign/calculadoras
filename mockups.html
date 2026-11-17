@@ -316,7 +316,7 @@
         { id: '24x12', w: 24, h: 12, label: '24″ × 12″' }
       ],
       custom: { w: 24, h: 18, min: 1, max: 60, step: 0.5 },
-      orient: 'h', sides: ['front'], bleed: 0.125, dimsDef: true,
+      orient: 'h', sides: ['front'], bleed: 0, dimsDef: true,
       styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D']],
       opts: [], scene: 'desk', note: '½″ rounded corners · one side print',
       radius: () => 0.5,
@@ -372,7 +372,7 @@
       ],
       def: '72x36', feet: true,
       custom: { w: 72, h: 36, min: 12, max: 240, step: 1 },
-      orient: 'h', sides: ['front'], bleed: 0.125,
+      orient: 'h', sides: ['front'], bleed: 0,
       styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D'], ['hanging', 'Hanging']],
       opts: [
         { id: 'grommets', label: 'Grommets', type: 'seg', def: 'auto', choices: [['none', 'None'], ['auto', 'Every 2 ft'], ['corners', '4 corners']] },
@@ -1083,7 +1083,7 @@
         <button class="clr" title="Remove">×</button></label>`);
     });
     h.push('</div>');
-    h.push(`<div class="row"><span>Bleed</span><select data-sel="bleed">
+    if (p.bleed) h.push(`<div class="row"><span>Bleed</span><select data-sel="bleed">
       <option value="auto" ${s.bleed === 'auto' ? 'selected' : ''}>Auto-detect</option>
       <option value="yes" ${s.bleed === 'yes' ? 'selected' : ''}>Artwork includes bleed</option>
       <option value="no" ${s.bleed === 'no' ? 'selected' : ''}>Trim size (no bleed)</option></select></div>`);
@@ -1147,6 +1147,7 @@
       lines.push(t);
     });
     if (lines.length) return lines.join('<br>');
+    if (!p.bleed) return `PNG, JPG or PDF. No bleed needed — send it at ${sizeLabel(p, dims(p, s))}.`;
     return p.sides.length > 1 && !p.oneView
       ? 'PNG, JPG or PDF. Files with bleed are trimmed automatically. A 2-page PDF fills front and back.'
       : 'PNG, JPG or PDF. Files with bleed are trimmed automatically.';
@@ -1499,7 +1500,7 @@
     const h = ['<section><span class="lbl">Artwork check</span><ul class="chk">'];
     res.forEach(r => {
       if (multi) h.push(`<li class="side">${(p.sideNames || { front: 'Front', back: 'Back' })[r.side] || r.side}</li>`);
-      r.issues.forEach(it => h.push(`<li><span class="dot" style="background:${SEV[it.sev]}"></span><span><b>${{ res_ok: 'Resolution OK', text_ok: 'Text size OK' }[it.k] || L.en.t[it.k]}</b><br><span class="d">${esc(shortLine(it))}</span></span></li>`));
+      r.issues.forEach(it => h.push(`<li><span class="dot" style="background:${SEV[it.sev]}"></span><span><b>${{ res_ok: 'Resolution OK', text_ok: 'Text size OK' }[it.k] || L.en.t[it.k === 'lowres' && it.sev === 'warn' ? 'lowres_warn' : it.k]}</b><br><span class="d">${esc(shortLine(it))}</span></span></li>`));
     });
     h.push('</ul>');
     const o = ocrState(p);
