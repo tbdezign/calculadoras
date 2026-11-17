@@ -1773,7 +1773,7 @@
         y += tl.length * U(27 * f) + bl.length * U(24 * f) + U((itm.small ? 14 : 26) * f);
       });
       ctx.font = `italic 400 ${U(15 * f)}px Poppins`;
-      const cl = list.length ? wrap(ctx, T.closing, LW) : [];
+      const cl = [];                                  // no closing line on the image
       if (y + cl.length * U(22 * f) <= bottom) { layout.closing = { y: y + U(6), lines: cl }; break; }
     }
     layout.forEach(({ itm, y, tl, bl }) => {
