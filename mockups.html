@@ -1309,7 +1309,8 @@
       small_pt: o => `Texto marcado com ~${o.pt} pt (mínimo ${o.min} pt).`,
       small_in: o => `Letras marcadas com ~${o.h} de altura (mínimo ${o.min}).`,
       edge: o => `Texto marcado fora da área segura (manter ${o.safe} da borda).`,
-      intro: 'Pontos a ajustar antes da impressão:', closing: 'Envie a arte ajustada para seguirmos com a impressão.', allOk: 'Arte aprovada para impressão.'
+      intro: 'Pontos a ajustar antes da impressão:', closing: 'Envie a arte ajustada para seguirmos com a impressão.', allOk: 'Arte aprovada para impressão.',
+      waClose: f => `Por favor, faça os ajustes e reenvie a arte. Se preferir, podemos fazer os ajustes necessários por $${f}.\nComo prefere seguir?`
     },
     en: {
       title: 'ARTWORK REVIEW', ready: 'Ready to print', fix: n => n === 1 ? '1 adjustment needed' : `${n} adjustments needed`,
@@ -1325,7 +1326,8 @@
       small_pt: o => `Marked text is ~${o.pt} pt (minimum ${o.min} pt).`,
       small_in: o => `Marked letters are ~${o.h} tall (minimum ${o.min}).`,
       edge: o => `Marked text is outside the safe area (keep ${o.safe} from the edge).`,
-      intro: 'Items to fix before printing:', closing: 'Send the adjusted artwork so we can move forward with printing.', allOk: 'Artwork approved for printing.'
+      intro: 'Items to fix before printing:', closing: 'Send the adjusted artwork so we can move forward with printing.', allOk: 'Artwork approved for printing.',
+      waClose: f => `Please make the adjustments and resend the artwork. If you prefer, we can make the necessary adjustments for $${f}.\nHow would you like to proceed?`
     },
     es: {
       title: 'REVISIÓN DEL ARTE', ready: 'Listo para imprimir', fix: n => n === 1 ? '1 ajuste necesario' : `${n} ajustes necesarios`,
@@ -1341,7 +1343,8 @@
       small_pt: o => `Texto marcado de ~${o.pt} pt (mínimo ${o.min} pt).`,
       small_in: o => `Letras marcadas de ~${o.h} de alto (mínimo ${o.min}).`,
       edge: o => `Texto marcado fuera del área segura (mantener ${o.safe} del borde).`,
-      intro: 'Puntos a ajustar antes de imprimir:', closing: 'Envía el arte ajustado para continuar con la impresión.', allOk: 'Arte aprobado para impresión.'
+      intro: 'Puntos a ajustar antes de imprimir:', closing: 'Envía el arte ajustado para continuar con la impresión.', allOk: 'Arte aprobado para impresión.',
+      waClose: f => `Por favor, haz los ajustes y reenvía el arte. Si prefieres, podemos hacer los ajustes necesarios por $${f}.\n¿Cómo prefieres seguir?`
     }
   };
   const matName = (p, lang) => lang === 'en' ? p.name : (p.names || {})[lang] || p.name;
@@ -1523,16 +1526,14 @@
     };
     return { items: items.map((x, i) => Object.assign(x, { no: i + 1 })), passed: passed.filter(ps => !items.some(x => x.k === failed[ps.k])).map(okTitle) };
   }
+  const ADJUST_FEE = 15;                               // price to fix the artwork for the client
   function whatsappText(p, s) {
-    const lang = s.lang || 'pt', T = L[lang], res = analyze(p, s), d = dims(p, s);
-    const multi = res.length > 1, { items, passed } = clientList(p, res, lang);
-    const lines = [`*${T.title.charAt(0) + T.title.slice(1).toLowerCase()} · ${matName(p, lang)} ${sizeLabel(p, d)}*`, ''];
-    if (!items.length) { lines.push('✓ ' + T.allOk); passed.forEach(t => lines.push('✓ ' + t)); return lines.join('\n'); }
-    lines.push(T.intro, '');
-    items.forEach(x => lines.push(`${x.no}. *${x.title}*${multi ? ` (${sidesList(p, x.sides, lang)})` : ''}`, x.text, ''));
-    passed.forEach(t => lines.push('✓ ' + t));
-    if (passed.length) lines.push('');
-    lines.push(T.closing);
+    const lang = s.lang || 'pt', T = L[lang], res = analyze(p, s);
+    const multi = res.length > 1, { items } = clientList(p, res, lang);
+    if (!items.length) return '✓ ' + T.allOk;
+    const lines = [T.intro, ''];
+    items.forEach(x => lines.push(`*${x.title}*${multi ? ` (${sidesList(p, x.sides, lang)})` : ''}:`, x.text, ''));
+    lines.push(T.waClose(ADJUST_FEE));
     return lines.join('\n');
   }
 
