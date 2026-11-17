@@ -1300,45 +1300,48 @@
       sides: { front: 'frente', back: 'verso', sign: 'placa', rider: 'rider' }, and: ' e ',
       legTrim: 'Linha de corte', legSafe: 'Área segura para textos', legCut: 'Parte que será cortada', empty: 'Envie a arte para conferir',
       where: { sides: 'nas laterais', tb: 'em cima e embaixo' },
-      t: { lowres: 'Imagem em baixa qualidade', ratio: 'Formato diferente do tamanho', bleed: 'O fundo precisa passar da borda', small: 'Texto muito pequeno', edge: 'Texto muito perto da borda', res_ok: 'Qualidade da imagem: ok', text_ok: 'Tamanho dos textos: ok' },
-      lowres_bad: o => `Vai sair borrada na impressão. Precisamos de uma imagem maior (${o.need} px ou mais).`,
-      lowres_warn: o => `Pode sair um pouco sem nitidez. Se tiver, mande uma versão maior (${o.need} px).`,
-      ratio: o => `Vai perder um pedaço ${o.where} (cerca de ${o.cut}). Ajuste a arte para ${o.fit}.`,
-      bleed: o => `Estenda o fundo ${o.b} além de cada borda para não ficar filete branco no corte. Tamanho final: ${o.full}.`,
-      small_pt: o => `O texto marcado vai ficar difícil de ler. Aumente para no mínimo ${o.min} pt.`,
-      small_in: o => `O texto marcado vai ficar difícil de ler de longe. Use letras com pelo menos ${o.min} de altura.`,
-      edge: () => 'O texto marcado pode ser cortado. Afaste um pouco da borda.',
-      intro: 'Para imprimir certinho, precisamos destes ajustes:', closing: 'Mande a arte ajustada ou fale com a gente se tiver dúvida.', allOk: 'Sua arte está pronta para imprimir!'
+      t: { lowres: 'Impressão borrada / pixelada', lowres_warn: 'Impressão pode perder nitidez', ratio: 'Informações serão cortadas', bleed: 'Risco de filete branco no corte', small: 'Texto pequeno demais', edge: 'Texto pode ser cortado', text_ok: 'Tamanho dos textos ok' },
+      resOk: v => `Resolução ok (${v})`,
+      lowres_bad: o => `Resolução baixa: ${o.dpi} DPI (mínimo ${o.min}). Recomendado: ${o.need} px.`,
+      lowres_warn: o => `Resolução: ${o.dpi} DPI (ideal ${o.target}). Recomendado: ${o.need} px.`,
+      ratio: o => `Formato diferente do produto. Corte de ~${o.cut} ${o.where}. Tamanho correto: ${o.fit}.`,
+      bleed: o => `Fundo sem sangria. Estender ${o.b} em cada lado (${o.full}).`,
+      small_pt: o => `Texto marcado com ~${o.pt} pt (mínimo ${o.min} pt).`,
+      small_in: o => `Letras marcadas com ~${o.h} de altura (mínimo ${o.min}).`,
+      edge: o => `Texto marcado fora da área segura (manter ${o.safe} da borda).`,
+      intro: 'Pontos a ajustar antes da impressão:', closing: 'Envie a arte ajustada para seguirmos com a impressão.', allOk: 'Arte aprovada para impressão.'
     },
     en: {
       title: 'ARTWORK REVIEW', ready: 'Ready to print', fix: n => n === 1 ? '1 adjustment needed' : `${n} adjustments needed`,
       sides: { front: 'front', back: 'back', sign: 'sign', rider: 'rider' }, and: ' and ',
       legTrim: 'Cut line', legSafe: 'Safe area for text', legCut: 'Part that will be cut off', empty: 'Upload artwork to check it',
       where: { sides: 'on the sides', tb: 'at the top and bottom' },
-      t: { lowres: 'Low image quality', ratio: 'Shape doesn’t match the size', bleed: 'Background must go past the edge', small: 'Text too small', edge: 'Text too close to the edge', res_ok: 'Image quality: OK', text_ok: 'Text size: OK' },
-      lowres_bad: o => `It will print blurry. We need a larger image (${o.need} px or more).`,
-      lowres_warn: o => `It may print a little soft. If you have it, send a larger version (${o.need} px).`,
-      ratio: o => `A strip will be cut off ${o.where} (about ${o.cut}). Please resize the artwork to ${o.fit}.`,
-      bleed: o => `Extend the background ${o.b} past each edge so no white line shows after cutting. Final size: ${o.full}.`,
-      small_pt: o => `The marked text will be hard to read. Make it at least ${o.min} pt.`,
-      small_in: o => `The marked text will be hard to read from a distance. Make the letters at least ${o.min} tall.`,
-      edge: () => 'The marked text may get cut off. Move it a little away from the edge.',
-      intro: 'To print it right, we need these adjustments:', closing: 'Send the adjusted artwork or message us with any questions.', allOk: 'Your artwork is ready to print!'
+      t: { lowres: 'Blurry / pixelated print', lowres_warn: 'Print may lose sharpness', ratio: 'Content will be cut off', bleed: 'Risk of white edge after cutting', small: 'Text too small', edge: 'Text may be cut off', text_ok: 'Text size OK' },
+      resOk: v => `Resolution OK (${v})`,
+      lowres_bad: o => `Low resolution: ${o.dpi} DPI (minimum ${o.min}). Recommended: ${o.need} px.`,
+      lowres_warn: o => `Resolution: ${o.dpi} DPI (ideal ${o.target}). Recommended: ${o.need} px.`,
+      ratio: o => `Shape doesn’t match the product. ~${o.cut} cut ${o.where}. Correct size: ${o.fit}.`,
+      bleed: o => `Background has no bleed. Extend ${o.b} on each side (${o.full}).`,
+      small_pt: o => `Marked text is ~${o.pt} pt (minimum ${o.min} pt).`,
+      small_in: o => `Marked letters are ~${o.h} tall (minimum ${o.min}).`,
+      edge: o => `Marked text is outside the safe area (keep ${o.safe} from the edge).`,
+      intro: 'Items to fix before printing:', closing: 'Send the adjusted artwork so we can move forward with printing.', allOk: 'Artwork approved for printing.'
     },
     es: {
       title: 'REVISIÓN DEL ARTE', ready: 'Listo para imprimir', fix: n => n === 1 ? '1 ajuste necesario' : `${n} ajustes necesarios`,
       sides: { front: 'frente', back: 'reverso', sign: 'letrero', rider: 'rider' }, and: ' y ',
       legTrim: 'Línea de corte', legSafe: 'Área segura para textos', legCut: 'Parte que se cortará', empty: 'Sube el arte para revisarlo',
       where: { sides: 'a los lados', tb: 'arriba y abajo' },
-      t: { lowres: 'Imagen de baja calidad', ratio: 'Formato distinto al tamaño', bleed: 'El fondo debe pasar del borde', small: 'Texto muy pequeño', edge: 'Texto muy cerca del borde', res_ok: 'Calidad de imagen: ok', text_ok: 'Tamaño de los textos: ok' },
-      lowres_bad: o => `Saldrá borrosa al imprimir. Necesitamos una imagen más grande (${o.need} px o más).`,
-      lowres_warn: o => `Puede salir un poco sin nitidez. Si la tienes, envía una versión más grande (${o.need} px).`,
-      ratio: o => `Se cortará una parte ${o.where} (unos ${o.cut}). Ajusta el arte a ${o.fit}.`,
-      bleed: o => `Extiende el fondo ${o.b} más allá de cada borde para que no quede un filo blanco al cortar. Tamaño final: ${o.full}.`,
-      small_pt: o => `El texto marcado será difícil de leer. Auméntalo a mínimo ${o.min} pt.`,
-      small_in: o => `El texto marcado será difícil de leer de lejos. Usa letras de al menos ${o.min} de alto.`,
-      edge: () => 'El texto marcado puede cortarse. Aléjalo un poco del borde.',
-      intro: 'Para imprimir bien, necesitamos estos ajustes:', closing: 'Envía el arte ajustado o escríbenos si tienes dudas.', allOk: '¡Tu arte está listo para imprimir!'
+      t: { lowres: 'Impresión borrosa / pixelada', lowres_warn: 'La impresión puede perder nitidez', ratio: 'Se cortará información', bleed: 'Riesgo de filo blanco al cortar', small: 'Texto demasiado pequeño', edge: 'El texto puede cortarse', text_ok: 'Tamaño de textos ok' },
+      resOk: v => `Resolución ok (${v})`,
+      lowres_bad: o => `Resolución baja: ${o.dpi} DPI (mínimo ${o.min}). Recomendado: ${o.need} px.`,
+      lowres_warn: o => `Resolución: ${o.dpi} DPI (ideal ${o.target}). Recomendado: ${o.need} px.`,
+      ratio: o => `Formato distinto al producto. Corte de ~${o.cut} ${o.where}. Tamaño correcto: ${o.fit}.`,
+      bleed: o => `Fondo sin sangrado. Extender ${o.b} por lado (${o.full}).`,
+      small_pt: o => `Texto marcado de ~${o.pt} pt (mínimo ${o.min} pt).`,
+      small_in: o => `Letras marcadas de ~${o.h} de alto (mínimo ${o.min}).`,
+      edge: o => `Texto marcado fuera del área segura (mantener ${o.safe} del borde).`,
+      intro: 'Puntos a ajustar antes de imprimir:', closing: 'Envía el arte ajustado para continuar con la impresión.', allOk: 'Arte aprobado para impresión.'
     }
   };
   const matName = (p, lang) => lang === 'en' ? p.name : (p.names || {})[lang] || p.name;
@@ -1505,23 +1508,29 @@
   function clientList(p, res, lang) {
     const items = [], passed = [];
     res.forEach(r => r.issues.forEach(it => {
-      if (it.sev === 'ok') { if (!passed.includes(it.k)) passed.push(it.k); return; }
-      const text = msg(lang, it), same = items.find(x => x.k === it.k && x.text === text);
+      if (it.sev === 'ok') { let ps = passed.find(x => x.k === it.k); if (!ps) passed.push(ps = { k: it.k, vals: [] }); ps.vals.push({ side: r.side, dpi: it.o.dpi }); return; }
+      const text = msg(lang, it), title = L[lang].t[it.k === 'lowres' && it.sev === 'warn' ? 'lowres_warn' : it.k];
+      const same = items.find(x => x.title === title && x.text === text);
       if (same) { same.sides.push(r.side); same.parts.push({ r, it }); }
-      else items.push({ k: it.k, sev: it.sev, text, sides: [r.side], parts: [{ r, it }] });
+      else items.push({ k: it.k, sev: it.sev, title, text, sides: [r.side], parts: [{ r, it }] });
     }));
     // a check only counts as passed when no side failed it
     const failed = { res_ok: 'lowres', text_ok: 'small' };
-    return { items: items.map((x, i) => Object.assign(x, { no: i + 1 })), passed: passed.filter(k => !items.some(x => x.k === failed[k])) };
+    const okTitle = ps => {
+      if (ps.k !== 'res_ok') return L[lang].t[ps.k];
+      const same = ps.vals.every(v => v.dpi === ps.vals[0].dpi) || ps.vals.length === 1;
+      return L[lang].resOk(same ? `${ps.vals[0].dpi} DPI` : ps.vals.map(v => `${sideName(p, v.side, lang)} ${v.dpi} DPI`).join(', '));
+    };
+    return { items: items.map((x, i) => Object.assign(x, { no: i + 1 })), passed: passed.filter(ps => !items.some(x => x.k === failed[ps.k])).map(okTitle) };
   }
   function whatsappText(p, s) {
     const lang = s.lang || 'pt', T = L[lang], res = analyze(p, s), d = dims(p, s);
     const multi = res.length > 1, { items, passed } = clientList(p, res, lang);
     const lines = [`*${T.title.charAt(0) + T.title.slice(1).toLowerCase()} · ${matName(p, lang)} ${sizeLabel(p, d)}*`, ''];
-    if (!items.length) { lines.push(T.allOk); return lines.join('\n'); }
+    if (!items.length) { lines.push('✓ ' + T.allOk); passed.forEach(t => lines.push('✓ ' + t)); return lines.join('\n'); }
     lines.push(T.intro, '');
-    items.forEach(x => lines.push(`${x.no}. *${T.t[x.k]}*${multi ? ` (${sidesList(p, x.sides, lang)})` : ''}`, x.text, ''));
-    passed.forEach(k => lines.push('✓ ' + T.t[k]));
+    items.forEach(x => lines.push(`${x.no}. *${x.title}*${multi ? ` (${sidesList(p, x.sides, lang)})` : ''}`, x.text, ''));
+    passed.forEach(t => lines.push('✓ ' + t));
     if (passed.length) lines.push('');
     lines.push(T.closing);
     return lines.join('\n');
@@ -1739,9 +1748,9 @@
     // List on the right, shrinking the font if needed
     const LX = U(670), LW = U(480), top = U(200), bottom = U(1085);
     const multi = res.length > 1;
-    const items = list.map(x => ({ no: x.no, col: SEV[x.sev], title: T.t[x.k] + (multi ? ` · ${sidesList(p, x.sides, lang)}` : ''), body: x.text }));
+    const items = list.map(x => ({ no: x.no, col: SEV[x.sev], title: x.title + (multi ? ` · ${sidesList(p, x.sides, lang)}` : ''), body: x.text }));
     if (!list.length) items.push({ no: '✓', col: SEV.ok, title: T.allOk, body: '' });
-    passed.forEach(k => items.push({ no: '✓', col: SEV.ok, title: T.t[k], body: '', small: true }));
+    passed.forEach(t => items.push({ no: '✓', col: SEV.ok, title: t, body: '', small: true }));
     let f = 1, layout;
     for (; f > 0.6; f -= 0.05) {
       let y = top; layout = [];
