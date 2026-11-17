@@ -160,6 +160,10 @@
   .order-item.dragging { box-shadow: 0 6px 18px rgba(0,0,0,.15); border-color: #41a9cc; z-index: 2; }
   .order-item .oi-remove { background: none; border: none; color: #ccc; font-size: 18px; cursor: pointer; padding: 0 4px; }
   .order-item .oi-result { display: flex; justify-content: space-between; align-items: baseline; padding-top: 8px; border-top: 1px solid #E8E8E8; }
+  .order-item .oi-result .was { font-size: 13px; color: #999; text-decoration: line-through; margin-right: 6px; }
+  .oi-sale { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:12px; color:#888; }
+  .oi-sale input { width:110px; padding:7px 10px; border:1px solid #ddd; border-radius:6px; font-size:13px; font-family:inherit; }
+  .oi-sale input.on { border-color:#c0392b; color:#c0392b; font-weight:600; }
   .order-item .oi-result .price { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .order-item .oi-result .detail { font-size: 11px; color: #888; font-family: 'SF Mono','Fira Code',monospace; }
   .order-item .oi-result .profit { font-size: 11px; color: #2E7D32; }
@@ -1256,7 +1260,19 @@ function sizeQtys(it) { const o = { std: parseInt(it.qty) || 0 }; if (hasSizes(i
 function itemQty(it) { const z = sizeQtys(it); return z.std + (z.x2 || 0) + (z.x3 || 0); }
 function sizeCost(it, size) { return SIZE_COST[method] ? itemCost(it, size) : 0; }
 // Price per size that has pieces: [{ size, q, r }]
-function sizeLines(it) { return Object.entries(sizeQtys(it)).filter(([, n]) => n > 0).map(([size, n]) => ({ size, q:n, r: METHODS[method].price(it, size) })).filter(l => l.r); }
+function sizeLines(it) { return Object.entries(sizeQtys(it)).filter(([, n]) => n > 0).map(([size, n]) => ({ size, q:n, r: withSale(it, size, METHODS[method].price(it, size)) })).filter(l => l.r); }
+// Sale price (per style, fixed per piece, XS–XL): the quote shows the regular price crossed out and the sale price.
+// 2XL/3XL keep their upcharge on top of the sale price. A sale price at or above the regular one is ignored.
+function saleOf(it) { const v = parseFloat(it.sale); return v > 0 ? v : 0; }
+function withSale(it, size, r) {
+  const sale = saleOf(it); if (!r || !sale) return r;
+  const up = size && size !== "std" ? r.perPiece - METHODS[method].price(it, "std").perPiece : 0, sp = Math.round((sale + up) * 100) / 100;
+  return sp < r.perPiece ? { ...r, regular: r.perPiece, perPiece: sp } : r;
+}
+function salePrice(it, regular) { const s = saleOf(it); return s && regular != null && s < regular ? s : null; }   // tier lists (XS–XL)
+// "~$24.70~ *$19.90*" (WhatsApp strikethrough) when on sale
+function priceTxt(r) { return r && r.regular ? "~" + fmt(r.regular) + "~ *" + fmt(r.perPiece) + "*" : fmt(r.perPiece); }
+function onSale(id, v) { const it = itemById(id); if (it) { it.sale = v; updateOrderResults(); } }
 function totalQty() { return validItems().reduce((s, it) => s + itemQty(it), 0); }
 function prod(it) { return cat()[(it.code||"").toUpperCase()]; }
 // ── Free supplier shipping: blanks from one supplier at $200+ ship free (Silk, DTF Vendor 1, Embroidery) ──
@@ -1795,6 +1811,7 @@ function renderOrderItems() {
     + '<div class="oi-suggest" id="oiac-' + it.id + '" hidden></div>'
     + itemControlsHTML(it)
     + supplierFieldHTML(it, M)
+    + '<div class="oi-sale"><span>Sale price</span><span>$</span><input type="number" step="0.01" min="0" placeholder="—" class="' + (saleOf(it) ? 'on' : '') + '" value="' + esc(it.sale || "") + '" oninput="this.classList.toggle(\'on\',parseFloat(this.value)>0);onSale(\'' + it.id + '\',this.value)"><span class="muted small">per piece (XS–XL) · optional</span></div>'
     + '<div id="oiresult-' + it.id + '"></div></div>').join("");
   orderItems.forEach(updateItemInfo);
   updateOrderResults();
@@ -1831,7 +1848,7 @@ function updateOrderResults() {
     el.innerHTML = lines.map(({ size, q: n, r }) => {
       const margin = (r.perPiece - r.unitCost) / r.perPiece * 100, mc = margin >= 50 ? "good" : margin >= 30 ? "warn" : "bad";
       grand += r.perPiece * n; cost += r.unitCost * n;
-      return '<div class="oi-result"><span class="detail">' + (hasSizes(it) ? '<b>' + SIZE_LABEL[size] + ' × ' + n + '</b> · ' : '') + esc(r.detail) + '</span><div class="right"><span class="price">' + fmt(r.perPiece) + '</span><span class="margin ' + mc + '"> ' + margin.toFixed(0) + '% margin</span></div></div>';
+      return '<div class="oi-result"><span class="detail">' + (hasSizes(it) ? '<b>' + SIZE_LABEL[size] + ' × ' + n + '</b> · ' : '') + esc(r.detail) + '</span><div class="right">' + (r.regular ? '<span class="was">' + fmt(r.regular) + '</span>' : '') + '<span class="price">' + fmt(r.perPiece) + '</span><span class="margin ' + mc + '"> ' + margin.toFixed(0) + '% margin</span></div></div>';
     }).join("");
   });
   if (method === "v2") { const o = v2Order(); const sv = q("v2ShipVal"); if (sv) sv.textContent = fmt(o.ship); orderItems.forEach(updateItemInfo); }
@@ -1996,7 +2013,7 @@ function finalPart() {
     const d = descFor(p); if (d.trim()) L.push(d.trim());
     if (prints.length > 1) L.push("", "*" + itemPrint(it) + "*", "");
     g.forEach(c => sizeLines(c).forEach(l => { sum += l.r.perPiece * l.q;
-      L.push((many ? "*" + colorName(c) + "*" + (hasSizes(c) ? " · " : ": ") : "") + (hasSizes(c) ? SIZE_LABEL[l.size] + ": " : "") + L0.pcs(l.q) + " x " + fmt(l.r.perPiece) + " = " + fmt(l.r.perPiece * l.q)); }));
+      L.push((many ? "*" + colorName(c) + "*" + (hasSizes(c) ? " · " : ": ") : "") + (hasSizes(c) ? SIZE_LABEL[l.size] + ": " : "") + L0.pcs(l.q) + " x " + priceTxt(l.r) + " = " + fmt(l.r.perPiece * l.q)); }));
   });
   const M = METHODS[method];
   return { body: L, sum, st: items.length ? M.setup() : null, tq: totalQty(), days: (PCFG[method] || {}).days || [7, 10], method, min: M.min, name: methodLabel() };
@@ -2043,17 +2060,18 @@ function renderQuote() {
       if (many && !tiersOn) {
         g.forEach(c => {
           const ls = itemQty(c) > 0 && tq > 0 ? sizeLines(c) : [];
-          if (hasSizes(c)) ls.forEach(l => L.push("*" + colorName(c) + "*" + " · " + SIZE_LABEL[l.size] + ": " + L0.pcs(l.q) + " · " + fmt(l.r.perPiece) + L0.each));
-          else if (ls[0]) L.push("*" + colorName(c) + "*: " + L0.pcs(itemQty(c)) + " · " + fmt(ls[0].r.perPiece) + L0.each);
+          if (hasSizes(c)) ls.forEach(l => L.push("*" + colorName(c) + "*" + " · " + SIZE_LABEL[l.size] + ": " + L0.pcs(l.q) + " · " + priceTxt(l.r) + L0.each));
+          else if (ls[0]) L.push("*" + colorName(c) + "*: " + L0.pcs(itemQty(c)) + " · " + priceTxt(ls[0].r) + L0.each);
         });
       } else if (tiersOn) {
-        M.tiers.forEach((t, i) => { const pr = M.tierPrice(it, t); if (pr != null) L.push((i === M.tiers.length - 1 ? L0.plus(t) : L0.pcs(t)) + ": " + fmt(pr) + L0.each); });
+        M.tiers.forEach((t, i) => { const pr = M.tierPrice(it, t); if (pr == null) return; const sp = salePrice(it, pr);
+          L.push((i === M.tiers.length - 1 ? L0.plus(t) : L0.pcs(t)) + ": " + (sp != null ? "~" + fmt(pr) + "~ *" + fmt(sp) + "*" : fmt(pr)) + L0.each); });
         // Bigger sizes only when "+ 2XL / 3XL" is on for this style.
         if (hasSizes(it)) { const t0 = M.tiers[0], base = M.tierPrice(it, t0), ups = ["x2","x3"].map(z => SIZE_LABEL[z] + " +" + fmt(M.tierPrice(it, t0, z) - base)); L.push(ups.join(" · ") + L0.perPc); }
       } else if (qn > 0 && tq > 0) {
         const ls = sizeLines(it);
-        if (hasSizes(it)) ls.forEach(l => L.push(SIZE_LABEL[l.size] + ": " + L0.pcs(l.q) + " · " + fmt(l.r.perPiece) + L0.each));
-        else if (ls[0]) L.push(L0.pcs(qn) + ": " + fmt(ls[0].r.perPiece) + L0.each);
+        if (hasSizes(it)) ls.forEach(l => L.push(SIZE_LABEL[l.size] + ": " + L0.pcs(l.q) + " · " + priceTxt(l.r) + L0.each));
+        else if (ls[0]) L.push(L0.pcs(qn) + ": " + priceTxt(ls[0].r) + L0.each);
       }
       if (groups.length === 1) { if (st) L.push("", ...st.lines); L.push("", ship); }
       quoteBlocks.push({ label: p.code + (many ? " · " + g.length + " colors" : it.color ? " · " + titleCase(it.color.trim()) : ""), text: L.join("\n") });
