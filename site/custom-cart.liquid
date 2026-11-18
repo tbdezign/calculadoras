@@ -247,16 +247,16 @@
   .tbd-ww .tbd-ww__total { margin: 0; white-space: nowrap; }
   .tbd-ww__line {
     display: grid;
-    grid-template-columns: 64px 1fr auto;
+    grid-template-columns: 100px 1fr auto;
     gap: 16px;
     align-items: center;
     padding: 12px 0;
     border-top: 1px solid rgba(13,27,42,0.06);
   }
   .tbd-ww__img {
-    width: 64px;
-    height: 64px;
-    border-radius: 10px;
+    width: 100px;
+    height: 100px;
+    border-radius: 12px;
     overflow: hidden;
     border: 1px solid rgba(13,27,42,0.08);
     background: #f7f7f7;
@@ -265,7 +265,7 @@
     justify-content: center;
   }
   .tbd-ww__img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .tbd-ww__img svg { width: 46px; height: 46px; }
+  .tbd-ww__img svg { width: 72px; height: 72px; }
   .tbd-ww__name { font-size: 14px; font-weight: 600; color: #0d1b2a; line-height: 1.35; }
   .tbd-ww__meta { font-size: 12.5px; color: #6b7f93; line-height: 1.55; }
   .tbd-ww__amt { text-align: right; white-space: nowrap; }
@@ -659,8 +659,8 @@
     .tbd-cart__container {
       padding: 24px 16px 60px;
     }
-    .tbd-ww__line { grid-template-columns: 52px 1fr; gap: 12px; }
-    .tbd-ww__img { width: 52px; height: 52px; }
+    .tbd-ww__line { grid-template-columns: 80px 1fr; gap: 16px; }
+    .tbd-ww__img { width: 80px; height: 80px; }
     .tbd-ww__amt { grid-column: 2; text-align: left; }
   }
 </style>
@@ -759,7 +759,7 @@
                         <div class="tbd-ww__line">
                           <div class="tbd-ww__img">
                             {%- if item.variant.featured_media -%}
-                              <img src="{{ item.variant.featured_media | image_url: width: 160 }}" alt="{{ item.product.title | escape }}" loading="lazy">
+                              <img src="{{ item.variant.featured_media | image_url: width: 200 }}" alt="{{ item.product.title | escape }}" loading="lazy">
                             {%- else -%}
                               {%- assign hex = item.properties['_hex'] | default: '#c9ced8' -%}
                               <svg viewBox="0 0 60 60" aria-hidden="true"><path d="M20 6l-14 8 5 11 6-3v32h26V22l6 3 5-11-14-8c-2 4-6 6-10 6s-8-2-10-6z" fill="{{ hex | escape }}" stroke="#c9ced8"/></svg>
