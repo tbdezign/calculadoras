@@ -704,7 +704,19 @@ TBDCloud.onLoad(async () => {
 });
 function siteBoxHTML(code) {
   const sp = siteProducts[code] || {};
-  if (!siteDraft || siteDraft.code !== code) siteDraft = { code, colors: (sp.colors || []).map(c => ({ ...c })), sizeChart: sp.sizeChart || "", newChart: null, main: sp.mainColor || "" };
+  if (!siteDraft || siteDraft.code !== code) {
+    siteDraft = { code, colors: (sp.colors || []).map(c => ({ ...c })), sizeChart: sp.sizeChart || "", newChart: null, main: sp.mainColor || "" };
+    // colors that already have photos (e.g. added in a quote) join the list, unchecked for the site; saved with the product
+    savedColors(code).forEach(color => {
+      if (siteDraft.colors.some(c => (c.name || "").trim().toLowerCase() === color.toLowerCase())) return;
+      const entry = { name: color, hex: "#cccccc", on: false }; siteDraft.colors.push(entry);
+      const ph = photoLib[photoKey(code, color, "front")] || Object.values(photoLib).find(p => p.code === code && p.color === color);
+      if (ph) loadImage(photoSrc(ph)).then(img => {
+        const cv = document.createElement("canvas"); cv.width = img.naturalWidth; cv.height = img.naturalHeight; cv.getContext("2d").drawImage(img, 0, 0);
+        entry.hex = garmentHex(cv); if (siteDraft && siteDraft.code === code && q("siteColors")) q("siteColors").innerHTML = siteColorsHTML();
+      }).catch(() => {});
+    });
+  }
   const sel = (id, list, v) => '<select id="' + id + '"><option value="">—</option>' + list.map(o => '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>').join("") + '</select>';
   return '<div class="site-box"><div class="int-head">Website catalog</div>'
     + '<label class="site-show"><input type="checkbox" id="pf_site_show"' + (sp.show ? ' checked' : '') + '> Show on site</label>'
@@ -2865,11 +2877,35 @@ async function saveGarmentPhoto(file, code, color, side) {
     const blob = cleaned ? await new Promise(r => cleaned.toBlob(r, "image/jpeg", 0.9)) : orig;
     await storePhoto(code, color, side, blob, null, cleaned ? orig : null);
     orderItems.forEach(o => { if (o.code.toUpperCase() === code && slugPart(o.color) === slugPart(color)) delete mk.boxes[boxKey(o, side)]; });
-    return { ok: true, cleaned: !!cleaned };
+    let hex = null; try { hex = garmentHex(cleaned || c); } catch (e) {}
+    return { ok: true, cleaned: !!cleaned, hex };
   } catch (e) {
     const c2 = e && e.code;
     return { ok: false, msg: c2 === "too_large" ? "That photo is too large. Try a smaller file." : c2 === "quota_or_state" ? "The photo library is full. Delete some photos you no longer need." : "Couldn't add that photo. Try again." };
   }
+}
+// Garment color from the photo: average of the middle of the shirt, ignoring the white background.
+function garmentHex(cv) {
+  const w = cv.width, h = cv.height, x0 = Math.round(w * 0.3), y0 = Math.round(h * 0.3);
+  const d = cv.getContext("2d").getImageData(x0, y0, Math.max(1, Math.round(w * 0.4)), Math.max(1, Math.round(h * 0.4))).data;
+  let r = 0, g = 0, b = 0, n = 0;
+  for (let i = 0; i < d.length; i += 16) { if (d[i] > 240 && d[i + 1] > 240 && d[i + 2] > 240) continue; r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+  if (!n) return "#ffffff";
+  return "#" + [r, g, b].map(v => Math.round(v / n).toString(16).padStart(2, "0")).join("");
+}
+// A color that gets a photo in a quote joins the product's color list (unchecked for the site, so nothing new shows up on tbdezign.com by itself).
+async function addColorToProduct(code, color, hex) {
+  const sp = siteProducts[code] || {}, list = (sp.colors || []).slice();
+  if (list.some(c => c && c.name && c.name.trim().toLowerCase() === color.toLowerCase())) return false;
+  const entry = { name: color, hex: hex || "#cccccc", on: false };
+  if (siteDraft && siteDraft.code === code && !siteDraft.colors.some(c => (c.name || "").trim().toLowerCase() === color.toLowerCase())) {
+    siteDraft.colors.push({ ...entry }); if (q("siteColors")) q("siteColors").innerHTML = siteColorsHTML();
+  }
+  if (!TBDCloud.loggedIn) return false;
+  const { show = false, ...data } = sp; data.colors = list.concat([entry]);
+  if (!await TBDCloud.write(sb => sb.from("site_products").upsert({ key: code, show, data }))) return false;
+  siteProducts[code] = { show, ...data }; saveSiteLS();
+  return true;
 }
 async function handleGarmentFile(file, id, side) {
   const it = itemById(id); if (!it) return;
@@ -2878,7 +2914,8 @@ async function handleGarmentFile(file, id, side) {
   mkMsg("Adding photo…");
   const r = await saveGarmentPhoto(file, code, color, side);
   if (!r.ok) { mkMsg(r.msg, true); return; }
-  mkMsg((mkDb || localLib) ? "Photo saved to the library as " + code + " · " + color + " · " + SIDE_EN[side] + "." + (r.cleaned ? " Background removed automatically (Undo is under the photo)." : " No plain background found, so it was kept as it is.") : "Photo added for this session only. The library isn't available in this view.");
+  const added = (mkDb || localLib) ? await addColorToProduct(code, color, r.hex) : false;
+  mkMsg((mkDb || localLib) ? "Photo saved to the library as " + code + " · " + color + " · " + SIDE_EN[side] + "." + (added ? " " + color + " added to the product's colors." : "") + (r.cleaned ? " Background removed automatically (Undo is under the photo)." : " No plain background found, so it was kept as it is.") : "Photo added for this session only. The library isn't available in this view.");
   mk.pasteTarget = null;
   renderLib(); mk.sig = ""; renderMockRows(true);
   if (siteDraft && siteDraft.code === code && q("siteColors")) q("siteColors").innerHTML = siteColorsHTML();
