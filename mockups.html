@@ -1192,6 +1192,7 @@
   });
   controls.addEventListener('change', e => {
     const t = e.target, s = st();
+    if (t.dataset.ex) { t.checked ? excl().delete(t.dataset.ex) : excl().add(t.dataset.ex); buildPanel(); render(); return; }
     if (t.dataset.t === 'feeFree') { FEE_FREE = t.checked; buildPanel(); return; }
     if (t.dataset.t) { s[t.dataset.t] = t.checked; buildPanel(); render(); }
     else if (t.dataset.sel) { s[t.dataset.sel] = t.value; buildPanel(); render(); }
@@ -1245,7 +1246,7 @@
   function dataUrlToImage(url) {
     return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
   }
-  function setArt(key, side, img) { ART[key][side] = img; VER[key][side]++; }
+  function setArt(key, side, img) { ART[key][side] = img; VER[key][side]++; if (EXCL[key]) EXCL[key].clear(); }
   async function loadFile(side, file) {
     if (!file) return;
     const key = cur, p = P[key], s = ST[key];
@@ -1281,6 +1282,8 @@
   // ---------- Artwork check (proportion, resolution, bleed, small text, text near the cut) ----------
   let tab = 'mockup';
   const OCR = {};                                     // `${material}|${side}` -> { ver, status, pct, words }
+  const EXCL = {};                                    // material -> Set of notice kinds left out of the client report (we fix those ourselves)
+  const excl = () => EXCL[cur] || (EXCL[cur] = new Set());
   const SEV = { bad: '#d64545', warn: '#e0912f', ok: '#4f9d5b' };
   const TESS = {
     js: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
@@ -1303,12 +1306,13 @@
       sides: { front: 'frente', back: 'verso', sign: 'placa', rider: 'rider' }, and: ' e ',
       legTrim: 'Linha de corte', legSafe: 'Área segura para textos', legCut: 'Parte que será cortada', empty: 'Envie a arte para conferir',
       where: { sides: 'nas laterais', tb: 'em cima e embaixo' },
-      t: { lowres: 'Impressão borrada / pixelada', lowres_warn: 'Impressão pode perder nitidez', ratio: 'Informações serão cortadas', bleed: 'Risco de borda branca no corte', small: 'Texto pequeno demais', edge: 'Texto pode ser cortado', text_ok: 'Tamanho dos textos ok' },
+      t: { lowres: 'Impressão borrada / pixelada', lowres_warn: 'Impressão pode perder nitidez', ratio: 'Informações serão cortadas', bleed: 'Risco de borda branca no corte', hole: 'Elemento na área do furo', small: 'Texto pequeno demais', edge: 'Texto pode ser cortado', text_ok: 'Tamanho dos textos ok' },
       resOk: v => `Resolução ok (${v})`,
       lowres_bad: o => `Resolução baixa: ${o.dpi} DPI (mínimo ${o.min}). Recomendado: ${o.need} px.`,
       lowres_warn: o => `Resolução: ${o.dpi} DPI (ideal ${o.target}). Recomendado: ${o.need} px.`,
       ratio: o => `Formato diferente do produto. Corte de ~${o.cut} ${o.where}. Tamanho correto: ${o.fit}.`,
       bleed: o => `Fundo sem sangria. Estender ${o.b} em cada lado (${o.full}).`,
+      hole: () => 'Parte da arte fica onde o furo é cortado. Deixar essa área livre (furo de ~1.2″ no topo).',
       small_pt: o => `Texto marcado com ~${o.pt} pt (mínimo ${o.min} pt).`,
       small_in: o => `Letras marcadas com ~${o.h} de altura (mínimo ${o.min}).`,
       edge: o => `Texto marcado fora da área segura (manter ${o.safe} da borda).`,
@@ -1321,12 +1325,13 @@
       sides: { front: 'front', back: 'back', sign: 'sign', rider: 'rider' }, and: ' and ',
       legTrim: 'Cut line', legSafe: 'Safe area for text', legCut: 'Part that will be cut off', empty: 'Upload artwork to check it',
       where: { sides: 'on the sides', tb: 'at the top and bottom' },
-      t: { lowres: 'Blurry / pixelated print', lowres_warn: 'Print may lose sharpness', ratio: 'Content will be cut off', bleed: 'Risk of white edge after cutting', small: 'Text too small', edge: 'Text may be cut off', text_ok: 'Text size OK' },
+      t: { lowres: 'Blurry / pixelated print', lowres_warn: 'Print may lose sharpness', ratio: 'Content will be cut off', bleed: 'Risk of white edge after cutting', hole: 'Artwork in the hole area', small: 'Text too small', edge: 'Text may be cut off', text_ok: 'Text size OK' },
       resOk: v => `Resolution OK (${v})`,
       lowres_bad: o => `Low resolution: ${o.dpi} DPI (minimum ${o.min}). Recommended: ${o.need} px.`,
       lowres_warn: o => `Resolution: ${o.dpi} DPI (ideal ${o.target}). Recommended: ${o.need} px.`,
       ratio: o => `Shape doesn’t match the product. ~${o.cut} cut ${o.where}. Correct size: ${o.fit}.`,
       bleed: o => `Background has no bleed. Extend ${o.b} on each side (${o.full}).`,
+      hole: () => 'Part of the design sits where the hanger hole is cut. Keep that area clear (~1.2″ hole at the top).',
       small_pt: o => `Marked text is ~${o.pt} pt (minimum ${o.min} pt).`,
       small_in: o => `Marked letters are ~${o.h} tall (minimum ${o.min}).`,
       edge: o => `Marked text is outside the safe area (keep ${o.safe} from the edge).`,
@@ -1339,12 +1344,13 @@
       sides: { front: 'frente', back: 'reverso', sign: 'letrero', rider: 'rider' }, and: ' y ',
       legTrim: 'Línea de corte', legSafe: 'Área segura para textos', legCut: 'Parte que se cortará', empty: 'Sube el arte para revisarlo',
       where: { sides: 'a los lados', tb: 'arriba y abajo' },
-      t: { lowres: 'Impresión borrosa / pixelada', lowres_warn: 'La impresión puede perder nitidez', ratio: 'Se cortará información', bleed: 'Riesgo de borde blanco al cortar', small: 'Texto demasiado pequeño', edge: 'El texto puede cortarse', text_ok: 'Tamaño de textos ok' },
+      t: { lowres: 'Impresión borrosa / pixelada', lowres_warn: 'La impresión puede perder nitidez', ratio: 'Se cortará información', bleed: 'Riesgo de borde blanco al cortar', hole: 'Elemento en el área del orificio', small: 'Texto demasiado pequeño', edge: 'El texto puede cortarse', text_ok: 'Tamaño de textos ok' },
       resOk: v => `Resolución ok (${v})`,
       lowres_bad: o => `Resolución baja: ${o.dpi} DPI (mínimo ${o.min}). Recomendado: ${o.need} px.`,
       lowres_warn: o => `Resolución: ${o.dpi} DPI (ideal ${o.target}). Recomendado: ${o.need} px.`,
       ratio: o => `Formato distinto al producto. Corte de ~${o.cut} ${o.where}. Tamaño correcto: ${o.fit}.`,
       bleed: o => `Fondo sin sangrado. Extender ${o.b} por lado (${o.full}).`,
+      hole: () => 'Parte del arte queda donde se corta el orificio. Dejar esa área libre (orificio de ~1.2″ arriba).',
       small_pt: o => `Texto marcado de ~${o.pt} pt (mínimo ${o.min} pt).`,
       small_in: o => `Letras marcadas de ~${o.h} de alto (mínimo ${o.min}).`,
       edge: o => `Texto marcado fuera del área segura (mantener ${o.safe} del borde).`,
@@ -1426,6 +1432,27 @@
     out.forEach(l => { const e = l.ems.slice().sort((a, b) => a - b); l.em = e[e.length >> 1]; });
     return out;
   }
+  // Door hanger hole in image pixels, and whether the artwork has detail there (text, logo, photo)
+  function holeZone(g) {
+    const cx = g.trim.x + g.trim.w / 2, cy = g.trim.y + HOLE.cy * g.dpi, r = HOLE.r * g.dpi;
+    return { cx, cy, r };
+  }
+  function holeBusy(img, hz) {
+    const sc = Math.min(1, 160 / (hz.r * 2.4));
+    const R = hz.r * 1.1, x0 = Math.max(0, hz.cx - R), y0 = Math.max(0, hz.cy - R);
+    const c = mk(2 * R * sc, 2 * R * sc), x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, x0, y0, 2 * R, 2 * R, 0, 0, c.width, c.height);
+    const d = x.getImageData(0, 0, c.width, c.height).data, ls = [];
+    for (let yy = 0; yy < c.height; yy++) for (let xx = 0; xx < c.width; xx++) {
+      const dx = xx - c.width / 2, dy = yy - c.height / 2;
+      if (dx * dx + dy * dy > (c.width / 2) ** 2) continue;
+      const i = (yy * c.width + xx) * 4; ls.push(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]);
+    }
+    if (!ls.length) return false;
+    ls.sort((a, b) => a - b);
+    const med = ls[ls.length >> 1], off = ls.filter(v => Math.abs(v - med) > 35).length / ls.length;
+    return off > 0.04;                                   // more than a few % of the hole differs from its main color
+  }
   // Issues per side: { side, img, g, issues: [{ sev, k, o, marks }] }
   function analyze(p, s) {
     const C = p.check;
@@ -1442,11 +1469,15 @@
         issues.push({ sev: g.off > 0.12 ? 'bad' : 'warn', k: 'ratio', o: { ar: ratioStr(g.ir), pr: ratioStr(g.pr), size, cut: fin(Math.round(cut * 8) / 8 || 0.125), wide, fit: full, bleedFit: !!b } });
       }
       if (b && !g.hasBleed && reachesEdge(img, g.trim)) issues.push({ sev: 'warn', k: 'bleed', o: { b: fin(b), full } });
+      const hz = p.decorate === dieCutHanger ? holeZone(g) : null;
+      if (hz && holeBusy(img, hz)) issues.push({ sev: 'bad', k: 'hole', o: {}, marks: [{ x0: hz.cx - hz.r, y0: hz.cy - hz.r, x1: hz.cx + hz.r, y1: hz.cy + hz.r, round: true }] });
       const o = OCR[cur + '|' + side];
       if (o && o.status === 'done' && o.ver === VER[cur][side]) {
         const small = [], edge = [];
         let minPt = 99, minH = 99;
         lines(o.words).forEach(w => {                                     // judge whole lines, not single words
+          if (w.ems.length < 2 && w.text.replace(/[^A-Za-z0-9À-ÿ]/g, '').length < 4) return;   // stray single short reading (often a photo texture)
+          if (hz && Math.hypot((w.x0 + w.x1) / 2 - hz.cx, (w.y0 + w.y1) / 2 - hz.cy) < hz.r * 1.2) return;
           const hIn = w.em / g.dpi;                                       // font size (em) in inches
           const l = (w.x0 - g.trim.x) / g.dpi, r = (g.trim.x + g.trim.w - w.x1) / g.dpi, t = (w.y0 - g.trim.y) / g.dpi, bt = (g.trim.y + g.trim.h - w.y1) / g.dpi;
           if (Math.min(l, r, t, bt) < C.safe) { edge.push(w); return; }
@@ -1476,6 +1507,7 @@
       lowres: () => `${o.dpi} DPI at ${o.size} — ${it.sev === 'bad' ? `needs ${o.min}+` : `${o.target} is ideal`}`,
       ratio: () => `art is ${o.ar}, product ${o.pr} · ~${o.cut} cut ${o.wide ? 'on each side' : 'top & bottom'}`,
       bleed: () => `art reaches the edge with no bleed (${o.b})`,
+      hole: () => 'design sits in the hanger hole (~1.2″ at the top)',
       small: () => o.pt ? `${o.n} spot${o.n > 1 ? 's' : ''} ~${o.pt} pt (min ${o.min} pt)` : `${o.n} spot${o.n > 1 ? 's' : ''} ~${o.h} letters (min ${o.min})`,
       edge: () => `${o.n} spot${o.n > 1 ? 's' : ''} within ${o.safe} of the trim`,
       res_ok: () => `${o.dpi} DPI at ${o.size}`,
@@ -1500,9 +1532,10 @@
     const h = ['<section><span class="lbl">Artwork check</span><ul class="chk">'];
     res.forEach(r => {
       if (multi) h.push(`<li class="side">${(p.sideNames || { front: 'Front', back: 'Back' })[r.side] || r.side}</li>`);
-      r.issues.forEach(it => h.push(`<li><span class="dot" style="background:${SEV[it.sev]}"></span><span><b>${{ res_ok: 'Resolution OK', text_ok: 'Text size OK' }[it.k] || L.en.t[it.k === 'lowres' && it.sev === 'warn' ? 'lowres_warn' : it.k]}</b><br><span class="d">${esc(shortLine(it))}</span></span></li>`));
+      r.issues.forEach(it => h.push(`<li${it.sev !== 'ok' && excl().has(it.k) ? ' style="opacity:.45"' : ''}><span class="dot" style="background:${SEV[it.sev]}"></span><span style="flex:1"><b>${{ res_ok: 'Resolution OK', text_ok: 'Text size OK' }[it.k] || L.en.t[it.k === 'lowres' && it.sev === 'warn' ? 'lowres_warn' : it.k]}</b><br><span class="d">${esc(shortLine(it))}</span></span>${it.sev !== 'ok' ? `<label title="Include in the client report and WhatsApp text" style="font-size:11px;color:var(--muted);white-space:nowrap;cursor:pointer"><input type="checkbox" data-ex="${it.k}" ${excl().has(it.k) ? '' : 'checked'} style="vertical-align:-2px"> send</label>` : ''}</li>`));
     });
     h.push('</ul>');
+    if (excl().size) h.push('<p class="note" style="margin-top:4px">Unchecked notices stay out of the client report (we fix those ourselves).</p>');
     const o = ocrState(p);
     if (o.busy) h.push(`<button class="btn2" disabled id="ocrBtn">Reading text… ${o.pct}%</button>`);
     else if (o.done) h.push(`<p class="note">Text scan: ${o.words} word${o.words === 1 ? '' : 's'} read. Stylized lettering may be missed, so take a quick look too.</p>`);
@@ -1519,6 +1552,7 @@
   function clientList(p, res, lang) {
     const items = [], passed = [];
     res.forEach(r => r.issues.forEach(it => {
+      if (it.sev !== 'ok' && excl().has(it.k)) return;
       if (it.sev === 'ok') { let ps = passed.find(x => x.k === it.k); if (!ps) passed.push(ps = { k: it.k, vals: [] }); ps.vals.push({ side: r.side, dpi: it.o.dpi }); return; }
       const text = msg(lang, it), title = L[lang].t[it.k === 'lowres' && it.sev === 'warn' ? 'lowres_warn' : it.k];
       const same = items.find(x => x.title === title && x.text === text);
@@ -1621,7 +1655,7 @@
         progressCb = pct => { if (OCR[id]) OCR[id].pct = (pi + pct) / rects.length; const b = document.getElementById('ocrBtn'); if (b && key === cur) b.textContent = `Reading text… ${ocrState(P[cur]).pct || 0}%`; };
         const { data } = await w.recognize(c, rects[pi] ? { rectangle: rects[pi] } : {});
         (data.words || [])
-          .filter(wd => wd.confidence >= 60 && /[A-Za-z0-9À-ÿ]{2,}/.test(wd.text))
+          .filter(wd => wd.confidence >= 72 && /[A-Za-z0-9À-ÿ]{2,}/.test(wd.text) && !/^(.)\1+$/.test(wd.text))
           .map(wd => ({ text: wd.text, x0: wd.bbox.x0 / sc, y0: wd.bbox.y0 / sc, x1: wd.bbox.x1 / sc, y1: wd.bbox.y1 / sc }))
           .filter(wd => wd.y1 - wd.y0 >= 4)
           .forEach(wd => {
@@ -1721,6 +1755,17 @@
       ctx.beginPath(); ctx.rect(ox, oy, dw, dh); ctx.rect(tx, ty, tw, th);
       ctx.fillStyle = 'rgba(214,69,69,0.32)'; ctx.fill('evenodd');
       ctx.restore();
+      // door hanger: hole + slit are cut out too
+      if (p.decorate === dieCutHanger) {
+        const hz = holeZone(r.g), [hx, hy] = M(hz.cx, hz.cy), hr = hz.r * k2;
+        let dx = SLIT.dirX, tdx = SLIT.topDx; if (r.side === 'back') { dx = -dx; tdx = -tdx; }
+        ctx.save();
+        ctx.beginPath(); ctx.arc(hx, hy, hr, 0, PI2);
+        ctx.fillStyle = 'rgba(214,69,69,0.32)'; ctx.fill();
+        ctx.lineWidth = U(2); ctx.setLineDash([U(6), U(4)]); ctx.strokeStyle = '#d64545'; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(hx + dx * hr * 0.9, hy + SLIT.dirY * hr * 0.9); ctx.lineTo(hx + tdx * r.g.dpi * k2, ty); ctx.stroke();
+        ctx.restore();
+      }
       // trim + safe lines
       const safe = p.check.safe * r.g.dpi * k2;
       ctx.save();
@@ -1735,7 +1780,7 @@
         it.marks.forEach((w, j) => {
           const [x0, y0] = M(w.x0, w.y0), pd = U(3), mw = (w.x1 - w.x0) * k2 + 2 * pd, mh = (w.y1 - w.y0) * k2 + 2 * pd;
           ctx.save();
-          pathRect(ctx, x0 - pd, y0 - pd, mw, mh, U(5));
+          if (w.round) { ctx.beginPath(); ctx.arc(x0 + mw / 2 - pd, y0 + mh / 2 - pd, mw / 2 + U(3), 0, PI2); } else pathRect(ctx, x0 - pd, y0 - pd, mw, mh, U(5));
           ctx.fillStyle = `rgba(${rgb},0.22)`; ctx.fill();
           ctx.lineWidth = U(1.5); ctx.strokeStyle = `rgba(${rgb},0.9)`; ctx.stroke();
           ctx.restore();
