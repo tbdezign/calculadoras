@@ -50,6 +50,14 @@
   .shop-msg { margin: 10px 0 0; padding: 10px 12px; border-radius: 8px; background: #f3f4f6; font-size: 13px; line-height: 1.6; }
   .shop-msg.ok { background: #eef7e6; color: #2f5410; }
   .shop-msg.err { background: #fdecec; color: #9b1c1c; }
+  .ai-fill { display: block; width: 100%; margin: 0 0 14px; padding: 10px; border: 1.5px dashed #1a7698; border-radius: 10px; background: #f2f9fc; color: #1a7698; font: inherit; font-weight: 600; cursor: pointer; }
+  .ai-fill:hover { background: #e6f3f9; }
+  .ai-drop { margin-top: 12px; border: 2px dashed #c9d6de; border-radius: 10px; padding: 18px; text-align: center; color: #667; font-size: 14px; cursor: pointer; }
+  .ai-drop.on { border-color: #1a7698; background: #f2f9fc; }
+  .ai-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .ai-thumbs div { position: relative; } .ai-thumbs img { height: 80px; border-radius: 6px; border: 1px solid #ddd; display: block; }
+  .ai-thumbs button { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; border: 0; background: #051024; color: #fff; font-size: 12px; cursor: pointer; line-height: 20px; padding: 0; }
+  .tc-box textarea { width: 100%; box-sizing: border-box; margin-top: 10px; min-height: 54px; border: 1px solid #ddd; border-radius: 8px; padding: 8px; font: inherit; font-size: 13px; }
   .tc-ov { position: fixed; inset: 0; background: rgba(5,16,36,.45); z-index: 1000; display: flex; align-items: flex-start; justify-content: center; padding: 30px 12px; overflow: auto; }
   .tc-box { background: #fff; border-radius: 12px; max-width: 560px; width: 100%; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
   .tc-box h3 { margin: 0 0 4px; }
@@ -902,6 +910,7 @@ function quoteHTML(q, qi) {
     </div>
     <div class="q-body">
       <div data-shopmsg></div>
+      <button class="ai-fill" data-act="aifill" title="Paste the vendor's screenshot (specs and prices) and the fields are filled for you">📷 Fill from vendor screenshot</button>
       <div class="grid2 cat-row">
         <div class="field"><label>Main category</label>
           <input type="text" data-f="cat" list="dl-cats" value="${esc(q.cat)}" placeholder="e.g. Business Cards"></div>
@@ -1151,6 +1160,7 @@ wrap.addEventListener('click', e => {
   if (act === 'catsave') return saveToCatalog(qi);
   if (act === 'shopify') return shopifyProduct(qi);
   if (act === 'tocart') return openToCart(qi);
+  if (act === 'aifill') return openAiFill(qi);
 
   let focusSel = null;
   if (act === 'dup') {
@@ -1510,6 +1520,99 @@ async function sendPrintToCart(list) {
     msg.innerHTML = '<div class="shop-msg ok">✓ ' + print.length + ' item' + (print.length > 1 ? 's' : '') + ' sent. ' + (win ? 'Your cart opened in a new tab.' : '<a href="' + url + '" target="_blank" rel="noopener">Open my cart</a>') + '</div>';
     go.textContent = 'Sent ✓';
   } catch (e) { if (win) win.close(); msg.innerHTML = '<div class="shop-msg err">' + escH(e.message || String(e)) + '</div>'; go.disabled = false; go.textContent = 'Send to my cart'; }
+}
+
+/* ---------- Fill from vendor screenshot (AI reads the specs and prices) ---------- */
+let aiImgs = [], aiQi = -1;
+function aiShrink(file) {
+  return new Promise(res => {
+    const fr = new FileReader();
+    fr.onload = () => { const im = new Image(); im.onload = () => {
+      const k = Math.min(1, 1800 / Math.max(im.width, im.height)), c = document.createElement('canvas');
+      c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+      res(c.toDataURL('image/jpeg', 0.88)); }; im.onerror = () => res(null); im.src = fr.result; };
+    fr.onerror = () => res(null); fr.readAsDataURL(file);
+  });
+}
+async function aiAdd(files) {
+  for (const f of files) { if (!/^image\//.test(f.type) || aiImgs.length >= 6) continue; const d = await aiShrink(f); if (d) aiImgs.push(d); }
+  aiThumbs();
+}
+function aiThumbs() {
+  const t = document.getElementById('aiThumbs'); if (!t) return;
+  t.innerHTML = aiImgs.map((d, i) => '<div><img src="' + d + '"><button onclick="aiImgs.splice(' + i + ',1);aiThumbs()" title="Remove">×</button></div>').join('');
+  document.getElementById('aiGo').disabled = !aiImgs.length && !document.getElementById('aiText').value.trim();
+}
+function aiPaste(e) {
+  const files = [...(e.clipboardData && e.clipboardData.files || [])];
+  if (files.length) { e.preventDefault(); aiAdd(files); }
+}
+function closeAiFill() { const o = document.getElementById('aiOv'); if (o) o.remove(); document.removeEventListener('paste', aiPaste); }
+function openAiFill(qi) {
+  if (!TBDCloud.loggedIn) { alert('Log in at the top of the page first.'); return; }
+  aiImgs = []; aiQi = qi;
+  const q = quotes[qi], filled = !!(q.title.trim() || q.lines.some(l => calcLine(l)));
+  const ov = document.createElement('div'); ov.className = 'tc-ov'; ov.id = 'aiOv';
+  ov.innerHTML = '<div class="tc-box" onclick="event.stopPropagation()"><h3>Fill from vendor screenshot</h3>'
+    + '<div class="tc-sub">Paste (Ctrl+V) or drop the vendor\'s screenshots: product page, specs, price table. Up to 6.</div>'
+    + '<div class="ai-drop" id="aiDrop">Ctrl+V here, drop images, or <u>choose files</u><input type="file" id="aiFile" accept="image/*" multiple hidden></div>'
+    + '<div class="ai-thumbs" id="aiThumbs"></div>'
+    + '<textarea id="aiText" placeholder="Optional: extra info (e.g. shipping $18, only the 500 and 1000 quantities)"></textarea>'
+    + (filled ? '<label class="check small" style="margin-top:8px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="aiReplace"> Replace what is already filled (otherwise only empty fields are filled and price lines are added)</label>' : '')
+    + '<div id="aiMsg"></div><div class="tc-btns"><button onclick="closeAiFill()">Cancel</button><button class="go" id="aiGo" disabled>Fill</button></div></div>';
+  ov.onclick = closeAiFill; document.body.appendChild(ov);
+  const drop = document.getElementById('aiDrop'), file = document.getElementById('aiFile');
+  drop.onclick = () => file.click();
+  file.onchange = () => { aiAdd([...file.files]); file.value = ''; };
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('on'); };
+  drop.ondragleave = () => drop.classList.remove('on');
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove('on'); aiAdd([...e.dataTransfer.files]); };
+  document.getElementById('aiText').oninput = aiThumbs;
+  document.getElementById('aiGo').onclick = runAiFill;
+  document.addEventListener('paste', aiPaste);
+}
+async function runAiFill() {
+  const go = document.getElementById('aiGo'), msg = document.getElementById('aiMsg'); msg.innerHTML = '';
+  go.disabled = true; go.textContent = 'Reading…';
+  try {
+    const cats = {}; Object.keys(categories).forEach(k => cats[k] = categories[k]);
+    const { data, error } = await TBDCloud.sb.functions.invoke('spec-reader', { body: { images: aiImgs, text: document.getElementById('aiText').value, categories: cats } });
+    let j = data;
+    if (error) { try { j = await error.context.json(); } catch (e) { j = { error: error.message }; } }
+    if (!j || !j.ok) throw new Error((j && j.error) || 'Couldn\'t read the screenshot.');
+    const rep = !!(document.getElementById('aiReplace') || {}).checked;
+    const n = applyAiFields(quotes[aiQi], j.fields || {}, rep);
+    closeAiFill(); render();
+    const box = wrap.querySelector(`[data-q="${aiQi}"] [data-shopmsg]`);
+    if (box) box.innerHTML = '<div class="shop-msg ok">✓ Filled from the screenshot: ' + escH(n) + '. Check the specs and prices before sending.'
+      + (j.fields && j.fields.notes ? '<br><b>Note:</b> ' + escH(j.fields.notes) : '') + '</div>';
+  } catch (e) { msg.innerHTML = '<div class="shop-msg err">' + escH(e.message || String(e)) + '</div>'; go.disabled = false; go.textContent = 'Fill'; }
+}
+function applyAiFields(q, f, rep) {
+  const done = [];
+  const str = v => String(v ?? '').trim();
+  ['title', 'cat', 'sub', 'size', 'stock', 'printing', 'finish', 'lamination', 'qtyNote', 'turnaround'].forEach(k => {
+    const v = str(f[k]); if (!v) return;
+    if (k === 'turnaround' && !/^\d+\s*-\s*\d+$|^\d+$/.test(v)) return;
+    if (rep || !str(q[k])) { q[k] = k === 'turnaround' ? v.replace(/\s+/g, '') : v; done.push(k); }
+  });
+  if (q.cat) addCategory(q.cat, q.sub);
+  const cus = (Array.isArray(f.custom) ? f.custom : []).filter(c => c && str(c.label) && str(c.value)).slice(0, 6);
+  if (cus.length) {
+    if (rep) q.custom = [];
+    cus.forEach(c => { if (!q.custom.some(x => x.label.trim().toLowerCase() === str(c.label).toLowerCase())) q.custom.push({ label: str(c.label), value: str(c.value) }); });
+    done.push('specs');
+  }
+  const ls = (Array.isArray(f.lines) ? f.lines : []).filter(l => l && +l.vc > 0 && str(l.qty)).slice(0, 40)
+    .map(l => Object.assign(newLine(str(l.group)), { qty: str(l.qty), vc: String(Math.round(+l.vc * 100) / 100), sh: +l.sh > 0 ? String(Math.round(+l.sh * 100) / 100) : '' }));
+  if (ls.length) {
+    const blank = !q.lines.some(l => calcLine(l) || String(l.qty).trim());
+    q.lines = rep || blank ? ls : q.lines.concat(ls);
+    done.push(ls.length + ' price line' + (ls.length > 1 ? 's' : ''));
+  }
+  const names = { title: 'name', cat: 'category', sub: 'subcategory', qtyNote: 'qty note' };
+  return done.map(k => names[k] || k).join(', ') || 'nothing new';
 }
 
 function loadFromCatalog(id, openIt) {
