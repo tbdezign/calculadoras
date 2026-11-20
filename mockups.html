@@ -1306,12 +1306,13 @@
       sides: { front: 'frente', back: 'verso', sign: 'placa', rider: 'rider' }, and: ' e ',
       legTrim: 'Linha de corte', legSafe: 'Área segura para textos', legCut: 'Parte que será cortada', empty: 'Envie a arte para conferir',
       where: { sides: 'nas laterais', tb: 'em cima e embaixo' },
-      t: { lowres: 'Impressão borrada / pixelada', lowres_warn: 'Impressão pode perder nitidez', ratio: 'Informações serão cortadas', bleed: 'Risco de borda branca no corte', hole: 'Elemento na área do furo', small: 'Texto pequeno demais', edge: 'Texto pode ser cortado', text_ok: 'Tamanho dos textos ok' },
+      t: { lowres: 'Impressão borrada / pixelada', lowres_warn: 'Impressão pode perder nitidez', ratio: 'Informações serão cortadas', bleed: 'Risco de borda branca no corte', frame: 'Borda branca na arte', hole: 'Elemento na área do furo', small: 'Texto pequeno demais', edge: 'Texto pode ser cortado', text_ok: 'Tamanho dos textos ok' },
       resOk: v => `Resolução ok (${v})`,
       lowres_bad: o => `Resolução baixa: ${o.dpi} DPI (mínimo ${o.min}). Recomendado: ${o.need} px.`,
       lowres_warn: o => `Resolução: ${o.dpi} DPI (ideal ${o.target}). Recomendado: ${o.need} px.`,
       ratio: o => `Formato diferente do produto. Corte de ~${o.cut} ${o.where}. Tamanho correto: ${o.fit}.`,
       bleed: o => `Fundo sem sangria. Estender ${o.b} em cada lado (${o.full}).`,
+      frame: o => `Arte com margem branca${o.round ? ' e cantos arredondados' : ''} em volta, que sai impressa. Remover e estender o fundo até ${o.full} (com sangria).`,
       hole: () => 'Parte da arte fica onde o furo é cortado. Deixar essa área livre (furo de ~1.2″ no topo).',
       small_pt: o => `Texto marcado com ~${o.pt} pt (mínimo ${o.min} pt).`,
       small_in: o => `Letras marcadas com ~${o.h} de altura (mínimo ${o.min}).`,
@@ -1325,12 +1326,13 @@
       sides: { front: 'front', back: 'back', sign: 'sign', rider: 'rider' }, and: ' and ',
       legTrim: 'Cut line', legSafe: 'Safe area for text', legCut: 'Part that will be cut off', empty: 'Upload artwork to check it',
       where: { sides: 'on the sides', tb: 'at the top and bottom' },
-      t: { lowres: 'Blurry / pixelated print', lowres_warn: 'Print may lose sharpness', ratio: 'Content will be cut off', bleed: 'Risk of white edge after cutting', hole: 'Artwork in the hole area', small: 'Text too small', edge: 'Text may be cut off', text_ok: 'Text size OK' },
+      t: { lowres: 'Blurry / pixelated print', lowres_warn: 'Print may lose sharpness', ratio: 'Content will be cut off', bleed: 'Risk of white edge after cutting', frame: 'White border in the artwork', hole: 'Artwork in the hole area', small: 'Text too small', edge: 'Text may be cut off', text_ok: 'Text size OK' },
       resOk: v => `Resolution OK (${v})`,
       lowres_bad: o => `Low resolution: ${o.dpi} DPI (minimum ${o.min}). Recommended: ${o.need} px.`,
       lowres_warn: o => `Resolution: ${o.dpi} DPI (ideal ${o.target}). Recommended: ${o.need} px.`,
       ratio: o => `Shape doesn’t match the product. ~${o.cut} cut ${o.where}. Correct size: ${o.fit}.`,
       bleed: o => `Background has no bleed. Extend ${o.b} on each side (${o.full}).`,
+      frame: o => `Artwork has a white margin${o.round ? ' and rounded corners' : ''} around it, which will print. Remove it and extend the background to ${o.full} (with bleed).`,
       hole: () => 'Part of the design sits where the hanger hole is cut. Keep that area clear (~1.2″ hole at the top).',
       small_pt: o => `Marked text is ~${o.pt} pt (minimum ${o.min} pt).`,
       small_in: o => `Marked letters are ~${o.h} tall (minimum ${o.min}).`,
@@ -1344,12 +1346,13 @@
       sides: { front: 'frente', back: 'reverso', sign: 'letrero', rider: 'rider' }, and: ' y ',
       legTrim: 'Línea de corte', legSafe: 'Área segura para textos', legCut: 'Parte que se cortará', empty: 'Sube el arte para revisarlo',
       where: { sides: 'a los lados', tb: 'arriba y abajo' },
-      t: { lowres: 'Impresión borrosa / pixelada', lowres_warn: 'La impresión puede perder nitidez', ratio: 'Se cortará información', bleed: 'Riesgo de borde blanco al cortar', hole: 'Elemento en el área del orificio', small: 'Texto demasiado pequeño', edge: 'El texto puede cortarse', text_ok: 'Tamaño de textos ok' },
+      t: { lowres: 'Impresión borrosa / pixelada', lowres_warn: 'La impresión puede perder nitidez', ratio: 'Se cortará información', bleed: 'Riesgo de borde blanco al cortar', frame: 'Borde blanco en el arte', hole: 'Elemento en el área del orificio', small: 'Texto demasiado pequeño', edge: 'El texto puede cortarse', text_ok: 'Tamaño de textos ok' },
       resOk: v => `Resolución ok (${v})`,
       lowres_bad: o => `Resolución baja: ${o.dpi} DPI (mínimo ${o.min}). Recomendado: ${o.need} px.`,
       lowres_warn: o => `Resolución: ${o.dpi} DPI (ideal ${o.target}). Recomendado: ${o.need} px.`,
       ratio: o => `Formato distinto al producto. Corte de ~${o.cut} ${o.where}. Tamaño correcto: ${o.fit}.`,
       bleed: o => `Fondo sin sangrado. Extender ${o.b} por lado (${o.full}).`,
+      frame: o => `El arte tiene un margen blanco${o.round ? ' y esquinas redondeadas' : ''} alrededor, que saldrá impreso. Quitarlo y extender el fondo hasta ${o.full} (con sangrado).`,
       hole: () => 'Parte del arte queda donde se corta el orificio. Dejar esa área libre (orificio de ~1.2″ arriba).',
       small_pt: o => `Texto marcado de ~${o.pt} pt (mínimo ${o.min} pt).`,
       small_in: o => `Letras marcadas de ~${o.h} de alto (mínimo ${o.min}).`,
@@ -1397,6 +1400,50 @@
     memo[key] = all > 0 && ink / all > 0.15;
     edgeCache.set(img, memo);
     return memo[key];
+  }
+
+  // White (or transparent) frame or rounded corners baked into the artwork — they print as a white border
+  const frameCache = new WeakMap();
+  function whiteFrame(img, t) {
+    const key = [t.x, t.y, t.w, t.h].map(v => v | 0).join(',');
+    const memo = frameCache.get(img) || {};
+    if (key in memo) return memo[key];
+    const sc = Math.min(1, 600 / Math.max(t.w, t.h));
+    const W = Math.max(1, Math.round(t.w * sc)), H = Math.max(1, Math.round(t.h * sc));
+    const c = mk(W, H), x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, t.x, t.y, t.w, t.h, 0, 0, W, H);
+    const d = x.getImageData(0, 0, W, H).data;
+    const ink = (xx, yy) => { const i = (yy * W + xx) * 4; return d[i + 3] > 40 && (d[i] < 225 || d[i + 1] < 225 || d[i + 2] < 225); };
+    const S = Math.min(W, H), maxD = Math.round(S * 0.1), fill = Math.max(3, Math.round(S * 0.04)), minD = Math.max(2, Math.round(S * 0.006));
+    // march from the edge inward: how far until the design starts, and is it solid right after?
+    const march = (x0, y0, dx, dy) => {
+      let k = 0;
+      while (k <= maxD && !ink(x0 + dx * k, y0 + dy * k)) k++;
+      if (k > maxD) return null;                                            // nothing near this edge (white-background design)
+      let on = 0;
+      for (let j = 0; j < fill; j++) { const xx = x0 + dx * (k + j), yy = y0 + dy * (k + j); if (xx >= 0 && yy >= 0 && xx < W && yy < H && ink(xx, yy)) on++; }
+      return { k, solid: on / fill > 0.8 };
+    };
+    const med = a => { const v = a.slice().sort((p, q) => p - q); return v[v.length >> 1]; };
+    const edges = [[0, 1, 0, 0], [0, -1, 0, H - 1], [1, 0, 0, 0], [-1, 0, W - 1, 0]].map(([dx, dy, fx, fy]) => {
+      const ks = [], N = 41;
+      for (let n = 0; n < N; n++) {
+        const f = 0.15 + 0.7 * n / (N - 1);
+        const r = dy ? march(Math.round(f * (W - 1)), fy, 0, dy) : march(fx, Math.round(f * (H - 1)), dx, 0);
+        ks.push(r && r.solid ? r.k : -1);
+      }
+      const solid = ks.filter(k => k >= 0);
+      return solid.length > N * 0.6 ? med(solid) : -1;                      // -1: edge is not a filled design
+    });
+    const filled = edges.filter(k => k >= 0), framed = filled.filter(k => k >= minD).length;
+    // corners: march diagonally; a rounded/cut corner leaves a much bigger white gap than the edges
+    const corner = (cx, cy, dx, dy) => { let k = 0; while (k <= maxD && !ink(cx + dx * k, cy + dy * k)) k++; return k; };
+    const cs = [corner(0, 0, 1, 1), corner(W - 1, 0, -1, 1), corner(0, H - 1, 1, -1), corner(W - 1, H - 1, -1, -1)];
+    const adj = [[0, 2], [0, 3], [1, 2], [1, 3]];                         // edges: top, bottom, left, right
+    const round = cs.filter((k, i) => k > Math.max(0, ...adj[i].map(e => edges[e])) + Math.max(3, S * 0.01)).length >= 3;
+    const res = filled.length >= 3 && (framed >= 3 || round) ? { round } : null;
+    memo[key] = res; frameCache.set(img, memo);
+    return res;
   }
 
   // Share of the font size a word's box covers: tall letters reach ~0.73 em, descenders add ~0.2 em, plain lowercase ~0.53 em
@@ -1468,7 +1515,9 @@
         const wide = g.ir > g.pr, cut = wide ? (ad.h * g.ir - ad.w) / 2 : (ad.w / g.ir - ad.h) / 2;
         issues.push({ sev: g.off > 0.12 ? 'bad' : 'warn', k: 'ratio', o: { ar: ratioStr(g.ir), pr: ratioStr(g.pr), size, cut: fin(Math.round(cut * 8) / 8 || 0.125), wide, fit: full, bleedFit: !!b } });
       }
-      if (b && !g.hasBleed && reachesEdge(img, g.trim)) issues.push({ sev: 'warn', k: 'bleed', o: { b: fin(b), full } });
+      const wf = b ? whiteFrame(img, g.trim) : null;
+      if (wf) issues.push({ sev: 'bad', k: 'frame', o: { round: wf.round, b: fin(b), full } });
+      else if (b && !g.hasBleed && reachesEdge(img, g.trim)) issues.push({ sev: 'warn', k: 'bleed', o: { b: fin(b), full } });
       const hz = p.decorate === dieCutHanger ? holeZone(g) : null;
       if (hz && holeBusy(img, hz)) issues.push({ sev: 'bad', k: 'hole', o: {}, marks: [{ x0: hz.cx - hz.r, y0: hz.cy - hz.r, x1: hz.cx + hz.r, y1: hz.cy + hz.r, round: true }] });
       const o = OCR[cur + '|' + side];
@@ -1507,6 +1556,7 @@
       lowres: () => `${o.dpi} DPI at ${o.size} — ${it.sev === 'bad' ? `needs ${o.min}+` : `${o.target} is ideal`}`,
       ratio: () => `art is ${o.ar}, product ${o.pr} · ~${o.cut} cut ${o.wide ? 'on each side' : 'top & bottom'}`,
       bleed: () => `art reaches the edge with no bleed (${o.b})`,
+      frame: () => `white margin${o.round ? ' + rounded corners' : ''} baked into the art — will print`,
       hole: () => 'design sits in the hanger hole (~1.2″ at the top)',
       small: () => o.pt ? `${o.n} spot${o.n > 1 ? 's' : ''} ~${o.pt} pt (min ${o.min} pt)` : `${o.n} spot${o.n > 1 ? 's' : ''} ~${o.h} letters (min ${o.min})`,
       edge: () => `${o.n} spot${o.n > 1 ? 's' : ''} within ${o.safe} of the trim`,
