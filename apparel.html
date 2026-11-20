@@ -1930,7 +1930,8 @@ function openCreateOrder() {
     + '<label>Email (optional)</label><input id="coEmail" type="email" placeholder="name@company.com">'
     + '<label>Phone (optional)</label><input id="coPhone" type="tel">'
     + '<label>Note for the order (optional)</label><textarea id="coNote"></textarea>'
-    + '<div id="coMsg"></div><div class="co-row"><button onclick="closeCreateOrder()">Cancel</button><button class="go" id="coGo" onclick="createOrder()">Create order</button></div></div>';
+    + '<div id="coMsg"></div><div class="co-row"><button onclick="closeCreateOrder()">Cancel</button><button id="coCart" onclick="sendQuoteToCart()" title="Adds these lines to your tbdezign.com cart (what is already there stays)">Send to my cart</button><button class="go" id="coGo" onclick="createOrder()">Create order</button></div>'
+    + '<div class="co-sub" style="margin-top:8px">Send to my cart: adds the shirts to your cart on tbdezign.com, so you can add other products there and check out with <b>cart?draft=true</b>. Customer fields are not used.</div></div>';
   ov.onclick = closeCreateOrder; document.body.appendChild(ov);
   setTimeout(() => q("coName").focus(), 0);
 }
@@ -1986,6 +1987,26 @@ async function createOrder() {
       + '<a href="' + esc(j.adminUrl) + '" target="_blank" rel="noopener">Open in Shopify</a> · <a href="#" onclick="navigator.clipboard.writeText(\'' + esc(j.invoiceUrl) + '\');this.textContent=\'Payment link copied ✓\';return false">Copy payment link</a></div>';
     go.textContent = "Done"; go.onclick = closeCreateOrder; go.disabled = false;
   } catch (e) { msg.innerHTML = '<div class="co-err">' + esc(e.message || String(e)) + '</div>'; go.disabled = false; go.textContent = "Create order"; }
+}
+
+// Send to my cart: the lines go to a hidden-product cart on tbdezign.com (added to what is already in the cart)
+async function sendQuoteToCart() {
+  const btn = q("coCart"), msg = q("coMsg"); msg.innerHTML = "";
+  const parts = orderPartsForShopify(), szErr = applySizes(parts);
+  if (szErr) { msg.innerHTML = '<div class="co-err">' + esc(szErr) + '</div>'; return; }
+  const win = window.open("about:blank", "_blank");   // opened now, so the popup blocker allows it
+  btn.disabled = true; btn.textContent = "Sending…";
+  try {
+    const body = { mode: "tocart", parts, files: await logoFilesForOrder(), quoteName: q("qName").value || "" };
+    const { data, error } = await TBDCloud.sb.functions.invoke("apparel-checkout", { body });
+    let j = data;
+    if (error) { try { j = await error.context.json(); } catch (e) { j = { error: error.message }; } }
+    if (!j || !j.ok) throw new Error((j && j.error) || "Couldn't send to the cart.");
+    const url = "https://tbdezign.com/cart?tbd_load=" + j.ref;
+    if (win) win.location = url;
+    msg.innerHTML = '<div class="co-ok" style="margin-top:12px;font-size:14px;line-height:1.7">✓ ' + j.count + ' line' + (j.count === 1 ? '' : 's') + ' sent. ' + (win ? 'Your cart opened in a new tab.' : '<a href="' + url + '" target="_blank" rel="noopener">Open my cart</a>') + '</div>';
+    btn.textContent = "Sent ✓";
+  } catch (e) { if (win) win.close(); msg.innerHTML = '<div class="co-err">' + esc(e.message || String(e)) + '</div>'; btn.disabled = false; btn.textContent = "Send to my cart"; }
 }
 
 // ════════════════════════════════════════════

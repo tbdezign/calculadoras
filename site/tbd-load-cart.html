@@ -1,0 +1,20 @@
+<!-- TBDezign: "Send to my cart" from the calculators.
+     Paste this in layout/theme.liquid, just before </body>.
+     Opening tbdezign.com/cart?tbd_load=<ref> adds the quoted items to the cart (what is already there stays). -->
+<script>
+(function () {
+  var m = location.search.match(/[?&]tbd_load=([a-f0-9]{16})/); if (!m) return;
+  var post = function (url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); };
+  fetch('https://fipimpagtmdhuznclqdn.supabase.co/functions/v1/apparel-checkout?cart=' + m[1])
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (!j.items) throw new Error(j.error || 'not found');
+      return post('/cart/add.js', { items: j.items }).then(function (r) {
+        if (!r.ok) return r.json().then(function (e) { throw new Error(e.description || e.message || 'cart'); });
+        return j.attributes && Object.keys(j.attributes).length ? post('/cart/update.js', { attributes: j.attributes }) : null;
+      });
+    })
+    .then(function () { location.replace('/cart'); })
+    .catch(function (e) { alert('Could not add the quoted items: ' + e.message); history.replaceState(null, '', location.pathname); });
+})();
+</script>

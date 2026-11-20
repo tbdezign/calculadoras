@@ -401,6 +401,84 @@ async function quoteDraft(req: Request, body: any) {
     adminUrl: `https://admin.shopify.com/store/${store}/draft_orders/${r.draftOrder.legacyResourceId}` });
 }
 
+// ── "Send to my cart" (staff): quoted apparel + print items become cart lines on hidden products.
+// The calculator gets a ref; the site page (?tbd_load=<ref>) fetches the lines once and adds them to the cart.
+async function ensurePrint() {
+  const [row] = await rest(`shopify_styles?code=eq._print&select=code,sig,product_id,media,prices,published`);
+  if (row && row.sig === "print-v1") {
+    if (!row.published && await publish(row.product_id)) { row.published = true; await patchStyle("_print", { published: true }); }
+    return row;
+  }
+  const d = await gql(`mutation($identifier: ProductSetIdentifiers, $input: ProductSetInput!) { productSet(synchronous: true, identifier: $identifier, input: $input) { product { id } userErrors { field message } } }`, {
+    identifier: { handle: "ww-print" },
+    input: { handle: "ww-print", title: "Custom print order", status: "ACTIVE", vendor: "TBDezign", productType: "Custom print (checkout only)", tags: ["workwear-checkout"], metafields: HIDDEN_SEO,
+      productOptions: [{ name: "Item", values: [{ name: "Custom" }] }],
+      variants: [{ optionValues: [{ optionName: "Item", name: "Custom" }], price: "0.00", taxable: true, inventoryPolicy: "CONTINUE", inventoryItem: { tracked: false, requiresShipping: true } }] },
+  });
+  const ps = d.productSet;
+  if (ps.userErrors && ps.userErrors.length) throw new Error("print " + JSON.stringify(ps.userErrors).slice(0, 300));
+  const out = { code: "_print", sig: "print-v1", product_id: ps.product.id, variants: {}, media: {}, prices: {}, published: await publish(ps.product.id), updated_at: new Date().toISOString() };
+  await rest(`shopify_styles?on_conflict=code`, { method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: JSON.stringify(out) });
+  return out;
+}
+async function staffCart(req: Request, body: any) {
+  if (!await isStaff(req)) return json({ error: "Log in to the calculator first." }, 401);
+  const num = (v: unknown, max: number) => { const n = +(v as number); return isFinite(n) && n > 0 && n <= max ? Math.round(n * 100) / 100 : null; };
+  const vnum = (gid: string) => +String(gid).split("/").pop()!;
+  const SIZE: Record<string, string> = { x2: "2XL", x3: "3XL" };
+  const items: any[] = [], unpublished: string[] = [];
+  // apparel (same parts as the draft-order quote)
+  const parts = Array.isArray(body.parts) ? body.parts.slice(0, 8) : [];
+  const lines = parts.flatMap((pt: any) => Array.isArray(pt.lines) ? pt.lines.slice(0, 150) : []);
+  const sts: Record<string, any> = {};
+  for (const code of [...new Set(lines.map((l: any) => String(l.code || "").trim()).filter(Boolean))] as string[]) {
+    const ls = lines.filter((l: any) => String(l.code || "").trim() === code);
+    sts[code] = await ensureStyle(code, cleanName(ls[0].name || code), [...new Set(ls.map((l: any) => clip(l.color, 40).trim()).filter(Boolean))] as string[]);
+    if (!sts[code].published) unpublished.push(code);
+  }
+  for (const l of lines) {
+    const code = String(l.code || "").trim(), qty = Math.round(+l.qty), unit = num(l.unit, 5000), color = clip(l.color, 40).trim();
+    if (!code || !(qty >= 1 && qty <= 100000) || unit == null) return json({ error: "Check the quantities and prices in the quote." }, 400);
+    const vid = await priceVariant(sts[code], code, color || "Custom", unit, "$" + money(unit) + " each");
+    const props: Record<string, string> = {};
+    const sz = clip(l.sizes, 200) || SIZE[l.size] || "", deco = clip(l.deco, 200);
+    if (sz) props.Sizes = sz; if (deco) props.Decoration = deco;
+    items.push({ id: vnum(vid), quantity: qty, properties: props });
+  }
+  for (const pt of parts) {
+    const st = pt.setup && num(pt.setup.total, 5000);
+    if (!st) continue;
+    const setup = await ensureSetup(); if (!setup.published) unpublished.push("setup");
+    const vid = await priceVariant(setup, "SETUP", "", st, clip(pt.setup.label || "Setup", 60) + " · $" + money(st), "Type", { requiresShipping: false });
+    items.push({ id: vnum(vid), quantity: 1, properties: {} });
+  }
+  // print items from the Pricing calculator: one variant per label (the label carries the price, so it is reused only at the same price)
+  const prints = Array.isArray(body.print) ? body.print.slice(0, 30) : [];
+  if (prints.length) {
+    const pr = await ensurePrint(); if (!pr.published) unpublished.push("print");
+    for (const it of prints) {
+      const price = num(it.price, 100000), title = clip(it.title, 120).trim();
+      if (price == null || !title) return json({ error: "Check the price of " + (title || "the print item") + "." }, 400);
+      const label = clip([title, clip(it.label, 120).trim()].filter(Boolean).join(" · "), 230) + " ($" + money(price) + ")";
+      const vid = await priceVariant(pr, "PRINT", "", price, label, "Item");
+      const props: Record<string, string> = {};
+      for (const kv of (Array.isArray(it.specs) ? it.specs.slice(0, 12) : [])) if (Array.isArray(kv) && kv[0] && kv[1]) props[clip(kv[0], 40)] = clip(kv[1], 250);
+      items.push({ id: vnum(vid), quantity: 1, properties: props });
+    }
+  }
+  if (!items.length) return json({ error: "Nothing to send yet." }, 400);
+  if (unpublished.length) return json({ error: "Some hidden products are not on the Online Store yet (" + unpublished.join(", ") + ")." }, 500);
+  const folder = new Date().toISOString().slice(0, 10) + "-" + crypto.randomUUID().slice(0, 8);
+  const files: any[] = [];
+  for (const [i, f] of (Array.isArray(body.files) ? body.files.slice(0, 6) : []).entries()) { const s = await saveFile(folder, f, i); if (s) files.push(s); }
+  const attributes: Record<string, string> = {};
+  if (body.quoteName) attributes["Quote"] = clip(body.quoteName, 80);
+  for (const f of files) attributes[`Logo file (${f.role})`] = f.url;
+  const ref = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+  await rest(`cart_orders`, { method: "POST", body: JSON.stringify({ ref, state: { kind: "staff", items, attributes, used: false }, files: files.map(f => ({ role: f.role, name: f.name, url: f.url })), total: null }) });
+  return json({ ok: true, ref, count: items.length });
+}
+
 const cleanName = (n: string) => String(n || "").replace(/\s*[®™]/g, "").replace(/\s+/g, " ").trim();
 const SIZE_LABEL: Record<string, string> = { std: "", x2: "2XL", x3: "3XL" };
 const money = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
@@ -429,6 +507,17 @@ Deno.serve(async (req) => {
       const [o] = await rest(`cart_orders?ref=eq.${ref}&select=state,files`);
       return o ? json(o) : json({ error: "not found" }, 404);
     }
+    // "Send to my cart": the site fetches the staff cart lines once (?cart=<ref>, valid 1 day)
+    const cref = new URL(req.url).searchParams.get("cart");
+    if (cref) {
+      if (!/^[0-9a-f]{16}$/.test(cref)) return json({ error: "not found" }, 404);
+      const [o] = await rest(`cart_orders?ref=eq.${cref}&select=state,created_at`);
+      if (!o || !o.state || o.state.kind !== "staff") return json({ error: "not found" }, 404);
+      if (o.state.used) return json({ error: "These items were already added to a cart. Send them again from the calculator." }, 410);
+      if (Date.now() - new Date(o.created_at).getTime() > 24 * 3600 * 1000) return json({ error: "This link expired. Send the items again from the calculator." }, 410);
+      await rest(`cart_orders?ref=eq.${cref}`, { method: "PATCH", body: JSON.stringify({ state: { ...o.state, used: true } }) });
+      return json({ items: o.state.items, attributes: o.state.attributes });
+    }
     // keep the hidden products ready (pg_cron calls this every 10 min): rebuilds the styles whose colors/photos changed, a few per call
     if (new URL(req.url).searchParams.get("sync")) {
       const t0 = Date.now(), done: string[] = [];
@@ -453,6 +542,7 @@ Deno.serve(async (req) => {
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "invalid JSON" }, 400); }
   if (body && body.mode === "product") { try { return await printProduct(req, body); } catch (e) { return json({ error: String((e as Error).message || e).slice(0, 300) }, 500); } }
+  if (body && body.mode === "tocart") { try { return await staffCart(req, body); } catch (e) { return json({ error: String((e as Error).message || e).slice(0, 300) }, 500); } }
   if (body && body.mode === "quote") { try { return await quoteDraft(req, body); } catch (e) { return json({ error: String((e as Error).message || e).slice(0, 300) }, 500); } }
   const order = body && body.order, d = (body && body.details) || {};
   if (!order || !Array.isArray(order.items) || !order.items.length || order.items.length > 50) return json({ error: "items required" }, 400);

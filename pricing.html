@@ -50,6 +50,18 @@
   .shop-msg { margin: 10px 0 0; padding: 10px 12px; border-radius: 8px; background: #f3f4f6; font-size: 13px; line-height: 1.6; }
   .shop-msg.ok { background: #eef7e6; color: #2f5410; }
   .shop-msg.err { background: #fdecec; color: #9b1c1c; }
+  .tc-ov { position: fixed; inset: 0; background: rgba(5,16,36,.45); z-index: 1000; display: flex; align-items: flex-start; justify-content: center; padding: 30px 12px; overflow: auto; }
+  .tc-box { background: #fff; border-radius: 12px; max-width: 560px; width: 100%; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+  .tc-box h3 { margin: 0 0 4px; }
+  .tc-sub { font-size: 13px; color: #666; line-height: 1.5; }
+  .tc-prod { margin-top: 14px; border-top: 1px solid #eee; padding-top: 10px; }
+  .tc-prod b { display: block; margin-bottom: 6px; }
+  .tc-row { display: flex; gap: 8px; align-items: center; padding: 4px 0; font-size: 14px; cursor: pointer; }
+  .tc-row span { flex: 1; } .tc-row em { font-style: normal; font-weight: 600; }
+  .tc-btns { display: flex; gap: 8px; margin-top: 16px; }
+  .tc-btns button { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ddd; background: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+  .tc-btns button.go { background: #051024; color: #fff; border-color: #051024; }
+  .tc-btns button:disabled { opacity: .6; cursor: default; }
   .shop-msg a { color: inherit; font-weight: 600; }
   .shop-ymq { margin-top: 6px; color: #444; font-size: 12px; }
   .q-actions .primary:hover { background: #13294a; border-color: #13294a; }
@@ -870,6 +882,7 @@ function quoteHTML(q, qi) {
     : `<div class="q-actions">
         <button data-act="catsave" class="primary">${inCat ? 'Update catalog' : 'Save to catalog'}</button>
         <button data-act="shopify" title="${q.shopify ? 'Update the prices of the product made in Shopify' : 'Create a draft product in Shopify'}">${q.shopify ? 'Update Shopify prices' : 'Create in Shopify'}</button>
+        <button data-act="tocart" title="Add to your tbdezign.com cart (with the other products on this page)">Send to my cart</button>
         <button data-act="dup">Duplicate</button>
         ${quotes.length > 1 ? '<button data-act="delq" class="danger">Remove</button>' : ''}
       </div>`;
@@ -1137,6 +1150,7 @@ wrap.addEventListener('click', e => {
   if (act === 'addl') return addLine(qi);
   if (act === 'catsave') return saveToCatalog(qi);
   if (act === 'shopify') return shopifyProduct(qi);
+  if (act === 'tocart') return openToCart(qi);
 
   let focusSel = null;
   if (act === 'dup') {
@@ -1443,6 +1457,59 @@ async function shopifyProduct(qi) {
     const nb = wrap.querySelector(`[data-q="${qi}"] [data-shopmsg]`);
     if (nb) nb.innerHTML = '<div class="shop-msg err">' + escH(e.message || String(e)) + '</div>';
   }
+}
+
+/* ---------- Send to my cart: the chosen quantity (and option) of each product goes to the tbdezign.com cart ---------- */
+function cartChoices(q) {
+  const was = qLang; qLang = 'en';
+  try {
+    const T = s => tr(s, q), X = LT(), out = [];
+    const specs = [];
+    OUT_ORDER.forEach(k => { if ((q[k] || '').trim() && k !== 'qtyNote') specs.push([X[k], T(q[k].trim())]); });
+    q.custom.forEach(c => { const v = c.value.trim(), lb = c.label.trim(); if (v && lb) specs.push([T(lb), T(v)]); });
+    const priced = pricedOptions(q);
+    q.lines.forEach(l => {
+      if (!calcLine(l)) return;
+      combos(priced).forEach(combo => {
+        const cp = comboPrice(l, combo); if (!cp) return;
+        const label = [T(l.group.trim()), qtyLabel(l, q), ...combo.map(c => T(c.name.trim())).filter(Boolean)].filter(Boolean).join(' · ');
+        const sp = specs.concat(priced.map((o, i) => [T(o.name.trim()), T((combo[i] && combo[i].name.trim()) || '')]).filter(x => x[1]));
+        out.push({ label, price: Math.round(cp.price * 100) / 100, specs: sp });
+      });
+    });
+    return { title: T(q.title.trim()) || 'Custom print', choices: out };
+  } finally { qLang = was; }
+}
+function openToCart(qi) {
+  if (!TBDCloud.loggedIn) { alert('Log in at the top of the page first.'); return; }
+  const list = quotes.map((q, i) => ({ i, ...cartChoices(q) })).filter(x => x.choices.length);
+  if (!list.some(x => x.i === qi)) { alert('Fill in at least one quantity with a price.'); return; }
+  const ov = document.createElement('div'); ov.className = 'tc-ov'; ov.id = 'tcOv';
+  ov.innerHTML = '<div class="tc-box" onclick="event.stopPropagation()"><h3>Send to my cart</h3><div class="tc-sub">Pick the quantity for each product. They are added to your cart on tbdezign.com (what is already there stays), so you can add other products and check out with <b>cart?draft=true</b>.</div>'
+    + list.map(x => '<div class="tc-prod"><b>' + escH(x.title) + '</b>'
+      + '<label class="tc-row"><input type="radio" name="tc' + x.i + '" value=""' + (x.i !== qi ? ' checked' : '') + '><span style="color:#999">Don\'t send</span></label>'
+      + x.choices.map((c, k) => '<label class="tc-row"><input type="radio" name="tc' + x.i + '" value="' + k + '"' + (x.i === qi && k === 0 ? ' checked' : '') + '><span>' + escH(c.label || 'Price') + '</span><em>' + money(c.price) + '</em></label>').join('') + '</div>').join('')
+    + '<div id="tcMsg"></div><div class="tc-btns"><button onclick="document.getElementById(\'tcOv\').remove()">Cancel</button><button class="go" id="tcGo">Send to my cart</button></div></div>';
+  ov.onclick = () => ov.remove(); document.body.appendChild(ov);
+  document.getElementById('tcGo').onclick = () => sendPrintToCart(list);
+}
+async function sendPrintToCart(list) {
+  const go = document.getElementById('tcGo'), msg = document.getElementById('tcMsg'); msg.innerHTML = '';
+  const print = [];
+  list.forEach(x => { const r = document.querySelector('input[name="tc' + x.i + '"]:checked'); if (r && r.value !== '') { const c = x.choices[+r.value]; print.push({ title: x.title, label: c.label, price: c.price, specs: c.specs }); } });
+  if (!print.length) { msg.innerHTML = '<div class="shop-msg err">Pick at least one product.</div>'; return; }
+  const win = window.open('about:blank', '_blank');   // opened now, so the popup blocker allows it
+  go.disabled = true; go.textContent = 'Sending…';
+  try {
+    const { data, error } = await TBDCloud.sb.functions.invoke('apparel-checkout', { body: { mode: 'tocart', print } });
+    let j = data;
+    if (error) { try { j = await error.context.json(); } catch (e) { j = { error: error.message }; } }
+    if (!j || !j.ok) throw new Error((j && j.error) || 'Couldn\'t send to the cart.');
+    const url = 'https://tbdezign.com/cart?tbd_load=' + j.ref;
+    if (win) win.location = url;
+    msg.innerHTML = '<div class="shop-msg ok">✓ ' + print.length + ' item' + (print.length > 1 ? 's' : '') + ' sent. ' + (win ? 'Your cart opened in a new tab.' : '<a href="' + url + '" target="_blank" rel="noopener">Open my cart</a>') + '</div>';
+    go.textContent = 'Sent ✓';
+  } catch (e) { if (win) win.close(); msg.innerHTML = '<div class="shop-msg err">' + escH(e.message || String(e)) + '</div>'; go.disabled = false; go.textContent = 'Send to my cart'; }
 }
 
 function loadFromCatalog(id, openIt) {
