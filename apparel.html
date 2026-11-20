@@ -350,6 +350,7 @@
   .co-lines { font-size:12.5px; color:#444; background:#f7f8fa; border-radius:8px; padding:8px 10px; max-height:160px; overflow:auto; line-height:1.6; }
   .co-row { display:flex; gap:8px; margin-top:16px; }
   .co-row button { flex:1; padding:10px; border-radius:8px; border:1px solid #ddd; background:#fff; font:inherit; font-weight:600; cursor:pointer; }
+  .co-btns { display:flex; gap:8px; } .co-btns .co-btn { flex:1; } .co-btn.alt { background:#fff !important; color:#051024 !important; border:1.5px solid #051024 !important; }
   .co-row button.go { background:#051024; color:#fff; border-color:#051024; }
   .co-row button:disabled { opacity:.6; cursor:default; }
   .co-err { color:#c0392b; font-size:13px; margin-top:10px; }
@@ -1879,7 +1880,7 @@ function updateOrderResults() {
     sum.hidden = false;
     sum.innerHTML = '<div class="card"><div class="sum-row"><span class="muted">Order total (' + tq + ' pcs)' + (setup ? ' + setup' : '') + '</span><span class="sum-total">' + fmt(grand + setup) + '</span></div>' + extra
       + '<div class="sum-row profit"><span class="muted">Total profit</span><span>' + fmt(grand + setup - cost - setupCost) + '</span></div>'
-      + (TBDCloud.loggedIn ? '<button class="co-btn" onclick="openCreateOrder()">Create order in Shopify</button>' : '') + '</div>';
+      + (TBDCloud.loggedIn ? '<div class="co-btns"><button class="co-btn" onclick="openCreateOrder()">Create order in Shopify</button><button class="co-btn alt" onclick="openCreateOrder(true)">Send to my cart</button></div>' : '') + '</div>';
   }
   renderMockRows();
   renderQuote();
@@ -1917,12 +1918,17 @@ async function logoFilesForOrder() {
   for (const { lg, role } of out.slice(0, 6)) { const d = await data(lg); if (d && d.length < 14e6) files.push({ role, name: (lg.name || role.replace(/\s+/g, "-")) + (/^data:image\/png/.test(d) ? ".png" : /^data:image\/jpe?g/.test(d) ? ".jpg" : ""), data: d }); }
   return files;
 }
-function openCreateOrder() {
+function openCreateOrder(toCart) {
   const parts = orderPartsForShopify();
   if (!parts.length) { alert("Enter the quantities first."); return; }
   const total = parts.reduce((a, p) => a + p.lines.reduce((s, l) => s + l.unit * l.qty, 0) + (p.setup ? p.setup.total : 0), 0);
   const lines = parts.map(p => p.lines.map(l => esc(l.qty + " × " + l.code + (l.color ? " " + l.color : "") + (l.size !== "std" ? " (" + SIZE_LABEL[l.size] + ")" : "") + " · " + fmt(l.unit))).concat(p.setup ? [esc(p.setup.label + " (one-time) · " + fmt(p.setup.total))] : []).join("<br>")).join("<br>");
   const ov = document.createElement("div"); ov.className = "co-ov"; ov.id = "coOv";
+  if (toCart) ov.innerHTML = '<div class="co-box" onclick="event.stopPropagation()"><h3>Send to my cart</h3><div class="co-sub">Adds these lines to your cart on tbdezign.com (what is already there stays). Add the other products on the site and check out with <b>cart?draft=true</b>.</div>'
+    + '<div class="co-lines">' + lines + '<br><b>Total ' + fmt(total) + '</b></div>'
+    + '<label>Sizes <span style="color:#999">(per color — leave empty for caps, bags or one-size items)</span></label>' + sizeGridHTML(parts)
+    + '<div id="coMsg"></div><div class="co-row"><button onclick="closeCreateOrder()">Cancel</button><button class="go" id="coCart" onclick="sendQuoteToCart()">Send to my cart</button></div></div>';
+  else
   ov.innerHTML = '<div class="co-box" onclick="event.stopPropagation()"><h3>Create order in Shopify</h3><div class="co-sub">A draft order with these prices. Nothing is charged or emailed: you get the payment link to send.</div>'
     + '<div class="co-lines">' + lines + '<br><b>Total ' + fmt(total) + '</b> · free shipping</div>'
     + '<label>Sizes <span style="color:#999">(per color — leave empty for caps, bags or one-size items)</span></label>' + sizeGridHTML(parts)
@@ -1930,10 +1936,9 @@ function openCreateOrder() {
     + '<label>Email (optional)</label><input id="coEmail" type="email" placeholder="name@company.com">'
     + '<label>Phone (optional)</label><input id="coPhone" type="tel">'
     + '<label>Note for the order (optional)</label><textarea id="coNote"></textarea>'
-    + '<div id="coMsg"></div><div class="co-row"><button onclick="closeCreateOrder()">Cancel</button><button id="coCart" onclick="sendQuoteToCart()" title="Adds these lines to your tbdezign.com cart (what is already there stays)">Send to my cart</button><button class="go" id="coGo" onclick="createOrder()">Create order</button></div>'
-    + '<div class="co-sub" style="margin-top:8px">Send to my cart: adds the shirts to your cart on tbdezign.com, so you can add other products there and check out with <b>cart?draft=true</b>. Customer fields are not used.</div></div>';
+    + '<div id="coMsg"></div><div class="co-row"><button onclick="closeCreateOrder()">Cancel</button><button class="go" id="coGo" onclick="createOrder()">Create order</button></div></div>';
   ov.onclick = closeCreateOrder; document.body.appendChild(ov);
-  setTimeout(() => q("coName").focus(), 0);
+  if (!toCart) setTimeout(() => q("coName").focus(), 0);
 }
 function closeCreateOrder() { const o = q("coOv"); if (o) o.remove(); }
 // Size breakdown for each line (the quote only has XS–XL / 2XL / 3XL totals); kept on the style so it's there next time.
