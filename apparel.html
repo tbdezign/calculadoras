@@ -1820,6 +1820,7 @@ function renderOrderItems() {
     + '<div class="oi-info" id="oiinfo-' + it.id + '"></div>'
     + (orderItems.length > 1 ? '<button class="oi-remove" onclick="removeOrderItem(\'' + it.id + '\')" aria-label="Remove style">×</button>' : '')
     + '<button class="mk-link small oi-addcolor" onclick="addColorOf(\'' + it.id + '\')" title="Same style, another color">+ color</button>'
+    + '<button class="mk-link small oi-addcolor" onclick="duplicateItem(\'' + it.id + '\')" title="Copy this style with all its selections (change the code, color or quantity after)">⧉ duplicate</button>'
     + '</div>'
     + '<div class="oi-suggest" id="oiac-' + it.id + '" hidden></div>'
     + itemControlsHTML(it)
@@ -2023,6 +2024,16 @@ function groupKey(it) { return (it.code || "").toUpperCase() + "|" + itemPrint(i
 function styleGroups(list) { const m = new Map(); list.forEach(it => { const k = groupKey(it); if (!m.has(k)) m.set(k, []); m.get(k).push(it); }); return [...m.values()]; }
 function groupOfItem(it) { return styleGroups(mockItems()).find(g => g.includes(it)) || [it]; }
 function colorName(it) { return titleCase((it.color || "").trim()) || "—"; }
+// Copy of the style with everything chosen (code, color, quantities, prints, logo and its position, sale price)
+function duplicateItem(id) {
+  const src = itemById(id); if (!src) return;
+  const nu = Object.assign(JSON.parse(JSON.stringify({ ...src, logo: null })), { id: Date.now() + Math.random() });
+  nu.logo = src.logo;
+  orderItems.splice(orderItems.indexOf(src) + 1, 0, nu);
+  Object.keys(mk.boxes).forEach(k => { if (k.startsWith(src.id + "|")) mk.boxes[nu.id + k.slice(String(src.id).length)] = { ...mk.boxes[k] }; });
+  mk.sig = ""; renderOrderItems(); renderMockRows(true); renderQuote();
+  const el = q("oic-" + nu.id); if (el) { el.focus({ preventScroll: true }); el.select(); el.scrollIntoView({ behavior: "smooth", block: "nearest" }); }
+}
 function addColorOf(id) {
   const src = itemById(id); if (!src) return;
   const copy = JSON.parse(JSON.stringify({ ...src, logo: null }));
