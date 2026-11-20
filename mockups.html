@@ -264,12 +264,12 @@
     card: {
       name: 'Business Card', sub: '3.5″ × 2″',
       sizes: [{ id: 'std', w: 3.5, h: 2, label: '3.5″ × 2″' }],
-      orient: 'h', sides: ['front', 'back'], bleed: 0.0625,
+      orient: 'h', sides: ['front', 'back'], bleed: 0.125,
       styles: [['flat', 'Flat'], ['angled', 'Angled'], ['3d', '3D'], ['stacked', 'Stacked']],
       opts: [{ id: 'corners', label: 'Corners', type: 'seg', def: '0', choices: [['0', 'Sharp'], ['0.125', '⅛″'], ['0.25', '¼″']] }],
       scene: 'desk',
       radius: st => +st.corners,
-      check: { dpi: [300, 200], safe: 0.0625, minPt: 7 }, names: { pt: 'Cartão de visita', es: 'Tarjeta de presentación' }
+      check: { dpi: [300, 200], safe: 0.125, minPt: 7 }, names: { pt: 'Cartão de visita', es: 'Tarjeta de presentación' }
     },
     flyer: {
       name: 'Flyer', sub: '4×6 to 8.5×11',
@@ -1551,6 +1551,9 @@
       const wf = b ? whiteFrame(img, g.trim) : null;
       if (wf) issues.push({ sev: 'bad', k: 'frame', o: { round: wf.round, b: fin(b), full } });
       else if (b && !g.hasBleed && reachesEdge(img, g.trim)) issues.push({ sev: 'warn', k: edgeBusy(img, g.trim, b * g.dpi) ? 'bleedcut' : 'bleed', o: { b: fin(b), full } });
+      // details get cut: the cut line really sits 1/8″ in (art fitted to the bleed size), so text is measured from there
+      let tc = g.trim;
+      if (issues.some(it => it.k === 'bleedcut')) { const ex = g.trim.w * b / (ad.w + 2 * b), ey = g.trim.h * b / (ad.h + 2 * b); tc = { x: g.trim.x + ex, y: g.trim.y + ey, w: g.trim.w - 2 * ex, h: g.trim.h - 2 * ey }; }
       const hz = p.decorate === dieCutHanger ? holeZone(g) : null;
       if (hz && holeBusy(img, hz)) issues.push({ sev: 'bad', k: 'hole', o: {}, marks: [{ x0: hz.cx - hz.r, y0: hz.cy - hz.r, x1: hz.cx + hz.r, y1: hz.cy + hz.r, round: true }] });
       const o = OCR[cur + '|' + side];
@@ -1561,7 +1564,7 @@
           if (w.ems.length < 2 && w.text.replace(/[^A-Za-z0-9À-ÿ]/g, '').length < 4) return;   // stray single short reading (often a photo texture)
           if (hz && Math.hypot((w.x0 + w.x1) / 2 - hz.cx, (w.y0 + w.y1) / 2 - hz.cy) < hz.r * 1.2) return;
           const hIn = w.em / g.dpi;                                       // font size (em) in inches
-          const l = (w.x0 - g.trim.x) / g.dpi, r = (g.trim.x + g.trim.w - w.x1) / g.dpi, t = (w.y0 - g.trim.y) / g.dpi, bt = (g.trim.y + g.trim.h - w.y1) / g.dpi;
+          const l = (w.x0 - tc.x) / g.dpi, r = (tc.x + tc.w - w.x1) / g.dpi, t = (w.y0 - tc.y) / g.dpi, bt = (tc.y + tc.h - w.y1) / g.dpi;
           if (Math.min(l, r, t, bt) < C.safe) { edge.push(w); return; }
           if (C.minPt) { const pt = hIn * 72; if (pt < C.minPt) { small.push(w); minPt = Math.min(minPt, pt); } }
           else { const cap = hIn * 0.72; if (cap < C.minIn) { small.push(w); minH = Math.min(minH, cap); } }
