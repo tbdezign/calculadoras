@@ -1251,24 +1251,93 @@
   function dataUrlToImage(url) {
     return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
   }
+  // RGB or CMYK? Read from the file itself (the browser shows everything as RGB).
+  // JPG: number of color channels in the frame header. PNG/WebP/GIF: always RGB. PDF: color spaces and color operators in the (unzipped) content.
+  async function colorModeOf(file, isPdf) {
+    try {
+      const buf = new Uint8Array(await file.arrayBuffer());
+      if (buf[0] === 0xFF && buf[1] === 0xD8) {                       // JPEG
+        let i = 2;
+        while (i + 9 < buf.length) {
+          if (buf[i] !== 0xFF) { i++; continue; }
+          const m = buf[i + 1], len = (buf[i + 2] << 8) | buf[i + 3];
+          if (m >= 0xC0 && m <= 0xCF && m !== 0xC4 && m !== 0xC8 && m !== 0xCC) { const n = buf[i + 9]; return n === 4 ? 'cmyk' : n === 1 ? 'gray' : 'rgb'; }
+          if (m === 0xD8 || m === 0x01 || (m >= 0xD0 && m <= 0xD7)) { i += 2; continue; }
+          i += 2 + len;
+        }
+        return 'rgb';
+      }
+      if (!isPdf) return buf[0] === 0x89 && buf[1] === 0x50 ? 'rgb' : 'rgb';
+      // PDF: look at the raw text and at every Flate stream we can unzip
+      const latin = b => { let t = ''; for (let k = 0; k < b.length; k += 65536) t += String.fromCharCode.apply(null, b.subarray(k, k + 65536)); return t; };
+      const raw = latin(buf), texts = [raw];
+      const re = /stream\r?\n/g; let mt, total = 0;
+      while ((mt = re.exec(raw)) && texts.length < 400 && total < 60e6) {
+        const st = mt.index + mt[0].length, en = raw.indexOf('endstream', st); if (en < 0) break;
+        const head = raw.slice(Math.max(0, mt.index - 400), mt.index);
+        if (/\/FlateDecode/.test(head) && !/\/Subtype\s*\/Image/.test(head)) {
+          try {
+            let data = buf.subarray(st, en);
+            if (/\/ASCII85Decode/.test(head)) data = a85(raw.slice(st, en));
+            const out = new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer()); total += out.length; texts.push(latin(out));
+          } catch (e) {}
+        }
+        re.lastIndex = en;
+      }
+      function a85(t) {
+        t = t.replace(/^<~/, '').split('~>')[0].replace(/\s+/g, '');
+        const out = []; let grp = [];
+        for (const ch of t) {
+          if (ch === 'z' && !grp.length) { out.push(0, 0, 0, 0); continue; }
+          grp.push(ch.charCodeAt(0) - 33);
+          if (grp.length === 5) { let v = 0; for (const g of grp) v = v * 85 + g; out.push(v >>> 24 & 255, v >>> 16 & 255, v >>> 8 & 255, v & 255); grp = []; }
+        }
+        if (grp.length) { const n = grp.length; while (grp.length < 5) grp.push(84); let v = 0; for (const g of grp) v = v * 85 + g; const bs = [v >>> 24 & 255, v >>> 16 & 255, v >>> 8 & 255, v & 255]; out.push(...bs.slice(0, n - 1)); }
+        return new Uint8Array(out);
+      }
+      const all = texts.join('\n');
+      const cm = /\/DeviceCMYK|\/N\s+4(?!\s+\d+\s+R)\b|(?:^|\s)(?:-?\d*\.?\d+\s+){4}[kK](?=\s)/m.test(all);
+      const rg = /\/DeviceRGB|\/N\s+3(?!\s+\d+\s+R)\b|\/CalRGB|(?:^|\s)(?:-?\d*\.?\d+\s+){3}(?:rg|RG)(?=\s)/m.test(all);
+      return cm && rg ? 'mixed' : cm ? 'cmyk' : rg ? 'rgb' : 'unknown';
+    } catch (e) { return 'unknown'; }
+  }
+  // share of very bright colors that CMYK can't print (bright greens, blues, purples, hot pinks, neon orange)
+  function vividShare(img) {
+    const sc = Math.min(1, 320 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = mk(img.naturalWidth * sc, img.naturalHeight * sc), x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, c.width, c.height);
+    const d = x.getImageData(0, 0, c.width, c.height).data;
+    let v = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 128) continue; n++;
+      const r = d[i], g = d[i + 1], b = d[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      if (mx < 170 || mx - mn < 150) continue;
+      // yellows and warm golds print fine; out-of-gamut is mostly green, cyan-blue, blue-violet, magenta-pink, neon orange-red
+      const yellowish = r > 180 && g > 150 && b < 120 && Math.abs(r - g) < 90;
+      if (!yellowish) v++;
+    }
+    return n ? v / n : 0;
+  }
   function setArt(key, side, img) { ART[key][side] = img; VER[key][side]++; if (EXCL[key]) EXCL[key].clear(); }
   async function loadFile(side, file) {
     if (!file) return;
     const key = cur, p = P[key], s = ST[key];
     const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
     if (!isPdf && !file.type.startsWith('image/')) { alert('Please upload a PNG, JPG or PDF file.'); return; }
+    const modeP = colorModeOf(file, isPdf);
     const drop = controls.querySelector(`.drop[data-side="${side}"]`);
     if (drop) drop.classList.add('loading');
     try {
       if (isPdf) {
         const lib = await loadPdfJs();
         const pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
-        setArt(key, side, await pdfPageToImage(pdf, 1));
+        const mode = await modeP;
+        const im1 = await pdfPageToImage(pdf, 1); im1.colorMode = mode; setArt(key, side, im1);
         const other = p.sides[1];
-        if (side === p.sides[0] && other && pdf.numPages >= 2 && !ART[key][other]) setArt(key, other, await pdfPageToImage(pdf, 2));
+        if (side === p.sides[0] && other && pdf.numPages >= 2 && !ART[key][other]) { const im2 = await pdfPageToImage(pdf, 2); im2.colorMode = mode; setArt(key, other, im2); }
       } else {
         const url = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = rej; fr.readAsDataURL(file); });
-        setArt(key, side, await dataUrlToImage(url));
+        const im = await dataUrlToImage(url); im.colorMode = await modeP; setArt(key, side, im);
       }
       // sensible view after upload
       if (p.oneView) { if (side === 'rider') s.rider = true; }
@@ -1311,8 +1380,10 @@
       sides: { front: 'frente', back: 'verso', sign: 'placa', rider: 'rider' }, and: ' e ',
       legTrim: 'Linha de corte', legSafe: 'Área segura para textos', legCut: 'Parte que será cortada', empty: 'Envie a arte para conferir',
       where: { sides: 'nas laterais', tb: 'em cima e embaixo' },
-      t: { lowres: 'Impressão borrada / pixelada', lowres_warn: 'Impressão pode perder nitidez', ratio: 'Informações serão cortadas', bleed: 'Risco de borda branca no corte', bleedcut: 'Elementos nas bordas serão cortados', frame: 'Borda branca na arte', hole: 'Elemento na área do furo', small: 'Texto pequeno demais', edge: 'Texto pode ser cortado', text_ok: 'Tamanho dos textos ok' },
+      t: { lowres: 'Impressão borrada / pixelada', lowres_warn: 'Impressão pode perder nitidez', ratio: 'Informações serão cortadas', bleed: 'Risco de borda branca no corte', bleedcut: 'Elementos nas bordas serão cortados', frame: 'Borda branca na arte', hole: 'Elemento na área do furo', small: 'Texto pequeno demais', edge: 'Texto pode ser cortado', text_ok: 'Tamanho dos textos ok', rgb: 'Cores podem mudar na impressão' },
       resOk: v => `Resolução ok (${v})`,
+      colorOk: v => `Cores ok (${v})`,
+      rgb: o => `Arquivo em ${o.mode} com cores muito vivas. A impressão é em CMYK e essas cores saem mais opacas. Converter para CMYK e conferir as cores.`,
       lowres_bad: o => `Resolução baixa: ${o.dpi} DPI (mínimo ${o.min}). Recomendado: ${o.need} px.`,
       lowres_warn: o => `Resolução: ${o.dpi} DPI (ideal ${o.target}). Recomendado: ${o.need} px.`,
       ratio: o => `Formato diferente do produto. Corte de ~${o.cut} ${o.where}. Tamanho correto: ${o.fit}.`,
@@ -1332,8 +1403,10 @@
       sides: { front: 'front', back: 'back', sign: 'sign', rider: 'rider' }, and: ' and ',
       legTrim: 'Cut line', legSafe: 'Safe area for text', legCut: 'Part that will be cut off', empty: 'Upload artwork to check it',
       where: { sides: 'on the sides', tb: 'at the top and bottom' },
-      t: { lowres: 'Blurry / pixelated print', lowres_warn: 'Print may lose sharpness', ratio: 'Content will be cut off', bleed: 'Risk of white edge after cutting', bleedcut: 'Details at the edges will be cut off', frame: 'White border in the artwork', hole: 'Artwork in the hole area', small: 'Text too small', edge: 'Text may be cut off', text_ok: 'Text size OK' },
+      t: { lowres: 'Blurry / pixelated print', lowres_warn: 'Print may lose sharpness', ratio: 'Content will be cut off', bleed: 'Risk of white edge after cutting', bleedcut: 'Details at the edges will be cut off', frame: 'White border in the artwork', hole: 'Artwork in the hole area', small: 'Text too small', edge: 'Text may be cut off', text_ok: 'Text size OK', rgb: 'Colors may shift in print' },
       resOk: v => `Resolution OK (${v})`,
+      colorOk: v => `Colors OK (${v})`,
+      rgb: o => `${o.mode} file with very bright colors. Printing is CMYK, so these colors come out duller. Convert to CMYK and check the colors.`,
       lowres_bad: o => `Low resolution: ${o.dpi} DPI (minimum ${o.min}). Recommended: ${o.need} px.`,
       lowres_warn: o => `Resolution: ${o.dpi} DPI (ideal ${o.target}). Recommended: ${o.need} px.`,
       ratio: o => `Shape doesn’t match the product. ~${o.cut} cut ${o.where}. Correct size: ${o.fit}.`,
@@ -1353,8 +1426,10 @@
       sides: { front: 'frente', back: 'reverso', sign: 'letrero', rider: 'rider' }, and: ' y ',
       legTrim: 'Línea de corte', legSafe: 'Área segura para textos', legCut: 'Parte que se cortará', empty: 'Sube el arte para revisarlo',
       where: { sides: 'a los lados', tb: 'arriba y abajo' },
-      t: { lowres: 'Impresión borrosa / pixelada', lowres_warn: 'La impresión puede perder nitidez', ratio: 'Se cortará información', bleed: 'Riesgo de borde blanco al cortar', bleedcut: 'Se cortarán detalles en los bordes', frame: 'Borde blanco en el arte', hole: 'Elemento en el área del orificio', small: 'Texto demasiado pequeño', edge: 'El texto puede cortarse', text_ok: 'Tamaño de textos ok' },
+      t: { lowres: 'Impresión borrosa / pixelada', lowres_warn: 'La impresión puede perder nitidez', ratio: 'Se cortará información', bleed: 'Riesgo de borde blanco al cortar', bleedcut: 'Se cortarán detalles en los bordes', frame: 'Borde blanco en el arte', hole: 'Elemento en el área del orificio', small: 'Texto demasiado pequeño', edge: 'El texto puede cortarse', text_ok: 'Tamaño de textos ok', rgb: 'Los colores pueden cambiar al imprimir' },
       resOk: v => `Resolución ok (${v})`,
+      colorOk: v => `Colores ok (${v})`,
+      rgb: o => `Archivo en ${o.mode} con colores muy vivos. La impresión es en CMYK y estos colores salen más apagados. Convertir a CMYK y revisar los colores.`,
       lowres_bad: o => `Resolución baja: ${o.dpi} DPI (mínimo ${o.min}). Recomendado: ${o.need} px.`,
       lowres_warn: o => `Resolución: ${o.dpi} DPI (ideal ${o.target}). Recomendado: ${o.need} px.`,
       ratio: o => `Formato distinto al producto. Corte de ~${o.cut} ${o.where}. Tamaño correcto: ${o.fit}.`,
@@ -1544,6 +1619,12 @@
       if (dpi < min) issues.push({ sev: 'bad', k: 'lowres', o: { px: `${g.iw}×${g.ih}`, dpi, size, min, target: good, need: need(good) } });
       else if (dpi < good * 0.95) issues.push({ sev: 'warn', k: 'lowres', o: { px: `${g.iw}×${g.ih}`, dpi, size, min, target: good, need: need(good) } });
       else issues.push({ sev: 'ok', k: 'res_ok', o: { dpi, size } });
+      const cmode = img.colorMode || 'unknown';
+      if (cmode !== 'unknown') {
+        const viv = cmode === 'cmyk' || cmode === 'gray' ? 0 : vividShare(img);
+        if (viv > 0.02) issues.push({ sev: 'warn', k: 'rgb', o: { mode: cmode === 'mixed' ? 'RGB + CMYK' : 'RGB', pct: Math.max(1, Math.round(viv * 100)) } });
+        else issues.push({ sev: 'ok', k: 'color_ok', o: { mode: cmode === 'mixed' ? 'CMYK + RGB' : cmode === 'gray' ? 'Grayscale' : cmode.toUpperCase() } });
+      }
       if (g.off > 0.03) {
         const wide = g.ir > g.pr, cut = wide ? (ad.h * g.ir - ad.w) / 2 : (ad.w / g.ir - ad.h) / 2;
         issues.push({ sev: g.off > 0.12 ? 'bad' : 'warn', k: 'ratio', o: { ar: ratioStr(g.ir), pr: ratioStr(g.pr), size, cut: fin(Math.round(cut * 8) / 8 || 0.125), wide, fit: full, bleedFit: !!b } });
@@ -1581,7 +1662,7 @@
     const T = L[lang];
     if (it.k === 'lowres') return T[it.sev === 'bad' ? 'lowres_bad' : 'lowres_warn'](it.o);
     if (it.k === 'ratio') return T.ratio(Object.assign({}, it.o, { where: T.where[it.o.wide ? 'sides' : 'tb'] }));
-    if (it.k === 'res_ok' || it.k === 'text_ok') return '';
+    if (it.k === 'res_ok' || it.k === 'text_ok' || it.k === 'color_ok') return '';
     if (it.k === 'small') return it.o.pt ? T.small_pt(it.o) : T.small_in(it.o);
     return T[it.k](it.o);
   }
@@ -1598,6 +1679,8 @@
       small: () => o.pt ? `${o.n} spot${o.n > 1 ? 's' : ''} ~${o.pt} pt (min ${o.min} pt)` : `${o.n} spot${o.n > 1 ? 's' : ''} ~${o.h} letters (min ${o.min})`,
       edge: () => `${o.n} spot${o.n > 1 ? 's' : ''} within ${o.safe} of the trim`,
       res_ok: () => `${o.dpi} DPI at ${o.size}`,
+      rgb: () => `${o.mode} file · ~${o.pct}% very bright colors that CMYK can't match`,
+      color_ok: () => o.mode === 'RGB' ? 'RGB file, colors within print range' : `${o.mode} file`,
       text_ok: () => `${o.n} word${o.n === 1 ? '' : 's'} read, none too small`
     }[it.k]();
   }
@@ -1619,7 +1702,7 @@
     const h = ['<section><span class="lbl">Artwork check</span><ul class="chk">'];
     res.forEach(r => {
       if (multi) h.push(`<li class="side">${(p.sideNames || { front: 'Front', back: 'Back' })[r.side] || r.side}</li>`);
-      r.issues.forEach(it => h.push(`<li${it.sev !== 'ok' && excl().has(it.k) ? ' style="opacity:.45"' : ''}><span class="dot" style="background:${SEV[it.sev]}"></span><span style="flex:1"><b>${{ res_ok: 'Resolution OK', text_ok: 'Text size OK' }[it.k] || L.en.t[it.k === 'lowres' && it.sev === 'warn' ? 'lowres_warn' : it.k]}</b><br><span class="d">${esc(shortLine(it))}</span></span>${it.sev !== 'ok' ? `<label title="Include in the client report and WhatsApp text" style="font-size:11px;color:var(--muted);white-space:nowrap;cursor:pointer"><input type="checkbox" data-ex="${it.k}" ${excl().has(it.k) ? '' : 'checked'} style="vertical-align:-2px"> send</label>` : ''}</li>`));
+      r.issues.forEach(it => h.push(`<li${it.sev !== 'ok' && excl().has(it.k) ? ' style="opacity:.45"' : ''}><span class="dot" style="background:${SEV[it.sev]}"></span><span style="flex:1"><b>${{ res_ok: 'Resolution OK', text_ok: 'Text size OK', color_ok: 'Colors OK' }[it.k] || L.en.t[it.k === 'lowres' && it.sev === 'warn' ? 'lowres_warn' : it.k]}</b><br><span class="d">${esc(shortLine(it))}</span></span>${it.sev !== 'ok' ? `<label title="Include in the client report and WhatsApp text" style="font-size:11px;color:var(--muted);white-space:nowrap;cursor:pointer"><input type="checkbox" data-ex="${it.k}" ${excl().has(it.k) ? '' : 'checked'} style="vertical-align:-2px"> send</label>` : ''}</li>`));
     });
     h.push('</ul>');
     if (excl().size) h.push('<p class="note" style="margin-top:4px">Unchecked notices stay out of the client report (we fix those ourselves).</p>');
@@ -1640,15 +1723,16 @@
     const items = [], passed = [];
     res.forEach(r => r.issues.forEach(it => {
       if (it.sev !== 'ok' && excl().has(it.k)) return;
-      if (it.sev === 'ok') { let ps = passed.find(x => x.k === it.k); if (!ps) passed.push(ps = { k: it.k, vals: [] }); ps.vals.push({ side: r.side, dpi: it.o.dpi }); return; }
+      if (it.sev === 'ok') { let ps = passed.find(x => x.k === it.k); if (!ps) passed.push(ps = { k: it.k, vals: [] }); ps.vals.push({ side: r.side, dpi: it.o.dpi, mode: it.o.mode }); return; }
       const text = msg(lang, it), title = L[lang].t[it.k === 'lowres' && it.sev === 'warn' ? 'lowres_warn' : it.k];
       const same = items.find(x => x.title === title && x.text === text);
       if (same) { same.sides.push(r.side); same.parts.push({ r, it }); }
       else items.push({ k: it.k, sev: it.sev, title, text, sides: [r.side], parts: [{ r, it }] });
     }));
     // a check only counts as passed when no side failed it
-    const failed = { res_ok: 'lowres', text_ok: 'small' };
+    const failed = { res_ok: 'lowres', text_ok: 'small', color_ok: 'rgb' };
     const okTitle = ps => {
+      if (ps.k === 'color_ok') { const same = ps.vals.every(v => v.mode === ps.vals[0].mode); return L[lang].colorOk(same ? ps.vals[0].mode : ps.vals.map(v => `${sideName(p, v.side, lang)} ${v.mode}`).join(', ')); }
       if (ps.k !== 'res_ok') return L[lang].t[ps.k];
       const same = ps.vals.every(v => v.dpi === ps.vals[0].dpi) || ps.vals.length === 1;
       return L[lang].resOk(same ? `${ps.vals[0].dpi} DPI` : ps.vals.map(v => `${sideName(p, v.side, lang)} ${v.dpi} DPI`).join(', '));
@@ -1904,7 +1988,7 @@
       // one list per side, next to that side's artwork
       res.forEach((r, i) => {
         const its = sideItems[i].map(x => ({ no: noOf(x, i), col: SEV[x.sev], title: x.title, body: x.text }));
-        r.issues.filter(it => it.sev === 'ok').forEach(it => its.push({ no: '✓', col: SEV.ok, title: it.k === 'res_ok' ? T.resOk(`${it.o.dpi} DPI`) : T.t[it.k], body: '', small: true }));
+        r.issues.filter(it => it.sev === 'ok').forEach(it => its.push({ no: '✓', col: SEV.ok, title: it.k === 'res_ok' ? T.resOk(`${it.o.dpi} DPI`) : it.k === 'color_ok' ? T.colorOk(it.o.mode) : T.t[it.k], body: '', small: true }));
         if (!sideItems[i].length) its.unshift({ no: '✓', col: SEV.ok, title: T.ready, body: '' });
         drawList(its, cells[i].y + U(40), cells[i].y + cells[i].h - U(6));
       });
