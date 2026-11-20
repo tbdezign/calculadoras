@@ -4,17 +4,31 @@
 <script>
 (function () {
   var m = location.search.match(/[?&]tbd_load=([a-f0-9]{16})/); if (!m) return;
+  var box = document.createElement('div');
+  box.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font:600 18px sans-serif;color:#051024';
+  box.textContent = 'Adding the quoted items to your cart…';
+  document.body.appendChild(box);
   var post = function (url, body) { return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); };
+  // a price made a second ago can take a few seconds to reach the store: try again before giving up
+  var waits = [1000, 1500, 2000, 3000, 3000, 4000, 5000, 5000];
+  var add = function (items, n) {
+    return post('/cart/add.js', { items: items }).then(function (r) {
+      if (r.ok) return;
+      return r.json().then(function (e) {
+        if (n >= waits.length) throw new Error(e.description || e.message || 'cart');
+        return new Promise(function (ok) { setTimeout(ok, waits[n]); }).then(function () { return add(items, n + 1); });
+      });
+    });
+  };
   fetch('https://fipimpagtmdhuznclqdn.supabase.co/functions/v1/apparel-checkout?cart=' + m[1])
     .then(function (r) { return r.json(); })
     .then(function (j) {
       if (!j.items) throw new Error(j.error || 'not found');
-      return post('/cart/add.js', { items: j.items }).then(function (r) {
-        if (!r.ok) return r.json().then(function (e) { throw new Error(e.description || e.message || 'cart'); });
+      return add(j.items, 0).then(function () {
         return j.attributes && Object.keys(j.attributes).length ? post('/cart/update.js', { attributes: j.attributes }) : null;
       });
     })
     .then(function () { location.replace('/cart'); })
-    .catch(function (e) { alert('Could not add the quoted items: ' + e.message); history.replaceState(null, '', location.pathname); });
+    .catch(function (e) { box.remove(); alert('Could not add the quoted items: ' + e.message); history.replaceState(null, '', location.pathname); });
 })();
 </script>
