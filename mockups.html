@@ -423,7 +423,12 @@
     if (s.bleed === 'no' || !p.bleed) return false;
     const r = img.naturalWidth / img.naturalHeight;
     const tr = ad.w / ad.h, br = (ad.w + 2 * p.bleed) / (ad.h + 2 * p.bleed);
-    return Math.abs(r - br) < Math.abs(r - tr);
+    if (Math.abs(r - br) >= Math.abs(r - tr)) return false;
+    // Bleed-shaped files from design apps come out at a round resolution (300, 350, 288 DPI…).
+    // A cropped or AI-made image that only happens to have that shape doesn't: treat it as trim size.
+    const dw = img.naturalWidth / (ad.w + 2 * p.bleed), dh = img.naturalHeight / (ad.h + 2 * p.bleed);
+    const round = v => [24, 25].some(m => Math.abs(v - Math.round(v / m) * m) <= Math.max(1, v * 0.006));
+    return Math.abs(dw - dh) / dw < 0.01 && round(dw) && round(dh);
   }
   function drawArt(p, s, x, img, w, h, ad) {
     const iw = img.naturalWidth, ih = img.naturalHeight;
