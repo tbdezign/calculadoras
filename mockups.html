@@ -269,7 +269,7 @@
       opts: [{ id: 'corners', label: 'Corners', type: 'seg', def: '0', choices: [['0', 'Sharp'], ['0.125', '⅛″'], ['0.25', '¼″']] }],
       scene: 'desk',
       radius: st => +st.corners,
-      check: { dpi: [300, 200], safe: 0.125, minPt: 7 }, names: { pt: 'Cartão de visita', es: 'Tarjeta de presentación' }
+      check: { dpi: [300, 200], safe: 0.0625, minPt: 7 }, names: { pt: 'Cartão de visita', es: 'Tarjeta de presentación' }
     },
     flyer: {
       name: 'Flyer', sub: '4×6 to 8.5×11',
@@ -1311,12 +1311,13 @@
       sides: { front: 'frente', back: 'verso', sign: 'placa', rider: 'rider' }, and: ' e ',
       legTrim: 'Linha de corte', legSafe: 'Área segura para textos', legCut: 'Parte que será cortada', empty: 'Envie a arte para conferir',
       where: { sides: 'nas laterais', tb: 'em cima e embaixo' },
-      t: { lowres: 'Impressão borrada / pixelada', lowres_warn: 'Impressão pode perder nitidez', ratio: 'Informações serão cortadas', bleed: 'Risco de borda branca no corte', frame: 'Borda branca na arte', hole: 'Elemento na área do furo', small: 'Texto pequeno demais', edge: 'Texto pode ser cortado', text_ok: 'Tamanho dos textos ok' },
+      t: { lowres: 'Impressão borrada / pixelada', lowres_warn: 'Impressão pode perder nitidez', ratio: 'Informações serão cortadas', bleed: 'Risco de borda branca no corte', bleedcut: 'Elementos nas bordas serão cortados', frame: 'Borda branca na arte', hole: 'Elemento na área do furo', small: 'Texto pequeno demais', edge: 'Texto pode ser cortado', text_ok: 'Tamanho dos textos ok' },
       resOk: v => `Resolução ok (${v})`,
       lowres_bad: o => `Resolução baixa: ${o.dpi} DPI (mínimo ${o.min}). Recomendado: ${o.need} px.`,
       lowres_warn: o => `Resolução: ${o.dpi} DPI (ideal ${o.target}). Recomendado: ${o.need} px.`,
       ratio: o => `Formato diferente do produto. Corte de ~${o.cut} ${o.where}. Tamanho correto: ${o.fit}.`,
       bleed: o => `Fundo sem sangria. Estender ${o.b} em cada lado (${o.full}).`,
+      bleedcut: o => `Arte sem sangria. Os detalhes que chegam até a borda serão cortados. Estender a arte ${o.b} em cada lado (${o.full}).`,
       frame: o => `Arte com margem branca${o.round ? ' e cantos arredondados' : ''} em volta, que sai impressa. Remover e estender o fundo até ${o.full} (com sangria).`,
       hole: () => 'Parte da arte fica onde o furo é cortado. Deixar essa área livre (furo de ~1.2″ no topo).',
       small_pt: o => `Texto marcado com ~${o.pt} pt (mínimo ${o.min} pt).`,
@@ -1331,12 +1332,13 @@
       sides: { front: 'front', back: 'back', sign: 'sign', rider: 'rider' }, and: ' and ',
       legTrim: 'Cut line', legSafe: 'Safe area for text', legCut: 'Part that will be cut off', empty: 'Upload artwork to check it',
       where: { sides: 'on the sides', tb: 'at the top and bottom' },
-      t: { lowres: 'Blurry / pixelated print', lowres_warn: 'Print may lose sharpness', ratio: 'Content will be cut off', bleed: 'Risk of white edge after cutting', frame: 'White border in the artwork', hole: 'Artwork in the hole area', small: 'Text too small', edge: 'Text may be cut off', text_ok: 'Text size OK' },
+      t: { lowres: 'Blurry / pixelated print', lowres_warn: 'Print may lose sharpness', ratio: 'Content will be cut off', bleed: 'Risk of white edge after cutting', bleedcut: 'Details at the edges will be cut off', frame: 'White border in the artwork', hole: 'Artwork in the hole area', small: 'Text too small', edge: 'Text may be cut off', text_ok: 'Text size OK' },
       resOk: v => `Resolution OK (${v})`,
       lowres_bad: o => `Low resolution: ${o.dpi} DPI (minimum ${o.min}). Recommended: ${o.need} px.`,
       lowres_warn: o => `Resolution: ${o.dpi} DPI (ideal ${o.target}). Recommended: ${o.need} px.`,
       ratio: o => `Shape doesn’t match the product. ~${o.cut} cut ${o.where}. Correct size: ${o.fit}.`,
       bleed: o => `Background has no bleed. Extend ${o.b} on each side (${o.full}).`,
+      bleedcut: o => `Artwork has no bleed. Details that reach the edge will be cut. Extend the artwork ${o.b} on each side (${o.full}).`,
       frame: o => `Artwork has a white margin${o.round ? ' and rounded corners' : ''} around it, which will print. Remove it and extend the background to ${o.full} (with bleed).`,
       hole: () => 'Part of the design sits where the hanger hole is cut. Keep that area clear (~1.2″ hole at the top).',
       small_pt: o => `Marked text is ~${o.pt} pt (minimum ${o.min} pt).`,
@@ -1351,12 +1353,13 @@
       sides: { front: 'frente', back: 'reverso', sign: 'letrero', rider: 'rider' }, and: ' y ',
       legTrim: 'Línea de corte', legSafe: 'Área segura para textos', legCut: 'Parte que se cortará', empty: 'Sube el arte para revisarlo',
       where: { sides: 'a los lados', tb: 'arriba y abajo' },
-      t: { lowres: 'Impresión borrosa / pixelada', lowres_warn: 'La impresión puede perder nitidez', ratio: 'Se cortará información', bleed: 'Riesgo de borde blanco al cortar', frame: 'Borde blanco en el arte', hole: 'Elemento en el área del orificio', small: 'Texto demasiado pequeño', edge: 'El texto puede cortarse', text_ok: 'Tamaño de textos ok' },
+      t: { lowres: 'Impresión borrosa / pixelada', lowres_warn: 'La impresión puede perder nitidez', ratio: 'Se cortará información', bleed: 'Riesgo de borde blanco al cortar', bleedcut: 'Se cortarán detalles en los bordes', frame: 'Borde blanco en el arte', hole: 'Elemento en el área del orificio', small: 'Texto demasiado pequeño', edge: 'El texto puede cortarse', text_ok: 'Tamaño de textos ok' },
       resOk: v => `Resolución ok (${v})`,
       lowres_bad: o => `Resolución baja: ${o.dpi} DPI (mínimo ${o.min}). Recomendado: ${o.need} px.`,
       lowres_warn: o => `Resolución: ${o.dpi} DPI (ideal ${o.target}). Recomendado: ${o.need} px.`,
       ratio: o => `Formato distinto al producto. Corte de ~${o.cut} ${o.where}. Tamaño correcto: ${o.fit}.`,
       bleed: o => `Fondo sin sangrado. Extender ${o.b} por lado (${o.full}).`,
+      bleedcut: o => `Arte sin sangrado. Los detalles que llegan al borde se cortarán. Extender el arte ${o.b} por lado (${o.full}).`,
       frame: o => `El arte tiene un margen blanco${o.round ? ' y esquinas redondeadas' : ''} alrededor, que saldrá impreso. Quitarlo y extender el fondo hasta ${o.full} (con sangrado).`,
       hole: () => 'Parte del arte queda donde se corta el orificio. Dejar esa área libre (orificio de ~1.2″ arriba).',
       small_pt: o => `Texto marcado de ~${o.pt} pt (mínimo ${o.min} pt).`,
@@ -1505,6 +1508,31 @@
     const med = ls[ls.length >> 1], off = ls.filter(v => Math.abs(v - med) > 35).length / ls.length;
     return off > 0.04;                                   // more than a few % of the hole differs from its main color
   }
+  // Is the strip that gets cut (no bleed) plain background, or are there details in it (lines, shapes, text)?
+  // Compared with the local main color of each 10% of the edge, so a gradient background still counts as plain.
+  function edgeBusy(img, t, bandPx) {
+    const sc = Math.min(1, 900 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = mk(img.naturalWidth * sc, img.naturalHeight * sc), x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(img, 0, 0, c.width, c.height);
+    const d = x.getImageData(0, 0, c.width, c.height).data;
+    const X0 = Math.round(t.x * sc), Y0 = Math.round(t.y * sc), W = Math.round(t.w * sc), H = Math.round(t.h * sc);
+    const band = Math.max(2, Math.round(bandPx * sc * 1.2));
+    const at = (xx, yy) => { const i = (Math.min(c.height - 1, Math.max(0, yy)) * c.width + Math.min(c.width - 1, Math.max(0, xx))) * 4; return [d[i], d[i + 1], d[i + 2]]; };
+    let worst = 0;
+    // four edges: run along the edge (u) and into the art (v)
+    [[W, (u, v) => at(X0 + u, Y0 + v)], [W, (u, v) => at(X0 + u, Y0 + H - 1 - v)], [H, (u, v) => at(X0 + v, Y0 + u)], [H, (u, v) => at(X0 + W - 1 - v, Y0 + u)]].forEach(([len, get]) => {
+      let off = 0, all = 0;
+      const seg = Math.max(4, Math.round(len / 10));
+      for (let a = 0; a < len; a += seg) {
+        const px = [];
+        for (let u = a; u < Math.min(len, a + seg); u++) for (let v = 0; v < band; v++) px.push(get(u, v));
+        const med = [0, 1, 2].map(k => { const v = px.map(q => q[k]).sort((m, n) => m - n); return v[v.length >> 1]; });
+        px.forEach(q => { all++; if (Math.max(Math.abs(q[0] - med[0]), Math.abs(q[1] - med[1]), Math.abs(q[2] - med[2])) > 45) off++; });
+      }
+      worst = Math.max(worst, off / Math.max(1, all));
+    });
+    return worst > 0.06;
+  }
   // Issues per side: { side, img, g, issues: [{ sev, k, o, marks }] }
   function analyze(p, s) {
     const C = p.check;
@@ -1522,7 +1550,7 @@
       }
       const wf = b ? whiteFrame(img, g.trim) : null;
       if (wf) issues.push({ sev: 'bad', k: 'frame', o: { round: wf.round, b: fin(b), full } });
-      else if (b && !g.hasBleed && reachesEdge(img, g.trim)) issues.push({ sev: 'warn', k: 'bleed', o: { b: fin(b), full } });
+      else if (b && !g.hasBleed && reachesEdge(img, g.trim)) issues.push({ sev: 'warn', k: edgeBusy(img, g.trim, b * g.dpi) ? 'bleedcut' : 'bleed', o: { b: fin(b), full } });
       const hz = p.decorate === dieCutHanger ? holeZone(g) : null;
       if (hz && holeBusy(img, hz)) issues.push({ sev: 'bad', k: 'hole', o: {}, marks: [{ x0: hz.cx - hz.r, y0: hz.cy - hz.r, x1: hz.cx + hz.r, y1: hz.cy + hz.r, round: true }] });
       const o = OCR[cur + '|' + side];
@@ -1561,6 +1589,7 @@
       lowres: () => `${o.dpi} DPI at ${o.size} — ${it.sev === 'bad' ? `needs ${o.min}+` : `${o.target} is ideal`}`,
       ratio: () => `art is ${o.ar}, product ${o.pr} · ~${o.cut} cut ${o.wide ? 'on each side' : 'top & bottom'}`,
       bleed: () => `art reaches the edge with no bleed (${o.b})`,
+      bleedcut: () => `details reach the edge with no bleed (${o.b}) — they get cut`,
       frame: () => `white margin${o.round ? ' + rounded corners' : ''} baked into the art — will print`,
       hole: () => 'design sits in the hanger hole (~1.2″ at the top)',
       small: () => o.pt ? `${o.n} spot${o.n > 1 ? 's' : ''} ~${o.pt} pt (min ${o.min} pt)` : `${o.n} spot${o.n > 1 ? 's' : ''} ~${o.h} letters (min ${o.min})`,
@@ -1759,7 +1788,15 @@
   // Client report image: artwork with trim / safe zone / problems marked + numbered list
   function drawReport() {
     const p = mat(), s = st(), lang = s.lang || 'pt', T = L[lang], U = v => v * S;
-    const res = analyze(p, s), n = countIssues(res);
+    const res = analyze(p, s);
+    const { items: list, passed } = res.length ? clientList(p, res, lang) : { items: [], passed: [] };
+    // front and back stacked: each side's notices sit next to it (numbered in that order)
+    const perSide = res.length > 1 && res[0].g.iw / res[0].g.ih > 1.15;
+    const sideItems = res.map(r => list.filter(x => x.parts.some(pt => pt.r === r)));
+    const NO = new Map(); let cnt = 0;
+    if (perSide) sideItems.forEach((xs, i) => xs.forEach(x => NO.set(x.no + '|' + i, ++cnt)));
+    const noOf = (x, i) => perSide ? NO.get(x.no + '|' + i) : x.no;
+    const n = perSide ? cnt : list.length;
     drawBrandedFrame(ctx, T.title, res.length ? (n ? T.fix(n) : T.ready) : '');
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, HEADER_TOP, CW, ZONE_H);
@@ -1780,8 +1817,6 @@
     ctx.fillStyle = n ? SEV.bad : SEV.ok;
     ctx.fillText(n ? T.fix(n) : T.ready, U(50), U(154));
 
-    // Numbered issue list (shared numbering with the marks on the artwork)
-    const { items: list, passed } = clientList(p, res, lang);
 
     // Artwork panels
     const box = { x: U(50), y: U(190), w: U(560), h: U(790) }, cells = [];
@@ -1803,7 +1838,10 @@
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(r.img, ox, oy, dw, dh);
       artBottom = Math.max(artBottom, oy + dh);
-      const tr = r.g.trim, M = (x, y) => [ox + x * k2, oy + y * k2];
+      // no bleed + details at the edge: the art gets fitted to the bleed size, so the cut line moves 1/16″ in (like the vendor template)
+      const cutIn = r.issues.some(it => it.k === 'bleedcut' && !excl().has('bleedcut')) && p.bleed;
+      const tr0 = r.g.trim, ex = cutIn ? tr0.w * p.bleed / (r.g.ad.w + 2 * p.bleed) : 0, ey = cutIn ? tr0.h * p.bleed / (r.g.ad.h + 2 * p.bleed) : 0;
+      const tr = { x: tr0.x + ex, y: tr0.y + ey, w: tr0.w - 2 * ex, h: tr0.h - 2 * ey }, M = (x, y) => [ox + x * k2, oy + y * k2];
       const [tx, ty] = M(tr.x, tr.y), tw = tr.w * k2, th = tr.h * k2;
       // shade what gets cut off
       ctx.save();
@@ -1841,7 +1879,7 @@
           ctx.restore();
           if (j === 0) {                                   // number sits right before the mark
             const br = U(11), bx = Math.max(ox - br, x0 - pd - br * 2 - U(5)), by = y0 - pd + mh / 2 - br;
-            ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.25)'; ctx.shadowBlur = U(4); badge(bx, by, x.no, col, br); ctx.restore();
+            ctx.save(); ctx.shadowColor = 'rgba(0,0,0,0.25)'; ctx.shadowBlur = U(4); badge(bx, by, noOf(x, i), col, br); ctx.restore();
           }
         });
       }));
@@ -1857,11 +1895,25 @@
     });
 
     // List on the right, shrinking the font if needed
-    const LX = U(670), LW = U(480), top = U(200), bottom = U(1085);
+    const LX = U(670), LW = U(480);
     const multi = res.length > 1;
-    const items = list.map(x => ({ no: x.no, col: SEV[x.sev], title: x.title + (multi ? ` · ${sidesList(p, x.sides, lang)}` : ''), body: x.text }));
-    if (!list.length) items.push({ no: '✓', col: SEV.ok, title: T.allOk, body: '' });
-    passed.forEach(t => items.push({ no: '✓', col: SEV.ok, title: t, body: '', small: true }));
+    if (perSide) {
+      // one list per side, next to that side's artwork
+      res.forEach((r, i) => {
+        const its = sideItems[i].map(x => ({ no: noOf(x, i), col: SEV[x.sev], title: x.title, body: x.text }));
+        r.issues.filter(it => it.sev === 'ok').forEach(it => its.push({ no: '✓', col: SEV.ok, title: it.k === 'res_ok' ? T.resOk(`${it.o.dpi} DPI`) : T.t[it.k], body: '', small: true }));
+        if (!sideItems[i].length) its.unshift({ no: '✓', col: SEV.ok, title: T.ready, body: '' });
+        drawList(its, cells[i].y + U(40), cells[i].y + cells[i].h - U(6));
+      });
+    } else {
+      const items = list.map(x => ({ no: x.no, col: SEV[x.sev], title: x.title + (multi ? ` · ${sidesList(p, x.sides, lang)}` : ''), body: x.text }));
+      if (!list.length) items.push({ no: '✓', col: SEV.ok, title: T.allOk, body: '' });
+      passed.forEach(t => items.push({ no: '✓', col: SEV.ok, title: t, body: '', small: true }));
+      drawList(items, U(200), U(1085));
+    }
+    document.getElementById('meta').textContent = [matName(p, 'en'), 'Artwork check', `${n} issue${n === 1 ? '' : 's'}`, `${s.lang.toUpperCase()}`, '1200×1200 PNG'].join(' · ');
+
+    function drawList(items, top, bottom) {
     let f = 1, layout;
     for (; f > 0.6; f -= 0.05) {
       let y = top; layout = [];
@@ -1885,11 +1937,7 @@
       const by = y + tl.length * U(27 * f) - U(3);
       bl.forEach((t, i) => ctx.fillText(t, LX + U(46), by + i * U(24 * f)));
     });
-    if (layout.closing) {
-      ctx.fillStyle = '#7a8597'; ctx.font = `italic 400 ${U(15 * f)}px Poppins`;
-      layout.closing.lines.forEach((t, i) => ctx.fillText(t, LX, layout.closing.y + i * U(22 * f)));
     }
-    document.getElementById('meta').textContent = [matName(p, 'en'), 'Artwork check', `${n} issue${n === 1 ? '' : 's'}`, `${s.lang.toUpperCase()}`, '1200×1200 PNG'].join(' · ');
 
     function badge(x, y, label, col, r) {
       ctx.save();
