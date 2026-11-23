@@ -424,6 +424,7 @@
     const r = img.naturalWidth / img.naturalHeight;
     const tr = ad.w / ad.h, br = (ad.w + 2 * p.bleed) / (ad.h + 2 * p.bleed);
     if (Math.abs(r - br) >= Math.abs(r - tr)) return false;
+    if (Math.abs(r - br) / br < 0.006) return true;     // exactly the with-bleed shape (e.g. 3.75 × 2.25): it has bleed, whatever the resolution
     // Bleed-shaped files from design apps come out at a round resolution (300, 350, 288 DPI…).
     // A cropped or AI-made image that only happens to have that shape doesn't: treat it as trim size.
     const dw = img.naturalWidth / (ad.w + 2 * p.bleed), dh = img.naturalHeight / (ad.h + 2 * p.bleed);
