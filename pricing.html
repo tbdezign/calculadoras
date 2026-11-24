@@ -400,6 +400,11 @@
   .pt-matrix { margin-top: 14px; }
   .pt-matrix summary, .ed-sec summary { cursor: pointer; font-size: 13px; font-weight: 600; color: #051024; }
   .pt-matrix .matrix { margin-top: 8px; }
+  .ed-area { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 14px; }
+  .ed-area .field { width: 110px; }
+  .ed-area .field input { padding: 7px 9px; border-width: 1px; }
+  .ed-area-sum { font-size: 13px; color: #2E7D32; font-weight: 600; padding-bottom: 8px; }
+  .pt input[readonly] { background: #f3f5f7; color: #5b6575; }
   .ed-art { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid #eef0f3; }
   .ed-art small { font-size: 12px; color: #8a93a2; }
   .ed-artfee .pt-in { width: 90px; padding: 7px 8px 7px 20px; font-size: 14px; border-width: 1px; }
@@ -823,6 +828,21 @@ function groupedLines(q) {
   });
   return groups.map(g => ({ g, lines: map[g] }));
 }
+// Priced by size: vendor cost per line = max(sq ft × rate, minimum) × quantity
+function areaInfo(q) {
+  if (!q.areaOn) return null;
+  const w = parseFloat(q.areaW), h = parseFloat(q.areaH), rate = parseFloat(q.areaRate), min = parseFloat(q.areaMin) || 0;
+  if (!(w > 0 && h > 0 && rate > 0)) return { ok: false };
+  const sq = w * h / 144, each = Math.max(sq * rate, min);
+  return { ok: true, w, h, sq, each, min: sq * rate < min };
+}
+function applyArea(q) {
+  const a = areaInfo(q);
+  if (!a || !a.ok) return;
+  q.lines.forEach(l => { const n = qtyNum(l); if (n > 0) l.vc = String(Math.round(a.each * n * 100) / 100); });
+  const auto = `${+a.w.toFixed(2)}" x ${+a.h.toFixed(2)}"`;
+  if (!q.size.trim() || q.size === q._areaSize) { q.size = auto; q._areaSize = auto; }
+}
 // Artwork design: none, included in the price, or a one-time fee
 const artFee = q => q.artMode === 'fee' ? Math.round((parseFloat(q.artFee) || 0) * 100) / 100 : 0;
 function artLine(q, X) {
@@ -1084,6 +1104,14 @@ function quoteHTML(q, qi) {
 
       <div class="ed-card">
         <div class="ed-h"><h2>Prices</h2><span>Type the vendor costs: your price and the add-ons fill in automatically (47%+ margin). Type in a price to set your own.</span></div>
+        <div class="ed-area">
+          <button class="chip${q.areaOn ? ' on' : ''}" data-act="area" title="Vendor cost comes from width × height × price per sq ft">Priced by size (sq ft)</button>
+          ${q.areaOn ? `<div class="field"><label>Width (in)</label><input type="number" data-f="areaW" value="${esc(q.areaW)}" placeholder="24"></div>
+          <div class="field"><label>Height (in)</label><input type="number" data-f="areaH" value="${esc(q.areaH)}" placeholder="12"></div>
+          <div class="field"><label>Vendor $ / sq ft</label><input type="number" data-f="areaRate" value="${esc(q.areaRate)}" placeholder="3.99"></div>
+          <div class="field"><label>Min per piece $</label><input type="number" data-f="areaMin" value="${esc(q.areaMin)}" placeholder="0"></div>
+          <div class="ed-area-sum" data-areasum></div>` : ''}
+        </div>
         ${priceTableHTML(q, qi)}
         <div class="ed-art">
           <span class="ed-lbl">Artwork design</span>
@@ -1163,8 +1191,14 @@ function update() {
   const qEl = wrap.querySelector('.ed[data-q]');
   if (!qEl) return;
   const qi = +qEl.dataset.q, q = quotes[qi];
+  applyArea(q);
+  const szIn = qEl.querySelector('[data-f="size"]'); if (szIn && document.activeElement !== szIn && szIn.value !== q.size) szIn.value = q.size;
+  const ai = areaInfo(q), sumEl = qEl.querySelector('[data-areasum]');
+  if (sumEl) sumEl.textContent = ai && ai.ok ? `= ${ai.sq.toFixed(2)} sq ft · $${ai.each.toFixed(2)} per piece${ai.min ? ' (minimum)' : ''}` : 'Fill width, height and $ / sq ft';
   q.lines.forEach((l, li) => {
     const row = qEl.querySelector(`tr[data-l="${li}"]`); if (!row) return;
+    const vcIn = row.querySelector('[data-lf="vc"]');
+    if (ai && ai.ok) { vcIn.readOnly = true; vcIn.title = 'From the size (sq ft)'; if (document.activeElement !== vcIn) vcIn.value = l.vc; } else { vcIn.readOnly = false; vcIn.title = ''; }
     const r = calcLine(l), ov = row.querySelector('[data-lf="ov"]'), m = row.querySelector('[data-margin]');
     ov.placeholder = r ? r.auto.toFixed(2) : '—';
     ov.closest('.pt-price').classList.toggle('own', !!(r && r.hasOv));
@@ -1272,6 +1306,7 @@ wrap.addEventListener('click', e => {
   if (act === 'tab') { quotes.forEach(o => o.collapsed = true); q.collapsed = false; ACTIVE = qi; render(); return; }
   if (act === 'mode') { q.optMode = b.dataset.mode; return render(); }
   if (act === 'grp') { q.showGroup = true; return render(); }
+  if (act === 'area') { q.areaOn = !q.areaOn; render(); const f = wrap.querySelector('[data-f="areaW"]'); if (f && !q.areaW) f.focus(); return; }
   if (act === 'art') { q.artMode = b.dataset.art; if (q.artMode === 'fee' && !String(q.artFee || '').trim()) q.artFee = '30'; render(); const f = wrap.querySelector('[data-f="artFee"]'); if (f) f.select(); return; }
   if (act === 'cat') { if (q.cat !== b.dataset.cat) { q.cat = b.dataset.cat; q.sub = ''; } return render(); }
   if (act === 'sub') { q.sub = q.sub === b.dataset.sub ? '' : b.dataset.sub; return render(); }
