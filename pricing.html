@@ -400,6 +400,9 @@
   .pt-matrix { margin-top: 14px; }
   .pt-matrix summary, .ed-sec summary { cursor: pointer; font-size: 13px; font-weight: 600; color: #051024; }
   .pt-matrix .matrix { margin-top: 8px; }
+  .ed-art { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid #eef0f3; }
+  .ed-art small { font-size: 12px; color: #8a93a2; }
+  .ed-artfee .pt-in { width: 90px; padding: 7px 8px 7px 20px; font-size: 14px; border-width: 1px; }
   .ed-more { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   @media (max-width: 760px) { .ed-more { grid-template-columns: 1fr; } }
   .ed-sec { background: #fafafa; border-radius: 12px; padding: 14px 18px; }
@@ -590,11 +593,11 @@ const LANG_KEY = 'tbdezign-pricing-lang';
 let qLang = (() => { try { return ['pt', 'en', 'es'].includes(localStorage.getItem(LANG_KEY)) ? localStorage.getItem(LANG_KEY) : 'pt'; } catch (e) { return 'pt'; } })();
 const L10N = {
   pt: { qtyNote: 'Quantidade', size: 'Tamanho', stock: 'Material', printing: 'Impressão', finish: 'Acabamento', lamination: 'Laminação',
-        free: 'Frete grátis', due: 'Prazo: ', suffix: ' dias úteis após aprovação da arte', anyQty: ' (qualquer quantidade)', noExtra: 'Sem custo adicional', noCost: 'sem custo', unit: 'un' },
+        artFee: 'Criação da arte: ', artIncl: 'Criação da arte inclusa', artOnce: ' (valor único)', free: 'Frete grátis', due: 'Prazo: ', suffix: ' dias úteis após aprovação da arte', anyQty: ' (qualquer quantidade)', noExtra: 'Sem custo adicional', noCost: 'sem custo', unit: 'un' },
   en: { qtyNote: 'Quantity', size: 'Size', stock: 'Material', printing: 'Printing', finish: 'Finish', lamination: 'Lamination',
-        free: 'Free shipping', due: 'Turnaround: ', suffix: ' business days after artwork approval', anyQty: ' (any quantity)', noExtra: 'No extra cost', noCost: 'no extra cost', unit: 'pcs' },
+        artFee: 'Artwork design: ', artIncl: 'Artwork design included', artOnce: ' (one-time)', free: 'Free shipping', due: 'Turnaround: ', suffix: ' business days after artwork approval', anyQty: ' (any quantity)', noExtra: 'No extra cost', noCost: 'no extra cost', unit: 'pcs' },
   es: { qtyNote: 'Cantidad', size: 'Tamaño', stock: 'Material', printing: 'Impresión', finish: 'Acabado', lamination: 'Laminado',
-        free: 'Envío gratis', due: 'Plazo: ', suffix: ' días hábiles después de aprobar el arte', anyQty: ' (cualquier cantidad)', noExtra: 'Sin costo adicional', noCost: 'sin costo', unit: 'uds' },
+        artFee: 'Diseño del arte: ', artIncl: 'Diseño del arte incluido', artOnce: ' (pago único)', free: 'Envío gratis', due: 'Plazo: ', suffix: ' días hábiles después de aprobar el arte', anyQty: ' (cualquier cantidad)', noExtra: 'Sin costo adicional', noCost: 'sin costo', unit: 'uds' },
 };
 const LT = () => L10N[qLang] || L10N.pt;
 // [portuguese, english, spanish] — common print terms
@@ -820,6 +823,13 @@ function groupedLines(q) {
   });
   return groups.map(g => ({ g, lines: map[g] }));
 }
+// Artwork design: none, included in the price, or a one-time fee
+const artFee = q => q.artMode === 'fee' ? Math.round((parseFloat(q.artFee) || 0) * 100) / 100 : 0;
+function artLine(q, X) {
+  if (q.artMode === 'incl') return X.artIncl;
+  const f = artFee(q);
+  return f > 0 ? X.artFee + money(f).replace(/\.00$/, '') + X.artOnce : '';
+}
 function quoteText(q) {
   const L = [];
   const block = (header, rows) => {
@@ -887,6 +897,8 @@ function quoteText(q) {
   }
 
   const notes = q.notes.filter(n => !n.internal && n.text.trim()).map(n => T(n.text.trim()));
+  const art = artLine(q, X);
+  if (art) { if (L.length) L.push(''); L.push(art); }
   const tail = [];
   if (q.freeShip) tail.push(X.free);
   const t = q.turnaround.trim();
@@ -1073,6 +1085,11 @@ function quoteHTML(q, qi) {
       <div class="ed-card">
         <div class="ed-h"><h2>Prices</h2><span>Type the vendor costs: your price and the add-ons fill in automatically (47%+ margin). Type in a price to set your own.</span></div>
         ${priceTableHTML(q, qi)}
+        <div class="ed-art">
+          <span class="ed-lbl">Artwork design</span>
+          ${[['none', 'Not needed'], ['incl', 'Included'], ['fee', 'Charge a fee']].map(([v, t]) => `<button class="chip${(q.artMode || 'none') === v ? ' on' : ''}" data-act="art" data-art="${v}">${t}</button>`).join('')}
+          ${q.artMode === 'fee' ? `<div class="pt-money ed-artfee"><span>$</span><input type="number" class="pt-in" data-f="artFee" value="${esc(q.artFee)}" placeholder="30" aria-label="Artwork design fee"></div><small>one-time, shown in the quote</small>` : ''}
+        </div>
       </div>
 
       <div class="ed-more">
@@ -1255,6 +1272,7 @@ wrap.addEventListener('click', e => {
   if (act === 'tab') { quotes.forEach(o => o.collapsed = true); q.collapsed = false; ACTIVE = qi; render(); return; }
   if (act === 'mode') { q.optMode = b.dataset.mode; return render(); }
   if (act === 'grp') { q.showGroup = true; return render(); }
+  if (act === 'art') { q.artMode = b.dataset.art; if (q.artMode === 'fee' && !String(q.artFee || '').trim()) q.artFee = '30'; render(); const f = wrap.querySelector('[data-f="artFee"]'); if (f) f.select(); return; }
   if (act === 'cat') { if (q.cat !== b.dataset.cat) { q.cat = b.dataset.cat; q.sub = ''; } return render(); }
   if (act === 'sub') { q.sub = q.sub === b.dataset.sub ? '' : b.dataset.sub; return render(); }
   if (act === 'newcat' || act === 'newsub') {
@@ -1610,7 +1628,7 @@ function openToCart(qi) {
   ov.innerHTML = '<div class="tc-box" onclick="event.stopPropagation()"><h3>Send to my cart</h3><div class="tc-sub">Pick the quantity for each product. They are added to your cart on tbdezign.com (what is already there stays), so you can add other products and check out with <b>cart?draft=true</b>.</div>'
     + list.map(x => '<div class="tc-prod"><b>' + escH(x.title) + '</b>'
       + '<label class="tc-row"><input type="radio" name="tc' + x.i + '" value=""' + (x.i !== qi ? ' checked' : '') + '><span style="color:#999">Don\'t send</span></label>'
-      + x.choices.map((c, k) => '<label class="tc-row"><input type="radio" name="tc' + x.i + '" value="' + k + '"' + (x.i === qi && k === 0 ? ' checked' : '') + '><span>' + escH(c.label || 'Price') + '</span><em>' + money(c.price) + '</em></label>').join('') + '</div>').join('')
+      + x.choices.map((c, k) => '<label class="tc-row"><input type="radio" name="tc' + x.i + '" value="' + k + '"' + (x.i === qi && k === 0 ? ' checked' : '') + '><span>' + escH(c.label || 'Price') + '</span><em>' + money(c.price) + '</em></label>').join('') + (artFee(quotes[x.i]) > 0 ? '<div class="tc-sub" style="margin-top:4px">+ Artwork design ' + money(artFee(quotes[x.i])) + ' goes with it</div>' : '') + '</div>').join('')
     + '<div id="tcMsg"></div><div class="tc-btns"><button onclick="document.getElementById(\'tcOv\').remove()">Cancel</button><button class="go" id="tcGo">Send to my cart</button></div></div>';
   ov.onclick = () => ov.remove(); document.body.appendChild(ov);
   document.getElementById('tcGo').onclick = () => sendPrintToCart(list);
@@ -1618,7 +1636,8 @@ function openToCart(qi) {
 async function sendPrintToCart(list) {
   const go = document.getElementById('tcGo'), msg = document.getElementById('tcMsg'); msg.innerHTML = '';
   const print = [];
-  list.forEach(x => { const r = document.querySelector('input[name="tc' + x.i + '"]:checked'); if (r && r.value !== '') { const c = x.choices[+r.value]; print.push({ title: x.title, label: c.label, price: c.price, specs: c.specs }); } });
+  list.forEach(x => { const r = document.querySelector('input[name="tc' + x.i + '"]:checked'); if (r && r.value !== '') { const c = x.choices[+r.value]; print.push({ title: x.title, label: c.label, price: c.price, specs: c.specs });
+    const af = artFee(quotes[x.i]); if (af > 0) print.push({ title: 'Artwork design', label: x.title, price: af, specs: [] }); } });
   if (!print.length) { msg.innerHTML = '<div class="shop-msg err">Pick at least one product.</div>'; return; }
   const win = window.open('about:blank', '_blank');   // opened now, so the popup blocker allows it
   go.disabled = true; go.textContent = 'Sending…';
