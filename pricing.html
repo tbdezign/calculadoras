@@ -465,8 +465,8 @@
 
 <div class="formula">
   <div class="formula-title">Formula reference</div>
-  <div class="formula-row">Base: (vendor + shipping) ÷ 0.53 → rounded up to .99</div>
-  <div class="formula-row">Add-on: extra vendor cost ÷ 0.53 → rounded up to the whole dollar</div>
+  <div class="formula-row">Base: (vendor + shipping) ÷ 0.53 → rounded up to the next 4.99 / 9.99</div>
+  <div class="formula-row">Add-on: extra vendor cost ÷ 0.53 → rounded up to the next $5</div>
   <div class="formula-row" style="color:#2D5E4A; font-weight:600;">Guaranteed margin: 47%+</div>
 </div>
 
@@ -759,8 +759,8 @@ function calcLine(l) {
   const vc = parseFloat(l.vc) || 0, sh = parseFloat(l.sh) || 0, ov = parseFloat(l.ov);
   if (vc <= 0) return null;
   const base = (vc + sh) / 0.53;
-  let auto = Math.ceil(base) - 0.01;
-  if (auto < base) auto += 1;
+  // always up to the next price ending in 4.99 or 9.99 (…74.99, 79.99, 84.99…)
+  const auto = Math.ceil((base + 0.01) / 5 - 1e-9) * 5 - 0.01;
   const hasOv = ov > 0;
   const price = hasOv ? ov : auto;
   return { vc, sh, auto, price, hasOv, profit: price - vc - sh, margin: (price - vc - sh) / price * 100 };
@@ -768,7 +768,7 @@ function calcLine(l) {
 function addon(choice, lineId) {
   const cell = (choice.add || {})[lineId] || {};
   const v = parseFloat(cell.v) || 0, o = parseFloat(cell.o);
-  const auto = v > 0 ? Math.ceil(v / 0.53) : 0;
+  const auto = v > 0 ? Math.ceil(v / 0.53 / 5 - 1e-9) * 5 : 0;   // add-ons in steps of $5, so every total still ends in 4.99 / 9.99
   return { v, auto, r: o > 0 ? o : auto, ov: o > 0 };
 }
 const isPriced = o => o.choices.slice(1).some(c => Object.keys(c.add || {}).some(k => addon(c, k).r > 0));
