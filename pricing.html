@@ -967,6 +967,7 @@ function quoteHTML(q, qi) {
       <div class="section-hint">Ex: Cantos, Foil coverage. A primeira escolha é o padrão ($0). Opções sem valor (ex: cor do foil) viram uma linha de spec.</div>
       ${q.options.map((o, oi) => optionHTML(o, oi, q)).join('')}
       <button class="add-line" data-act="addo">+ Add price option</button>
+      ${pricedOptions(q).length ? '<button class="text-btn" data-act="ymq" style="margin-top:8px">YMQ setup: which copies to make, and their prices</button>' : ''}
       <div class="mode-row" data-moderow>
         <span>Quote shows</span>
         <select data-f="optMode">
@@ -1161,6 +1162,7 @@ wrap.addEventListener('click', e => {
   if (act === 'shopify') return shopifyProduct(qi);
   if (act === 'tocart') return openToCart(qi);
   if (act === 'aifill') return openAiFill(qi);
+  if (act === 'ymq') return openYmq(qi);
 
   let focusSel = null;
   if (act === 'dup') {
@@ -1613,6 +1615,56 @@ function applyAiFields(q, f, rep) {
   }
   const names = { title: 'name', cat: 'category', sub: 'subcategory', qtyNote: 'qty note' };
   return done.map(k => names[k] || k).join(', ') || 'nothing new';
+}
+
+/* ---------- YMQ setup: each priced option becomes copies, one per set of quantities that share the same add-on prices ---------- */
+function ymqPlan(q) {
+  const was = qLang; qLang = 'en';
+  try {
+    const T = s => tr(s, q);
+    const lines = q.lines.filter(l => calcLine(l) && qtyNum(l) > 0);
+    const groups = [...new Set(lines.map(l => l.group.trim()))], useGroup = groups.length > 1 || (groups.length === 1 && groups[0]);
+    const per = perUnit(q);
+    const variantOf = l => { const qv = per > 0 ? qtyLabel(l, q) : String(l.qty).trim(); return useGroup ? qv + ' / ' + (T(l.group.trim()) || 'Standard') : qv; };
+    return pricedOptions(q).map(o => {
+      const ch = o.choices.filter((c, i) => i === 0 || c.name.trim());
+      const copies = [];
+      lines.forEach(l => {
+        const prices = ch.map((c, i) => i === 0 ? 0 : addon(c, l.id).r);
+        const key = prices.join('|');
+        let cp = copies.find(x => x.key === key);
+        if (!cp) copies.push(cp = { key, prices, variants: [] });
+        cp.variants.push(variantOf(l));
+      });
+      return { name: T(o.name.trim()), choices: ch.map((c, i) => T(c.name.trim()) || (i === 0 ? '(default)' : '')), copies, all: lines.length };
+    });
+  } finally { qLang = was; }
+}
+function ymqText(plan) {
+  const L = [];
+  plan.forEach(o => {
+    L.push(o.name + (o.copies.length > 1 ? ` — ${o.copies.length} copies` : ' — 1 option, no condition'));
+    o.copies.forEach((cp, i) => {
+      if (o.copies.length > 1) L.push(`  Copy ${i + 1} · Shopify variant is one of: ${cp.variants.join(', ')}`);
+      L.push('    ' + o.choices.map((c, k) => `${c}: ${cp.prices[k] ? moneyAdd(cp.prices[k]) : '$0'}`).join(' · '));
+    });
+    L.push('');
+  });
+  return L.join('\n').trim();
+}
+function openYmq(qi) {
+  const plan = ymqPlan(quotes[qi]);
+  if (!plan.length) { alert('Add a price option with add-on costs first.'); return; }
+  const ov = document.createElement('div'); ov.className = 'tc-ov'; ov.id = 'ymqOv';
+  ov.innerHTML = '<div class="tc-box" onclick="event.stopPropagation()" style="max-width:640px"><h3>YMQ setup</h3>'
+    + '<div class="tc-sub">One YMQ option per copy below, all with the same name. Each copy gets the condition <b>Shopify variant is one of</b> with its quantities, and these add-on prices. The default choice is always $0.</div>'
+    + plan.map(o => '<div class="tc-prod"><b>' + escH(o.name) + ' <span style="font-weight:400;color:#666">· ' + (o.copies.length > 1 ? o.copies.length + ' copies' : '1 option, no condition needed') + '</span></b>'
+      + o.copies.map((cp, i) => '<div style="margin:8px 0 12px;padding:10px 12px;background:#f6f7f9;border-radius:8px;font-size:14px;line-height:1.6">'
+        + (o.copies.length > 1 ? '<div style="font-weight:600">Copy ' + (i + 1) + '</div><div style="color:#555">Shopify variant is one of: <strong>' + cp.variants.map(escH).join(', ') + '</strong></div>' : '')
+        + o.choices.map((c, k) => '<div>' + escH(c) + ': <strong>' + (cp.prices[k] ? moneyAdd(cp.prices[k]) : '$0') + '</strong></div>').join('') + '</div>').join('') + '</div>').join('')
+    + '<div class="tc-btns"><button onclick="document.getElementById(\'ymqOv\').remove()">Close</button><button class="go" id="ymqCopy">Copy as text</button></div></div>';
+  ov.onclick = () => ov.remove(); document.body.appendChild(ov);
+  document.getElementById('ymqCopy').onclick = e => copyText(ymqText(plan), e.target);
 }
 
 function loadFromCatalog(id, openIt) {
