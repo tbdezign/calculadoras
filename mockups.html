@@ -1207,6 +1207,7 @@
   });
   controls.addEventListener('input', e => {
     const t = e.target, s = st();
+    if (t.id === 'recIn') { const v = parseFloat(t.value); if (v >= 0) { RECREATE_FEE = v; try { localStorage.setItem('tbd-recreate-fee', v); } catch (e) {} } return; }
     if (t.id === 'feeIn') { const v = parseFloat(t.value); if (v >= 0) { ADJUST_FEE = v; try { localStorage.setItem('tbd-adjust-fee', v); } catch (e) {} } return; }
     if (t.dataset.n) { const v = parseFloat(t.value); if (v > 0) { s[t.dataset.n] = v; render(); } }
     else if (t.dataset.c) { s[t.dataset.c] = t.value; render(); }
@@ -1397,7 +1398,9 @@
       edge: o => `Texto marcado fora da área segura (manter ${o.safe} da borda).`,
       intro: 'Pontos a ajustar antes da impressão:', closing: 'Envie a arte ajustada para seguirmos com a impressão.', allOk: 'Arte aprovada para impressão.',
       waFree: 'Por favor, faça os ajustes e reenvie a arte. Se preferir, podemos fazer os ajustes necessários sem custo adicional.\nComo prefere seguir?',
-      waClose: f => `Por favor, faça os ajustes e reenvie a arte. Se preferir, podemos fazer os ajustes necessários por $${+f.toFixed(2)}.\nComo prefere seguir?`
+      waClose: f => `Por favor, faça os ajustes e reenvie a arte. Se preferir, podemos fazer os ajustes necessários por $${+f.toFixed(2)}.\nComo prefere seguir?`,
+      waRecreate: f => `Como há vários pontos a ajustar, recomendamos recriar a arte: fazemos uma nova versão em alta resolução (com base nesta ou do zero), já pronta para impressão, por $${+f.toFixed(2)}.\nSe preferir, você pode fazer os ajustes e reenviar a arte.\nComo prefere seguir?`,
+      waBoth: (a, f) => `Por favor, faça os ajustes e reenvie a arte. Se preferir, podemos ${a ? `fazer os ajustes por $${+a.toFixed(2)}` : 'fazer os ajustes sem custo adicional'}, ou recriar a arte em alta resolução (com base nesta ou do zero), já pronta para impressão, por $${+f.toFixed(2)}.\nComo prefere seguir?`
     },
     en: {
       title: 'ARTWORK REVIEW', ready: 'Ready to print', fix: n => n === 1 ? '1 adjustment needed' : `${n} adjustments needed`,
@@ -1420,7 +1423,9 @@
       edge: o => `Marked text is outside the safe area (keep ${o.safe} from the edge).`,
       intro: 'Items to fix before printing:', closing: 'Send the adjusted artwork so we can move forward with printing.', allOk: 'Artwork approved for printing.',
       waFree: 'Please make the adjustments and resend the artwork. If you prefer, we can make the necessary adjustments at no extra cost.\nHow would you like to proceed?',
-      waClose: f => `Please make the adjustments and resend the artwork. If you prefer, we can make the necessary adjustments for $${+f.toFixed(2)}.\nHow would you like to proceed?`
+      waClose: f => `Please make the adjustments and resend the artwork. If you prefer, we can make the necessary adjustments for $${+f.toFixed(2)}.\nHow would you like to proceed?`,
+      waRecreate: f => `Since there are several points to fix, we recommend recreating the artwork: we make a new high-resolution version (based on this one or from scratch), ready to print, for $${+f.toFixed(2)}.\nIf you prefer, you can make the adjustments and resend the artwork.\nHow would you like to proceed?`,
+      waBoth: (a, f) => `Please make the adjustments and resend the artwork. If you prefer, we can ${a ? `make the adjustments for $${+a.toFixed(2)}` : 'make the adjustments at no extra cost'}, or recreate the artwork in high resolution (based on this one or from scratch), ready to print, for $${+f.toFixed(2)}.\nHow would you like to proceed?`
     },
     es: {
       title: 'REVISIÓN DEL ARTE', ready: 'Listo para imprimir', fix: n => n === 1 ? '1 ajuste necesario' : `${n} ajustes necesarios`,
@@ -1443,7 +1448,9 @@
       edge: o => `Texto marcado fuera del área segura (mantener ${o.safe} del borde).`,
       intro: 'Puntos a ajustar antes de imprimir:', closing: 'Envía el arte ajustado para continuar con la impresión.', allOk: 'Arte aprobado para impresión.',
       waFree: 'Por favor, haz los ajustes y reenvía el arte. Si prefieres, podemos hacer los ajustes necesarios sin costo adicional.\n¿Cómo prefieres seguir?',
-      waClose: f => `Por favor, haz los ajustes y reenvía el arte. Si prefieres, podemos hacer los ajustes necesarios por $${+f.toFixed(2)}.\n¿Cómo prefieres seguir?`
+      waClose: f => `Por favor, haz los ajustes y reenvía el arte. Si prefieres, podemos hacer los ajustes necesarios por $${+f.toFixed(2)}.\n¿Cómo prefieres seguir?`,
+      waRecreate: f => `Como hay varios puntos por ajustar, recomendamos recrear el arte: hacemos una nueva versión en alta resolución (basada en esta o desde cero), lista para imprimir, por $${+f.toFixed(2)}.\nSi prefieres, puedes hacer los ajustes y reenviar el arte.\n¿Cómo prefieres seguir?`,
+      waBoth: (a, f) => `Por favor, haz los ajustes y reenvía el arte. Si prefieres, podemos ${a ? `hacer los ajustes por $${+a.toFixed(2)}` : 'hacer los ajustes sin costo adicional'}, o recrear el arte en alta resolución (basada en esta o desde cero), lista para imprimir, por $${+f.toFixed(2)}.\n¿Cómo prefieres seguir?`
     }
   };
   const matName = (p, lang) => lang === 'en' ? p.name : (p.names || {})[lang] || p.name;
@@ -1713,8 +1720,14 @@
     else h.push(`<button class="btn2" data-act="ocr">${o.error ? 'Text scan failed · try again' : 'Scan for small text'}</button>`);
     h.push(`<div style="font-size:12px;color:var(--muted);margin:12px 0 6px">Client report language</div>${seg('lang', [['pt', 'Português'], ['en', 'English'], ['es', 'Español']], s.lang)}`);
     h.push(`<button class="btn2 primary" data-act="report">${tab === 'report' ? 'Showing client report' : 'See client report'}</button>`);
-    h.push(`<div class="row"><span>Adjustment fee (WhatsApp)</span><span${FEE_FREE ? ' style="opacity:.4"' : ''}>$ <input type="number" id="feeIn" min="0" step="1" value="${ADJUST_FEE}" style="width:64px"${FEE_FREE ? ' disabled' : ''}></span></div>`);
-    h.push(toggle('feeFree', 'We cover the adjustments', FEE_FREE, false, '(no charge)'));
+    const offer = s.offer || 'adjust', nIss = countIssues(res);
+    h.push(`<div style="font-size:12px;color:var(--muted);margin:12px 0 6px">What we offer to do (WhatsApp)</div>${seg('offer', [['adjust', 'Adjustments'], ['recreate', 'Recreate art'], ['both', 'Both']], offer)}`);
+    if (nIss >= 4 && offer === 'adjust') h.push('<p class="note" style="margin-top:4px">Many fixes: recreating the art may be simpler.</p>');
+    if (offer !== 'recreate') {
+      h.push(`<div class="row"><span>Adjustment fee</span><span${FEE_FREE ? ' style="opacity:.4"' : ''}>$ <input type="number" id="feeIn" min="0" step="1" value="${ADJUST_FEE}" style="width:64px"${FEE_FREE ? ' disabled' : ''}></span></div>`);
+      h.push(toggle('feeFree', 'We cover the adjustments', FEE_FREE, false, '(no charge)'));
+    }
+    if (offer !== 'adjust') h.push(`<div class="row"><span>Recreate art fee</span><span>$ <input type="number" id="recIn" min="0" step="1" value="${RECREATE_FEE}" style="width:64px"></span></div>`);
     h.push(`<button class="btn2" data-act="wa">Copy WhatsApp text</button></section>`);
     return h.join('');
   }
@@ -1743,13 +1756,16 @@
   let ADJUST_FEE = 15;                                 // price to fix the artwork for the client (editable in the panel)
   try { const v = parseFloat(localStorage.getItem('tbd-adjust-fee')); if (v >= 0) ADJUST_FEE = v; } catch (e) {}
   let FEE_FREE = false;                                // we cover the adjustments this time (not remembered)
+  let RECREATE_FEE = 30;                               // price to recreate the artwork (editable in the panel)
+  try { const v = parseFloat(localStorage.getItem('tbd-recreate-fee')); if (v >= 0) RECREATE_FEE = v; } catch (e) {}
   function whatsappText(p, s) {
     const lang = s.lang || 'pt', T = L[lang], res = analyze(p, s);
     const multi = res.length > 1, { items } = clientList(p, res, lang);
     if (!items.length) return '✓ ' + T.allOk;
     const lines = [T.intro, ''];
     items.forEach(x => lines.push(`*${x.title}*${multi ? ` (${sidesList(p, x.sides, lang)})` : ''}:`, x.text, ''));
-    lines.push(FEE_FREE || !ADJUST_FEE ? T.waFree : T.waClose(ADJUST_FEE));
+    const offer = s.offer || 'adjust', adj = FEE_FREE || !ADJUST_FEE ? 0 : ADJUST_FEE;
+    lines.push(offer === 'recreate' ? T.waRecreate(RECREATE_FEE) : offer === 'both' ? T.waBoth(adj, RECREATE_FEE) : adj ? T.waClose(adj) : T.waFree);
     return lines.join('\n');
   }
 
