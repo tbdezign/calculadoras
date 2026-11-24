@@ -12,7 +12,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-    max-width: 720px; margin: 0 auto; padding: 24px 16px;
+    max-width: 1320px; margin: 0 auto; padding: 24px 16px;
     color: #051024; line-height: 1.5; background: #fff;
   }
   h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.3px; }
@@ -340,7 +340,90 @@
 
   /* iPhone zooms in when a field's text is under 16px: keep fields at 16px on phones/tablets */
   @media (max-width: 1024px), (pointer: coarse) { input, select, textarea { font-size: 16px !important; } }
+
+  /* ── Product editor (tabs + one screen) ── */
+  .ptabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .ptab { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; max-width: 260px; padding: 8px 14px; border-radius: 10px; border: 1px solid #e3e6ea; background: #fff; cursor: pointer; font-family: inherit; color: #051024; text-align: left; }
+  .ptab b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 230px; }
+  .ptab small { font-size: 11px; color: #8a93a2; }
+  .ptab.on { background: #051024; border-color: #051024; color: #fff; }
+  .ptab.on small { color: #b9c7d6; }
+  .ptab.add { justify-content: center; border-style: dashed; color: #1a7698; font-weight: 600; font-size: 13px; }
+  .ed { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; margin-bottom: 28px; }
+  .ed-main { flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+  .ed-side { flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 14px; position: sticky; top: 52px; }
+  .ed-card { background: #fafafa; border-radius: 12px; padding: 18px 20px; }
+  .ed-h { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .ed-h h2, .ed-next h2 { font-size: 15px; font-weight: 700; margin: 0; }
+  .ed-h span { font-size: 12px; color: #8a93a2; }
+  .ed-name { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .ed-name .ai-fill { width: auto; margin: 0; height: 46px; padding: 0 16px; }
+  input.ed-title { font-size: 19px; font-weight: 700; height: 46px; }
+  .ed-cats { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .ed-lbl { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: .5px; margin-right: 4px; }
+  .chip { border: 1px solid #dde1e6; background: #fff; border-radius: 999px; padding: 6px 13px; font: inherit; font-size: 13px; color: #051024; cursor: pointer; }
+  .chip:hover { border-color: #9aa3b2; }
+  .chip.on { background: #051024; border-color: #051024; color: #fff; }
+  .chip.ghost { border-style: dashed; color: #1a7698; }
+  .ed-chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  .pt-wrap { overflow-x: auto; margin: 0 -4px; }
+  .pt { border-collapse: separate; border-spacing: 0; min-width: 100%; }
+  .pt th { font-size: 11px; font-weight: 700; color: #8a93a2; text-transform: uppercase; letter-spacing: .4px; text-align: left; padding: 6px 6px; vertical-align: bottom; white-space: nowrap; }
+  .pt td { padding: 5px 6px; border-top: 1px solid #eef0f3; vertical-align: middle; white-space: nowrap; }
+  .pt .pt-opt { background: #f0f4f7; border-left: 3px solid #fafafa; }
+  .pt th.pt-opt { text-transform: none; letter-spacing: 0; color: #051024; }
+  .pt-ohead { display: flex; gap: 4px; align-items: center; }
+  .pt-ohead input { width: 100%; min-width: 0; font-weight: 700; font-size: 13px; padding: 5px 8px; border-width: 1px; }
+  .pt-odef { max-width: 240px; font-size: 12px; font-weight: 500; color: #5b6575; margin-top: 4px; display: flex; gap: 6px; align-items: center; }
+  .pt-odef input { flex: 1; min-width: 90px; font-size: 12px; padding: 4px 7px; border-width: 1px; }
+  .pt-chname { display: flex; gap: 2px; align-items: center; }
+  .pt-chname input { font-size: 13px; font-weight: 600; padding: 5px 8px; border-width: 1px; width: 100%; min-width: 120px; }
+  .pt th small { display: block; font-size: 10px; font-weight: 500; color: #8a93a2; margin-top: 3px; text-transform: none; letter-spacing: 0; }
+  .pt-mini { white-space: nowrap; border: 0; background: none; color: #1a7698; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; padding: 0 2px; }
+  .pt-money { position: relative; }
+  .pt-money span { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); font-size: 13px; color: #9aa3b2; pointer-events: none; }
+  .pt .pt-in { width: 80px; padding: 7px 8px 7px 20px; font-size: 14px; border-width: 1px; }
+  .pt .pt-qty { width: 66px; padding-left: 8px; font-weight: 700; }
+  .pt .pt-sh { width: 62px; }
+  .pt .pt-sm { width: 64px; }
+  .pt-grp { width: 160px; font-size: 13px; padding: 7px 8px; border-width: 1px; }
+  .pt-price .pt-in { border-style: dashed; background: transparent; font-weight: 700; font-size: 15px; }
+  .pt-price .pt-in::placeholder { color: #051024; opacity: 1; }
+  .pt-price.own .pt-in { border-style: solid; border-color: #e0913a; background: #fff8ef; }
+  .pt-addon { display: flex; gap: 4px; align-items: center; }
+  .pt-addon .pt-price span { left: 6px; }
+  .pt-addon .pt-price .pt-in { padding-left: 26px; font-size: 14px; }
+  .pt-m b { font-size: 13px; } .pt-m small { display: block; font-size: 11px; color: #8a93a2; }
+  .pt-m .margin-green { color: #2E7D32; } .pt-m .margin-yellow { color: #b45309; } .pt-m .margin-red { color: #dc2626; }
+  .pt-row-act { text-align: right; }
+  .pt-add { vertical-align: middle !important; }
+  .pt-matrix { margin-top: 14px; }
+  .pt-matrix summary, .ed-sec summary { cursor: pointer; font-size: 13px; font-weight: 600; color: #051024; }
+  .pt-matrix .matrix { margin-top: 8px; }
+  .ed-more { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  @media (max-width: 760px) { .ed-more { grid-template-columns: 1fr; } }
+  .ed-sec { background: #fafafa; border-radius: 12px; padding: 14px 18px; }
+  .ed-sec[open] { grid-column: 1 / -1; }
+  .ed-sec-body { margin-top: 12px; }
+  .ed-count { font-size: 11px; font-weight: 600; color: #5b6575; background: #eef0f3; border-radius: 10px; padding: 1px 8px; margin-left: 6px; }
+  .ed-quote { background: #fff; border: 2px solid #051024; border-radius: 12px; overflow: hidden; }
+  .ed-quote .out-head { justify-content: space-between; }
+  .ed-modes { display: flex; gap: 6px; flex-wrap: wrap; padding: 10px 14px 0; }
+  .ed-modes .chip { font-size: 12px; padding: 5px 11px; }
+  .ed-quote .out-text { max-height: 60vh; overflow: auto; }
+  .ed-copy { display: flex; gap: 8px; padding: 0 14px 14px; }
+  .ed-copy button, .ed-next-grid button { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #dde1e6; background: #fff; font: inherit; font-size: 13px; font-weight: 600; color: #051024; cursor: pointer; }
+  .ed-copy button.go { flex: 2; background: #051024; color: #fff; border-color: #051024; font-size: 14px; }
+  .ed-next { background: #fff; border: 1px solid #eef0f3; }
+  .ed-next-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+  .ed-next-grid button:disabled { opacity: .45; cursor: default; }
+  .ed-copy button:hover, .ed-next-grid button:hover:not(:disabled) { border-color: #9aa3b2; }
+  .ed-more-links { margin-top: 10px; font-size: 12px; color: #8a93a2; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .ed-more-links button { border: 0; background: none; font: inherit; color: #1a7698; cursor: pointer; padding: 0; text-decoration: underline; }
+  .ed-more-links .danger { color: #dc2626; }
+  @media (max-width: 1000px) { .ed-side { position: static; } }
 </style>
+<!-- end main styles -->
 </head>
 <body>
 
@@ -350,7 +433,6 @@
     <p class="subtitle">Specs + vendor cost → WhatsApp-ready quote</p>
   </div>
   <div class="top-tools">
-    <button class="link-btn" onclick="collapseAll()">Collapse all</button>
     <button class="link-btn" onclick="resetAll()">Start new quote</button>
   </div>
 </div>
@@ -358,8 +440,7 @@
 <datalist id="dl-cats"></datalist>
 <div id="quotes"></div>
 
-<button class="add-btn" onclick="addQuote()">+ Add another product</button>
-<button class="copy-all" id="copyAll" onclick="copyText(allText(), this)">Copy all products</button>
+
 
 <div class="catalog">
   <div class="cat-head">
@@ -878,11 +959,65 @@ function optionHTML(o, oi, q) {
   </div>`;
 }
 
+// The open product (one at a time; the others are tabs)
+let ACTIVE = 0;
+function activeIdx() {
+  let i = quotes.findIndex(q => !q.collapsed);
+  if (i < 0) { i = Math.min(ACTIVE, quotes.length - 1); }
+  quotes.forEach((q, k) => q.collapsed = k !== i);
+  return ACTIVE = i;
+}
+const OPEN_SEC = new Set();
+function sec(id, title, count, body) {
+  return `<details class="ed-sec" data-sec="${id}"${OPEN_SEC.has(id) ? ' open' : ''}><summary>${title}${count ? ` <span class="ed-count">${count}</span>` : ''}</summary><div class="ed-sec-body">${body}</div></details>`;
+}
+
+function priceTableHTML(q, qi) {
+  const showGrp = q.showGroup || q.lines.some(l => l.group.trim());
+  const opts = q.options.map((o, oi) => ({ o, oi, cols: o.choices.map((c, ci) => ({ c, ci })).slice(1) }));
+  const base = (showGrp ? 1 : 0) + 5;
+  const head1 = `<tr>
+    ${showGrp ? '<th rowspan="2">Option label</th>' : ''}<th rowspan="2">Qty</th><th rowspan="2">Vendor cost</th><th rowspan="2">Shipping</th><th rowspan="2">Your price</th><th rowspan="2">Margin</th>
+    ${opts.map(({ o, oi, cols }) => `<th class="pt-opt" colspan="${cols.length}" data-o="${oi}">
+      <div class="pt-ohead"><input type="text" data-of="name" value="${esc(o.name)}" placeholder="Option — e.g. Foil" aria-label="Option name">
+      <button class="pt-mini" data-act="addch" title="Add another paid choice">+ choice</button><button class="x-btn" data-act="delo" title="Remove option">×</button></div>
+      <div class="pt-odef" data-ch="0">Standard: <input type="text" data-chf="name" value="${esc(o.choices[0].name)}" placeholder="e.g. Front only" aria-label="Standard choice"></div></th>`).join('')}
+    <th rowspan="2"></th></tr>
+    <tr>${opts.map(({ oi, cols }) => cols.map(({ c, ci }) => `<th class="pt-opt pt-ch" data-o="${oi}" data-ch="${ci}">
+      <div class="pt-chname"><input type="text" data-chf="name" value="${esc(c.name)}" placeholder="Upgrade — e.g. Front &amp; back" aria-label="Paid choice">${cols.length > 1 ? '<button class="x-btn" data-act="delch" title="Remove choice">×</button>' : ''}</div>
+      <small>vendor + · your add-on</small></th>`).join('')).join('')}</tr>`;
+  const rows = q.lines.map((l, li) => `<tr data-l="${li}">
+    ${showGrp ? `<td><input type="text" class="pt-grp" data-lf="group" list="groups-${qi}" value="${esc(l.group)}" placeholder="e.g. Com laminação"></td>` : ''}
+    <td><input type="text" class="pt-in pt-qty" inputmode="numeric" data-lf="qty" value="${esc(l.qty)}" placeholder="100" aria-label="Quantity"></td>
+    <td><div class="pt-money"><span>$</span><input type="number" class="pt-in" data-lf="vc" value="${esc(l.vc)}" placeholder="0.00" aria-label="Vendor cost"></div></td>
+    <td><div class="pt-money"><span>$</span><input type="number" class="pt-in pt-sh" data-lf="sh" value="${esc(l.sh)}" placeholder="0" aria-label="Shipping"></div></td>
+    <td><div class="pt-money pt-price${l.ov ? ' own' : ''}"><span>$</span><input type="number" class="pt-in" data-lf="ov" value="${esc(l.ov)}" placeholder="—" title="Automatic price. Type a value to set your own; clear it to go back to automatic." aria-label="Your price"></div></td>
+    <td class="pt-m" data-margin></td>
+    ${opts.map(({ o, oi, cols }) => cols.map(({ c, ci }) => { const cell = (c.add || {})[l.id] || {}; return `<td class="pt-opt" data-o="${oi}" data-ch="${ci}">
+      <div class="pt-addon"><div class="pt-money"><span>$</span><input type="number" class="pt-in pt-sm" data-add="v" data-line="${l.id}" value="${esc(cell.v || '')}" placeholder="0" aria-label="Extra vendor cost"></div>
+      <div class="pt-money pt-price${cell.o ? ' own' : ''}"><span>+$</span><input type="number" class="pt-in pt-sm" data-add="o" data-line="${l.id}" value="${esc(cell.o || '')}" placeholder="—" title="Automatic add-on. Type to set your own." aria-label="Your add-on"></div></div></td>`; }).join('')).join('')}
+    <td class="pt-row-act">${q.lines.length > 1 ? `<button class="mv-btn" data-act="mvl" data-d="-1" title="Move up"${li === 0 ? ' disabled' : ''}>↑</button><button class="mv-btn" data-act="mvl" data-d="1" title="Move down"${li === q.lines.length - 1 ? ' disabled' : ''}>↓</button>` : ''}<button class="x-btn" data-act="dell" title="Remove line">×</button></td>
+  </tr>`).join('');
+  return `<div class="pt-wrap"><table class="pt"><thead>${head1}</thead><tbody>${rows}</tbody></table></div>
+    <datalist id="groups-${qi}"></datalist>
+    <div class="ed-chips">
+      <button class="chip" data-act="addl">+ Quantity</button>
+      <button class="chip" data-act="addo" title="A paid choice, e.g. foil on both sides or rounded corners">+ Option</button>
+      ${q.lines.length > 1 ? '<button class="chip" data-act="shipall" title="Copy the first line\'s shipping to every line">Same shipping for all</button>' : ''}
+      ${q.lines.filter(l => qtyNum(l) > 0).length > 1 ? '<button class="chip" data-act="sortl">Sort by quantity</button>' : ''}
+      ${showGrp ? '' : '<button class="chip" data-act="grp" title="For prices that change by a choice, e.g. with / without lamination, as separate lines">+ Option label column</button>'}
+    </div>
+    <details class="pt-matrix" data-sec="matrix"${OPEN_SEC.has('matrix') ? ' open' : ''}><summary>Every combination, with margin</summary><div class="matrix" data-matrix></div></details>`;
+}
+
 function quoteHTML(q, qi) {
   const inCat = q.catalogId && catalog.some(c => c.id === q.catalogId);
-  const specFields = SPECS.map(([k, label, ph]) => `
-    <div class="field"><label>${label}</label>
-      <input type="text" data-f="${k}" value="${esc(q[k])}" placeholder="${esc(ph)}"></div>`).join('');
+  const cats = Object.keys(categories);
+  const catKey = findKey(categories, q.cat || '');
+  const subs = catKey ? categories[catKey] : [];
+  const chip = (on, act, attr, label) => `<button class="chip${on ? ' on' : ''}" data-act="${act}" ${attr}>${esc(label)}</button>`;
+  const specFields = SPECS.filter(([k]) => k !== 'qtyNote').map(([k, label, ph]) => `
+    <div class="field"><label>${label}</label><input type="text" data-f="${k}" value="${esc(q[k])}" placeholder="${esc(ph)}"></div>`).join('');
   const custom = q.custom.map((c, ci) => `
     <div class="custom-row" data-c="${ci}">
       <input type="text" data-cf="label" value="${esc(c.label)}" placeholder="Label (ex: Cantos)">
@@ -895,135 +1030,102 @@ function quoteHTML(q, qi) {
       <label class="check small"><input type="checkbox" data-nf="internal" ${n.internal ? 'checked' : ''}> Internal</label>
       <button class="x-btn" data-act="deln" title="Remove note">×</button>
     </div>`).join('');
-
-  const actions = q.collapsed
-    ? `<div class="q-actions">
-        <button data-act="copy">Copy</button>
-        ${quotes.length > 1 ? '<button data-act="delq" class="x-btn" title="Remove from quote">×</button>' : ''}
-      </div>`
-    : `<div class="q-actions">
-        <button data-act="catsave" class="primary">${inCat ? 'Update catalog' : 'Save to catalog'}</button>
-        <button data-act="shopify" title="${q.shopify ? 'Update the prices of the product made in Shopify' : 'Create a draft product in Shopify'}">${q.shopify ? 'Update Shopify prices' : 'Create in Shopify'}</button>
-        <button data-act="tocart" title="Add to your tbdezign.com cart (with the other products on this page)">Send to my cart</button>
-        <button data-act="dup">Duplicate</button>
-        ${quotes.length > 1 ? '<button data-act="delq" class="danger">Remove</button>' : ''}
-      </div>`;
+  const priced = pricedOptions(q).length > 0;
+  const modes = [['byqty', 'By quantity'], ['combos', 'All combinations'], ['addons', 'Base + add-ons']];
+  const mode = q.optMode === 'addons' || q.optMode === 'byqty' ? q.optMode : 'combos';
 
   return `
-  <div class="quote${q.collapsed ? ' collapsed' : ''}" data-q="${qi}">
-    <div class="q-head" data-act="toggle">
-      <div class="q-left">
-        <span class="chev">▶</span>
-        <div class="q-meta">
-          <span class="q-num">Product ${qi + 1}${inCat ? '<span class="in-cat">in catalog</span>' : ''}</span>
-          <div class="q-title"></div>
-          <div class="q-sum"></div>
-        </div>
-      </div>
-      ${actions}
-    </div>
-    <div class="q-body">
+  <div class="ed" data-q="${qi}">
+    <section class="ed-main">
       <div data-shopmsg></div>
-      <button class="ai-fill" data-act="aifill" title="Paste the vendor's screenshot (specs and prices) and the fields are filled for you">📷 Fill from vendor screenshot</button>
-      <div class="grid2 cat-row">
-        <div class="field"><label>Main category</label>
-          <input type="text" data-f="cat" list="dl-cats" value="${esc(q.cat)}" placeholder="e.g. Business Cards"></div>
-        <div class="field"><label>Subcategory</label>
-          <input type="text" data-f="sub" list="dl-subs-${qi}" value="${esc(q.sub)}" placeholder="e.g. Premium Business Cards"></div>
+      <div class="ed-card">
+        <div class="ed-name">
+          <div class="field" style="flex:1 1 320px"><label>Product name ${inCat ? '<span class="in-cat">in catalog</span>' : ''}</label>
+            <input type="text" class="ed-title" data-f="title" value="${esc(q.title)}" placeholder="Raised Foil Business Cards"></div>
+          <button class="ai-fill" data-act="aifill" title="Paste the vendor's screenshot (specs and prices) and the fields are filled for you">Fill from vendor screenshot</button>
+        </div>
+        <div class="ed-cats"><span class="ed-lbl">Category</span>
+          ${cats.map(c => chip(c === catKey, 'cat', `data-cat="${esc(c)}"`, c)).join('')}
+          ${q.cat.trim() && !catKey ? chip(true, 'cat', `data-cat="${esc(q.cat)}"`, q.cat) : ''}
+          <button class="chip ghost" data-act="newcat">+ New</button>
+        </div>
+        ${catKey ? `<div class="ed-cats"><span class="ed-lbl">Subcategory</span>
+          ${subs.map(sb => chip(sb === q.sub, 'sub', `data-sub="${esc(sb)}"`, sb)).join('')}
+          ${q.sub.trim() && !subs.includes(q.sub) ? chip(true, 'sub', `data-sub="${esc(q.sub)}"`, q.sub) : ''}
+          <button class="chip ghost" data-act="newsub">+ New</button></div>` : ''}
       </div>
-      <datalist id="dl-subs-${qi}"></datalist>
 
-      <div class="field"><label>Product name</label>
-        <input type="text" data-f="title" value="${esc(q.title)}" placeholder="Raised Spot UV Business Cards"></div>
-
-      <div class="grid2">
-        ${specFields}
-        <div class="field"><label>Turnaround</label>
-          <input type="text" data-f="turnaround" value="${esc(q.turnaround)}" placeholder="5-8">
-          <div class="suffix-hint">Só números (5-8) → adiciona "${SUFFIX.trim()}"</div></div>
-      </div>
-      ${custom}
-      <div class="q-tools">
-        <button class="text-btn" data-act="addc">+ Custom spec</button>
-        <div style="display:flex;gap:16px;flex-wrap:wrap">
-          <label class="check"><input type="checkbox" data-f="showUnit" ${q.showUnit ? 'checked' : ''}> Preço por unidade</label>
-          <label class="check"><input type="checkbox" data-f="freeShip" ${q.freeShip ? 'checked' : ''}> Frete grátis</label>
+      <div class="ed-card">
+        <div class="ed-h"><h2>Specs</h2><span>Write in Portuguese · EN/ES quotes are translated</span></div>
+        <div class="grid3">
+          ${specFields}
+          <div class="field"><label>Turnaround (business days)</label><input type="text" data-f="turnaround" value="${esc(q.turnaround)}" placeholder="5-8"></div>
+          <div class="field"><label>Qty line (optional)</label><input type="text" data-f="qtyNote" value="${esc(q.qtyNote)}" placeholder="e.g. 100, 250 ou 500 un"></div>
+        </div>
+        ${custom}
+        <div class="ed-chips">
+          <button class="chip" data-act="addc">+ Custom spec</button>
+          <label class="check"><input type="checkbox" data-f="freeShip" ${q.freeShip ? 'checked' : ''}> Free shipping</label>
+          <label class="check"><input type="checkbox" data-f="showUnit" ${q.showUnit ? 'checked' : ''}> Price per unit</label>
         </div>
       </div>
 
-      <div class="int-box">
-        <div class="int-head">Internal only · never shown to the client</div>
-        <div class="grid2">
-          <div class="field"><label>Vendor (where this price came from)</label>
-            <input type="text" data-f="vendor" list="dl-vendors" value="${esc(q.vendor)}" placeholder="e.g. YMQ"></div>
-          <div class="field"><label>Memo</label>
-            <textarea data-f="memo" rows="2" placeholder="e.g. price checked 11/03, item #, contact…">${esc(q.memo)}</textarea></div>
-        </div>
-        <datalist id="dl-vendors">${[...new Set(catalog.map(c => (c.data.vendor || '').trim()).filter(Boolean))].sort().map(v => `<option value="${esc(v)}">`).join('')}</datalist>
+      <div class="ed-card">
+        <div class="ed-h"><h2>Prices</h2><span>Type the vendor costs: your price and the add-ons fill in automatically (47%+ margin). Type in a price to set your own.</span></div>
+        ${priceTableHTML(q, qi)}
       </div>
 
-      <div class="section-title">Pricing</div>
-      <div class="grid3">
-        <div class="field"><label>Unit name</label>
-          <input type="text" data-f="unitName" value="${esc(q.unitName)}" placeholder="un"></div>
-        <div class="field"><label>Pieces per unit</label>
-          <input type="number" data-f="perUnit" value="${esc(q.perUnit)}" placeholder="—"></div>
-        <div class="field"><label>Piece name</label>
-          <input type="text" data-f="pieceName" value="${esc(q.pieceName)}" placeholder="etiqueta"></div>
+      <div class="ed-more">
+        ${sec('internal', 'Internal · vendor &amp; memo', q.vendor.trim() ? esc(q.vendor) : '', `<div class="grid2" style="margin-top:0">
+          <div class="field"><label>Vendor (where this price came from)</label><input type="text" data-f="vendor" list="dl-vendors" value="${esc(q.vendor)}" placeholder="e.g. YMQ"></div>
+          <div class="field"><label>Memo</label><textarea data-f="memo" rows="2" placeholder="e.g. price checked 11/03, item #, contact…">${esc(q.memo)}</textarea></div></div>
+          <datalist id="dl-vendors">${[...new Set(catalog.map(c => (c.data.vendor || '').trim()).filter(Boolean))].sort().map(v => `<option value="${esc(v)}">`).join('')}</datalist>`)}
+        ${sec('units', 'Sheets / kits', perUnit(q) ? perUnit(q) + ' per ' + esc(q.unitName || 'un') : '', `<div class="grid3">
+          <div class="field"><label>Unit name</label><input type="text" data-f="unitName" value="${esc(q.unitName)}" placeholder="un"></div>
+          <div class="field"><label>Pieces per unit</label><input type="number" data-f="perUnit" value="${esc(q.perUnit)}" placeholder="—"></div>
+          <div class="field"><label>Piece name</label><input type="text" data-f="pieceName" value="${esc(q.pieceName)}" placeholder="etiqueta"></div></div>
+          <div class="suffix-hint">folhas · 5 · etiqueta → "50 folhas (250 etiquetas)" and price per label. Empty = "un".</div>`)}
+        ${sec('notes', 'Notes', q.notes.length || '', `${notes}<div class="ed-chips"><button class="chip" data-act="addn">+ Add note</button><span class="suffix-hint" style="margin:0">Internal notes stay out of the quote</span></div>`)}
+        ${sec('mockups', 'Mockups', q.images.length || '', `<div class="mock-grid">${q.images.map(im => mockHTML(im, true)).join('')}</div>
+          <label class="drop" data-drop>+ Upload mockup <span>— or drag &amp; drop / paste (Ctrl+V)</span><input type="file" accept="image/*,application/pdf" multiple data-upload hidden></label>`)}
       </div>
-      <div class="suffix-hint" style="margin:4px 0 10px">Para folhas/kits: folhas · 5 · etiqueta → "50 folhas (250 etiquetas)" e preço por etiqueta. Deixe vazio para "un".</div>
-      <datalist id="groups-${qi}"></datalist>
-      ${q.lines.map((l, li) => lineHTML(l, li, qi)).join('')}
-      <button class="add-line" data-act="addl">+ Add price line</button>
-      ${q.lines.filter(l => qtyNum(l) > 0).length > 1 ? '<button class="text-btn sort-btn" data-act="sortl">↕ Sort by quantity (low → high)</button>' : ''}
+    </section>
 
-      <div class="section-title">Price options (variants)</div>
-      <div class="section-hint">Ex: Cantos, Foil coverage. A primeira escolha é o padrão ($0). Opções sem valor (ex: cor do foil) viram uma linha de spec.</div>
-      ${q.options.map((o, oi) => optionHTML(o, oi, q)).join('')}
-      <button class="add-line" data-act="addo">+ Add price option</button>
-      ${pricedOptions(q).length ? '<button class="text-btn" data-act="ymq" style="margin-top:8px">YMQ setup: which copies to make, and their prices</button>' : ''}
-      <div class="mode-row" data-moderow>
-        <span>Quote shows</span>
-        <select data-f="optMode">
-          <option value="combos" ${q.optMode !== 'addons' && q.optMode !== 'byqty' ? 'selected' : ''}>Every combination (full prices)</option>
-          <option value="byqty" ${q.optMode === 'byqty' ? 'selected' : ''}>By quantity (compact)</option>
-          <option value="addons" ${q.optMode === 'addons' ? 'selected' : ''}>Base price + add-ons</option>
-        </select>
-      </div>
-      <div class="matrix" data-matrix></div>
-
-      <div class="section-title">Notes</div>
-      ${notes}
-      <div class="q-tools" style="margin-top:${q.notes.length ? 8 : 0}px">
-        <button class="text-btn" data-act="addn">+ Add note</button>
-        <span class="suffix-hint" style="margin:0">Internal notes stay out of the WhatsApp text</span>
-      </div>
-
-      <div class="section-title">Mockups</div>
-      <div class="mock-grid">${q.images.map(im => mockHTML(im, true)).join('')}</div>
-      <label class="drop" data-drop>+ Upload mockup <span>— or drag & drop / paste (Ctrl+V)</span>
-        <input type="file" accept="image/*,application/pdf" multiple data-upload hidden></label>
-
-      <div class="output">
+    <aside class="ed-side">
+      <div class="ed-quote">
         <div class="out-head">
-          <span>WhatsApp preview</span>
-          <div>
-            <span class="lang-sw">${['pt', 'en', 'es'].map(l => `<button class="${l === qLang ? 'on' : ''}" data-act="lang" data-lang="${l}">${l.toUpperCase()}</button>`).join('')}</span>
-            <button class="ghost" data-act="save">Save to log</button>
-            <button data-act="copy">Copy</button>
-          </div>
+          <span>Quote for the client</span>
+          <span class="lang-sw">${['pt', 'en', 'es'].map(l => `<button class="${l === qLang ? 'on' : ''}" data-act="lang" data-lang="${l}">${l.toUpperCase()}</button>`).join('')}</span>
         </div>
+        ${priced ? `<div class="ed-modes">${modes.map(([v, t]) => `<button class="chip${mode === v ? ' on' : ''}" data-act="mode" data-mode="${v}">${t}</button>`).join('')}</div>` : ''}
         <div class="out-text"></div>
         <div class="tr-panel" data-trpanel></div>
+        <div class="ed-copy"><button class="go" data-act="copy">Copy quote</button><button data-act="save" title="Keep this quote in Saved calculations">Save to log</button></div>
       </div>
-    </div>
+      <div class="ed-card ed-next">
+        <h2>Next steps</h2>
+        <div class="ed-next-grid">
+          <button data-act="catsave">${inCat ? 'Update catalog' : 'Save to catalog'}</button>
+          <button data-act="tocart" title="Add to your tbdezign.com cart (with the other products on this page)">Send to my cart</button>
+          <button data-act="shopify" title="${q.shopify ? 'Update the prices of the product made in Shopify' : 'Create a draft product in Shopify'}">${q.shopify ? 'Update Shopify prices' : 'Create in Shopify'}</button>
+          <button data-act="ymq"${priced ? '' : ' disabled title="Add a paid option first"'}>YMQ setup</button>
+        </div>
+        <div class="ed-more-links">More: <button data-act="dup">Duplicate</button>${quotes.length > 1 ? '<button data-act="copyall">Copy all products</button><button data-act="delq" class="danger">Remove</button>' : ''}</div>
+      </div>
+    </aside>
   </div>`;
 }
 
+function tabsHTML(ai) {
+  return `<nav class="ptabs">${quotes.map((q, i) => `<button class="ptab${i === ai ? ' on' : ''}" data-q="${i}" data-act="tab"><b>${esc(q.title.trim() || 'Untitled product')}</b><small>${esc(priceRange(q) || 'no prices yet')}</small></button>`).join('')}
+    <button class="ptab add" onclick="addQuote()">+ New product</button></nav>`;
+}
+
 function render() {
+  const ai = activeIdx();
   setTimeout(() => hydrateImages(wrap), 0);
   document.getElementById('dl-cats').innerHTML = Object.keys(categories).map(c => `<option value="${esc(c)}">`).join('');
-  wrap.innerHTML = quotes.map(quoteHTML).join('');
+  wrap.innerHTML = tabsHTML(ai) + quoteHTML(quotes[ai], ai);
   update();
 }
 
@@ -1041,62 +1143,51 @@ function matrixHTML(q, priced) {
 }
 
 function update() {
-  quotes.forEach((q, qi) => {
-    const qEl = wrap.querySelector(`[data-q="${qi}"]`);
-    if (!qEl) return;
-    q.lines.forEach((l, li) => {
-      const box = qEl.querySelector(`[data-l="${li}"] .line-result`);
-      const r = calcLine(l);
-      if (!r) { box.classList.remove('show'); box.innerHTML = ''; return; }
-      box.innerHTML =
-        `<span class="lr-price">${money(r.price)}</span>` +
-        (r.hasOv ? '<span class="override-tag">overridden</span>' : '') +
-        `<span class="lr-margin ${marginClass(r.margin)}">${r.margin.toFixed(1)}%</span>` +
-        `<span>cost $${(r.vc + r.sh).toFixed(2)} · profit $${r.profit.toFixed(2)}` +
-        (unitPrice(l, r.price, q) ? ` · ${unitPrice(l, r.price, q)}` : '') +
-        (r.hasOv ? ` · auto ${money(r.auto)}` : '') + `</span>`;
-      box.classList.add('show');
-    });
-
-    // Option table headers + auto add-on hints
-    q.lines.forEach((l, li) => qEl.querySelectorAll(`[data-colhead="${l.id}"]`).forEach(th => th.textContent = lineLabel(l, li)));
-    qEl.querySelectorAll('[data-add="o"]').forEach(inp => {
-      const o = q.options[+inp.closest('[data-o]').dataset.o];
-      const c = o.choices[+inp.closest('[data-ch]').dataset.ch];
-      const a = addon(c, inp.dataset.line);
-      inp.placeholder = a.auto ? 'auto +$' + a.auto : 'auto';
-    });
-    const priced = pricedOptions(q);
-    qEl.querySelector('[data-moderow]').style.display = priced.length ? 'flex' : 'none';
-    qEl.querySelector('[data-matrix]').innerHTML = priced.length ? matrixHTML(q, priced) : '';
-
-    const catKey = findKey(categories, q.cat || '');
-    qEl.querySelector(`#dl-subs-${qi}`).innerHTML = (catKey ? categories[catKey] : []).map(s => `<option value="${esc(s)}">`).join('');
-
-    qEl.querySelector('.q-title').textContent = q.title.trim() || 'Untitled product';
-    qEl.querySelector('.q-sum').textContent = quoteSummary(q);
-    const out = qEl.querySelector('.out-text');
-    const txt = quoteText(q);
-    out.textContent = txt || 'Fill in the fields to build the quote…';
-    out.classList.toggle('empty', !txt);
-    const tp = qEl.querySelector('[data-trpanel]'), srcs = qLang === 'pt' ? [] : trSources(q);
-    const sig = qLang + '|' + JSON.stringify(srcs);
-    if (tp.dataset.sig !== sig) {
-      tp.dataset.sig = sig;
-      const own = (q.tr && q.tr[qLang]) || {};
-      const rows = srcs.map((src, i) => ({ src, i, a: autoTr(src), own: own[src] || '' })).sort((x, y) => (y.a.left.length && !y.own) - (x.a.left.length && !x.own));
-      const miss = rows.filter(r => r.a.left.length && !r.own).length;
-      tp.innerHTML = !srcs.length ? '' : `<details${miss ? ' open' : ''}><summary>${miss ? '⚠ ' + miss + (miss > 1 ? ' textos' : ' texto') + ' sem tradução — ajuste abaixo' : 'Ajustar tradução (' + qLang.toUpperCase() + ')'}</summary>`
-        + rows.map(r => `<label class="tr-row${r.a.left.length && !r.own ? ' miss' : ''}"><small>${esc(r.src)}${r.a.left.length ? ' · <b>' + esc(r.a.left.join(', ')) + '</b>' : ''}</small>`
-          + `<input type="text" data-tri="${r.i}" value="${esc(r.own)}" placeholder="${esc(r.a.text)}"></label>`).join('')
-        + '<div class="suffix-hint" style="margin:6px 0 0">Vazio = tradução automática. O que você escrever fica salvo no produto.</div></details>';
-      tp._srcs = srcs;
-    } else tp._srcs = tp._srcs || srcs;
-
-    const groups = [...new Set(q.lines.map(l => l.group.trim()).filter(Boolean))];
-    qEl.querySelector(`#groups-${qi}`).innerHTML = groups.map(g => `<option value="${esc(g)}">`).join('');
+  const qEl = wrap.querySelector('.ed[data-q]');
+  if (!qEl) return;
+  const qi = +qEl.dataset.q, q = quotes[qi];
+  q.lines.forEach((l, li) => {
+    const row = qEl.querySelector(`tr[data-l="${li}"]`); if (!row) return;
+    const r = calcLine(l), ov = row.querySelector('[data-lf="ov"]'), m = row.querySelector('[data-margin]');
+    ov.placeholder = r ? r.auto.toFixed(2) : '—';
+    ov.closest('.pt-price').classList.toggle('own', !!(r && r.hasOv));
+    if (!r) { m.innerHTML = ''; return; }
+    m.innerHTML = `<b class="${marginClass(r.margin)}">${r.margin.toFixed(0)}%</b>`
+      + `<small>${r.hasOv ? 'auto ' + money(r.auto) : 'profit $' + r.profit.toFixed(0)}${q.showUnit && unitPrice(l, r.price, q) ? '<br>' + unitPrice(l, r.price, q) : ''}</small>`;
   });
-  document.getElementById('copyAll').classList.toggle('show', quotes.filter(q => quoteText(q)).length > 1);
+  qEl.querySelectorAll('[data-add="o"]').forEach(inp => {
+    const c = q.options[+inp.closest('[data-o]').dataset.o].choices[+inp.closest('[data-ch]').dataset.ch];
+    const a = addon(c, inp.dataset.line);
+    inp.placeholder = a.auto ? String(a.auto) : '—';
+    inp.closest('.pt-price').classList.toggle('own', a.ov);
+  });
+  const priced = pricedOptions(q);
+  const mx = qEl.querySelector('.pt-matrix');
+  mx.style.display = priced.length ? '' : 'none';
+  qEl.querySelector('[data-matrix]').innerHTML = priced.length ? matrixHTML(q, priced) : '';
+
+  const tab = wrap.querySelector('.ptab.on');
+  if (tab) { tab.querySelector('b').textContent = q.title.trim() || 'Untitled product'; tab.querySelector('small').textContent = priceRange(q) || 'no prices yet'; }
+  const out = qEl.querySelector('.out-text');
+  const txt = quoteText(q);
+  out.textContent = txt || 'Fill in the fields to build the quote…';
+  out.classList.toggle('empty', !txt);
+  const tp = qEl.querySelector('[data-trpanel]'), srcs = qLang === 'pt' ? [] : trSources(q);
+  const sig = qLang + '|' + JSON.stringify(srcs);
+  if (tp.dataset.sig !== sig) {
+    tp.dataset.sig = sig;
+    const own = (q.tr && q.tr[qLang]) || {};
+    const rows = srcs.map((src, i) => ({ src, i, a: autoTr(src), own: own[src] || '' })).sort((x, y) => (y.a.left.length && !y.own) - (x.a.left.length && !x.own));
+    const miss = rows.filter(r => r.a.left.length && !r.own).length;
+    tp.innerHTML = !srcs.length ? '' : `<details${miss ? ' open' : ''}><summary>${miss ? '⚠ ' + miss + (miss > 1 ? ' textos' : ' texto') + ' sem tradução — ajuste abaixo' : 'Ajustar tradução (' + qLang.toUpperCase() + ')'}</summary>`
+      + rows.map(r => `<label class="tr-row${r.a.left.length && !r.own ? ' miss' : ''}"><small>${esc(r.src)}${r.a.left.length ? ' · <b>' + esc(r.a.left.join(', ')) + '</b>' : ''}</small>`
+        + `<input type="text" data-tri="${r.i}" value="${esc(r.own)}" placeholder="${esc(r.a.text)}"></label>`).join('')
+      + '<div class="suffix-hint" style="margin:6px 0 0">Vazio = tradução automática. O que você escrever fica salvo no produto.</div></details>';
+    tp._srcs = srcs;
+  } else tp._srcs = tp._srcs || srcs;
+
+  const groups = [...new Set(q.lines.map(l => l.group.trim()).filter(Boolean))];
+  const dl = qEl.querySelector(`#groups-${qi}`); if (dl) dl.innerHTML = groups.map(g => `<option value="${esc(g)}">`).join('');
   store(DRAFT_KEY, quotes);
 }
 
@@ -1161,14 +1252,20 @@ wrap.addEventListener('click', e => {
   const qi = +b.closest('[data-q]').dataset.q, q = quotes[qi], act = b.dataset.act;
   const oi = b.closest('[data-o]') ? +b.closest('[data-o]').dataset.o : -1;
 
-  if (act === 'toggle') {
-    const opening = q.collapsed;
-    if (opening) quotes.forEach(o => o.collapsed = true);
-    q.collapsed = !opening;
-    render();
-    if (opening) wrap.querySelector(`[data-q="${qi}"]`).scrollIntoView({ behavior: 'smooth', block: 'start' });
-    return;
+  if (act === 'tab') { quotes.forEach(o => o.collapsed = true); q.collapsed = false; ACTIVE = qi; render(); return; }
+  if (act === 'mode') { q.optMode = b.dataset.mode; return render(); }
+  if (act === 'grp') { q.showGroup = true; return render(); }
+  if (act === 'cat') { if (q.cat !== b.dataset.cat) { q.cat = b.dataset.cat; q.sub = ''; } return render(); }
+  if (act === 'sub') { q.sub = q.sub === b.dataset.sub ? '' : b.dataset.sub; return render(); }
+  if (act === 'newcat' || act === 'newsub') {
+    const v = (prompt(act === 'newcat' ? 'New main category:' : 'New subcategory for ' + q.cat + ':') || '').trim();
+    if (!v) return;
+    if (act === 'newcat') { q.cat = v; q.sub = ''; } else q.sub = v;
+    addCategory(q.cat, q.sub);
+    return render();
   }
+  if (act === 'copyall') return copyText(allText(), b);
+  if (act === 'shipall') { const sh = q.lines[0].sh; q.lines.forEach(l => l.sh = sh); return render(); }
   if (act === 'copy') return copyText(quoteText(q), b);
   if (act === 'lang') { qLang = b.dataset.lang; try { localStorage.setItem(LANG_KEY, qLang); } catch (e) {} return render(); }
   if (act === 'save') return saveQuote(q, b);
@@ -1221,7 +1318,6 @@ wrap.addEventListener('click', e => {
     if (!q.lines.length) q.lines.push(newLine());
   }
   render();
-  if (act === 'dup') wrap.querySelector(`[data-q="${qi + 1}"]`).scrollIntoView({ behavior: 'smooth', block: 'start' });
   if (focusSel) { const el = wrap.querySelector(focusSel); if (el) el.focus(); }
 });
 
@@ -1229,18 +1325,17 @@ function addLine(qi) {
   const q = quotes[qi], last = q.lines[q.lines.length - 1];
   q.lines.push(newLine(last ? last.group : ''));
   render();
-  wrap.querySelector(`[data-q="${qi}"] [data-l="${q.lines.length - 1}"] [data-lf="qty"]`).focus();
+  const el = wrap.querySelector(`[data-q="${qi}"] [data-l="${q.lines.length - 1}"] [data-lf="qty"]`); if (el) el.focus();
 }
 
-function collapseAll() { quotes.forEach(q => q.collapsed = true); render(); }
+// remember which extra sections are open between renders
+wrap.addEventListener('toggle', e => { const d = e.target; if (d.dataset && d.dataset.sec) { if (d.open) OPEN_SEC.add(d.dataset.sec); else OPEN_SEC.delete(d.dataset.sec); } }, true);
 
 function addQuote() {
   quotes.forEach(q => q.collapsed = true);
   quotes.push(newQuote());
   render();
-  const el = wrap.querySelector(`[data-q="${quotes.length - 1}"]`);
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  el.querySelector('[data-f="cat"]').focus({ preventScroll: true });
+  const el = wrap.querySelector('.ed-title'); if (el) el.focus();
 }
 
 function resetAll() {
