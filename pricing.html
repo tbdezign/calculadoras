@@ -782,6 +782,20 @@ function quoteText(q) {
         block(header, vals.map(x => (qtyLabel(x.l, q) ? qtyLabel(x.l, q) + ' - ' : '') + (x.r ? moneyAdd(x.r) : X.noCost)));
       }
     }));
+  } else if (q.optMode === 'byqty') {
+    // one block per quantity: a row per choice of the first options, the last option's choices side by side
+    const last = priced[priced.length - 1], rest = priced.slice(0, -1);
+    const lastCh = namedChoices(last);
+    groups.forEach(({ g, lines }) => lines.forEach(l => {
+      const rows = combos(rest).map(combo => {
+        const head = combo.map(c => T(c.name.trim())).filter(Boolean).join(' · ');
+        const ps = lastCh.map(c => ({ c, p: comboPrice(l, combo.concat([c])).price }));
+        const first = money(ps[0].p), more = ps.slice(1).map(x => T(x.c.name.trim()).toLowerCase() + ': ' + money(x.p));
+        if (!rest.length) return ps.map(x => T(x.c.name.trim()) + ': ' + money(x.p)).join('\n');
+        return head + ': ' + first + (more.length ? ' (' + more.join(' · ') + ')' : '');
+      });
+      block([T(g), qtyLabel(l, q)].filter(Boolean).join(' · '), rows.join('\n').split('\n'));
+    }));
   } else {
     combos(priced).forEach(combo => {
       groups.forEach(({ g, lines }) => {
@@ -971,7 +985,8 @@ function quoteHTML(q, qi) {
       <div class="mode-row" data-moderow>
         <span>Quote shows</span>
         <select data-f="optMode">
-          <option value="combos" ${q.optMode !== 'addons' ? 'selected' : ''}>Every combination (full prices)</option>
+          <option value="combos" ${q.optMode !== 'addons' && q.optMode !== 'byqty' ? 'selected' : ''}>Every combination (full prices)</option>
+          <option value="byqty" ${q.optMode === 'byqty' ? 'selected' : ''}>By quantity (compact)</option>
           <option value="addons" ${q.optMode === 'addons' ? 'selected' : ''}>Base price + add-ons</option>
         </select>
       </div>
