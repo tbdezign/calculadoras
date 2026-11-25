@@ -884,6 +884,14 @@ async function pullProduct(code, id) {
 // ── Catalog panel ──
 let showCatalog = false, editProduct = null, showImport = false;
 function toggleCatalog() { showCatalog = !showCatalog; editProduct = null; showImport = false; renderCatalog(); }
+function addToCatalog(code) {
+  showCatalog = true; editProduct = "__new__"; showImport = false; renderCatalog();
+  requestAnimationFrame(() => {
+    const f = q("pf_code"); if (f) { f.value = code.toUpperCase(); f.dispatchEvent(new Event("input")); }
+    const panel = q("catalogPanel"); if (panel) panel.scrollIntoView({ behavior:"smooth", block:"start" });
+    setTimeout(() => { const n = q("pf_name"); if (n) n.focus(); }, 350);
+  });
+}
 function costSummary(p) {
   if (method === "v2") return ["t2","t4","t8","t16"].map(t => fmt(p[t]||0)).join(" / ");
   return CAT_FIELDS[method].map(f => fmt(p[f.k]||0)).join(" / ");
@@ -1878,7 +1886,7 @@ function updateItemInfo(it) {
     const src = findElsewhere(it.code);
     info.innerHTML = src
       ? '<span class="notfound">"' + esc(it.code) + '" isn\'t in ' + METHODS[method].label + ' yet — <a onclick="pullProduct(\'' + esc(src.p.code) + '\',\'' + it.id + '\')">add from ' + METHODS[src.k].label + ' (' + fmt(blankCosts(src.k, src.p).std) + ')</a></span>'
-      : '<span class="notfound">"' + esc(it.code) + '" — <a onclick="showCatalog=true;editProduct=\'__new__\';renderCatalog()">add</a></span>';
+      : '<span class="notfound">"' + esc(it.code) + '" — <a onclick="addToCatalog(\'' + esc(it.code) + '\')">add</a></span>';
   }
   else info.innerHTML = "";
   const tierEl = q("oitiers-" + it.id);
