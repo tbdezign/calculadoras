@@ -888,7 +888,7 @@ function addToCatalog(code) {
   showCatalog = true; editProduct = "__new__"; showImport = false; renderCatalog();
   requestAnimationFrame(() => {
     const f = q("pf_code"); if (f) { f.value = code.toUpperCase(); f.dispatchEvent(new Event("input")); }
-    const panel = q("catalogPanel"); if (panel) panel.scrollIntoView({ behavior:"smooth", block:"start" });
+    const form = document.querySelector(".cat-form"); if (form) form.scrollIntoView({ behavior:"smooth", block:"center" });
     setTimeout(() => { const n = q("pf_name"); if (n) n.focus(); }, 350);
   });
 }
