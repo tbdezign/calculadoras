@@ -1272,18 +1272,36 @@ const SIZE_LABEL = { std:"XS–XL", x2:"2XL", x3:"3XL" };
 function hasSizes(it) { return !!(SIZE_COST[method] && it.sizes); }
 function sizeQtys(it) { const o = { std: parseInt(it.qty) || 0 }; if (hasSizes(it)) { o.x2 = parseInt(it.q2) || 0; o.x3 = parseInt(it.q3) || 0; } return o; }
 function itemQty(it) { const z = sizeQtys(it); return z.std + (z.x2 || 0) + (z.x3 || 0); }
-function sizeCost(it, size) { return SIZE_COST[method] ? itemCost(it, size) : 0; }
+function sizeCost(it, size) {
+  if (!SIZE_COST[method]) return 0;
+  if (it._saleCost != null && (!size || size === "std")) return it._saleCost;  // sale cost override for XS–XL
+  if (it._saleCost != null && size && size !== "std") {
+    // 2XL/3XL: use sale cost + the surcharge difference (2XL/3XL cost − std cost)
+    const stdCost = itemCost(it, "std"), surcharge = itemCost(it, size) - stdCost;
+    return it._saleCost + surcharge;
+  }
+  return itemCost(it, size);
+}
 // Price per size that has pieces: [{ size, q, r }]
 function sizeLines(it) { return Object.entries(sizeQtys(it)).filter(([, n]) => n > 0).map(([size, n]) => ({ size, q:n, r: withSale(it, size, METHODS[method].price(it, size)) })).filter(l => l.r); }
-// Sale price (per style, fixed per piece, XS–XL): the quote shows the regular price crossed out and the sale price.
-// 2XL/3XL keep their upcharge on top of the sale price. A sale price at or above the regular one is ignored.
+// Sale price (per style, XS–XL): the entered value is the vendor's sale blank cost.
+// It replaces the standard blank cost and runs through the normal markup formula (÷ divisor + shipping + print).
+// 2XL/3XL keep their upcharge on top. A sale cost at or above the standard cost is ignored.
 function saleOf(it) { const v = parseFloat(it.sale); return v > 0 ? v : 0; }
 function withSale(it, size, r) {
-  const sale = saleOf(it); if (!r || !sale) return r;
-  const up = size && size !== "std" ? r.perPiece - METHODS[method].price(it, "std").perPiece : 0, sp = Math.round((sale + up) * 100) / 100;
-  return sp < r.perPiece ? { ...r, regular: r.perPiece, perPiece: sp } : r;
+  const saleCost = saleOf(it); if (!r || !saleCost) return r;
+  const stdCost = itemCost(it, "std"); if (saleCost >= stdCost) return r;  // sale cost must be below regular cost
+  // Re-run the method's price with the sale blank cost substituted in
+  const saleR = METHODS[method].price({ ...it, _saleCost: saleCost }, size);
+  if (!saleR || saleR.perPiece >= r.perPiece) return r;
+  return { ...r, regular: r.perPiece, perPiece: saleR.perPiece };
 }
-function salePrice(it, regular) { const s = saleOf(it); return s && regular != null && s < regular ? s : null; }   // tier lists (XS–XL)
+function salePrice(it, regular, tierQty) {   // tier lists: return sale retail price or null
+  const s = saleOf(it); if (!s || regular == null) return null;
+  const stdCost = itemCost(it, "std"); if (s >= stdCost) return null;
+  const saleR = METHODS[method].tierPrice({ ...it, _saleCost: s }, tierQty || totalQty());
+  return saleR != null && saleR < regular ? saleR : null;
+}
 // "~$24.70~ *$19.90*" (WhatsApp strikethrough) when on sale
 function priceTxt(r) { return r && r.regular ? "~" + fmt(r.regular) + "~ *" + fmt(r.perPiece) + "*" : fmt(r.perPiece); }
 function onSale(id, v) { const it = itemById(id); if (it) { it.sale = v; updateOrderResults(); } }
@@ -1317,7 +1335,7 @@ function displayName(it, p) { return (method === "v2" && it.name && it.name.trim
 // ── Silk Screen ──
 // Formulas and rates live in pricing.js (shared with the website and the agent).
 const PCFG = TBDPricing.CONFIG;
-const RATES = PCFG.silk.rates, MINS = PCFG.silk.mins;
+const MINS = PCFG.silk.mins;
 const SCREEN = PCFG.silk.screen, SHIP_IN = PCFG.silk.shipIn, SHIP_OUT = PCFG.silk.shipOut;
 function comboCfg(m, tq) { return inCombo() ? { ...PCFG, [m]: { ...PCFG[m], shipOut: comboOut(tq) } } : undefined; }
 function silkCalc(blankCost, tq, shipQty, shipIn) {
@@ -1463,11 +1481,11 @@ const METHODS = {
     get label() { return dtfLabel(); }, min:0, tiers:PCFG.dtf.tiers, split:true,
     views: it => dtfPl(it).views,
     print: it => T().dtf + " · " + placeText(dtfPl(it).views, it.extraSpots || 0, it) + dtfSizeText(it),
-    price(it) { const p = { cost: itemCost(it, "std") }, pl = dtfPl(it), r0 = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, dtfExtraSize(it), suppShipFor(it, SUPP_SHIP()));
+    price(it) { const p = { cost: it._saleCost != null ? it._saleCost : itemCost(it, "std") }, pl = dtfPl(it), r0 = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, dtfExtraSize(it), suppShipFor(it, SUPP_SHIP()));
       const up = dtfUplift(), r = up ? { ...r0, perPiece: Math.round((r0.perPiece + up) * 100) / 100 } : r0;
       const ex = dtfExtra()[dtfExtraSize(it)], R = dtfRates();
       return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() + (R.sheetShip ? " + $" + R.sheetShip + " sheet/" + Math.max(totalQty(), R.sheetMinQty || 1) : "") + (up ? " + " + fmt(up) + " (min $" + R.minProfit + " profit)" : "") }; },
-    tierPrice(it, t) { const c = itemCost(it, "std"); return Math.round((dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, dtfExtraSize(it), tierSuppShip(c, t, SUPP_SHIP())).perPiece + dtfUplift(t)) * 100) / 100; },
+    tierPrice(it, t) { const c = it._saleCost != null ? it._saleCost : itemCost(it, "std"); return Math.round((dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, dtfExtraSize(it), tierSuppShip(c, t, SUPP_SHIP())).perPiece + dtfUplift(t)) * 100) / 100; },
     setup: () => null, ship: () => T().ship(PCFG.dtf.days[0], PCFG.dtf.days[1], true), tierNote: () => T().tierNoteMix,
   },
   v2: {
@@ -1564,8 +1582,8 @@ function renderSettingsBody() {
     const btns = (fn, vals, cur, labels) => vals.map((v, i) => '<button class="btn' + (v === cur ? ' active' : '') + '" onclick="' + fn + '(' + v + ')">' + labels[i] + '</button>').join("");
     const n = numColors * (numSides + extraSpots);
     el.innerHTML = '<div class="card-label">Print Options</div>'
-      + '<label class="lbl">Ink colors</label><div class="btn-group">' + btns("setColors", [1,2,3,4], numColors, ["1 Color","2 Colors","3 Colors","4 Colors"]) + '</div>'
-      + '<div class="info-row"><span>Vendor rate</span><span class="mono">' + fmt(RATES[numColors]) + '/pc/spot · Min ' + MINS[numColors] + ' pcs</span></div>'
+      + '<label class="lbl">Ink colors</label><div class="btn-group">' + btns("setColors", [1,2,3,4,5,6], numColors, ["1","2","3","4","5","6"]) + '</div>'
+      + '<div class="info-row"><span>Vendor rate</span><span class="mono">' + fmt(TBDPricing.silkRate(numColors, totalQty() || 24)) + '/pc/spot (' + (totalQty() || 0) + ' pcs) · Min ' + MINS[numColors] + ' pcs</span></div>'
       + '<label class="lbl" style="margin-top:12px">Placement</label><div class="btn-group">' + btns("setSides", [1,2], numSides, ["One side","Front + Back"]) + '</div>'
       + '<label class="lbl" style="margin-top:12px">Extra spots (sleeves, etc.)</label><div class="btn-group">' + btns("setExtra", [0,1,2], extraSpots, ["None","+1 Spot","+2 Spots"]) + '</div>'
       + '<div class="setup-row"><span>Screen setup (one-time)</span><span class="mono strong">' + n + ' x ' + fmt(SCREEN) + ' = ' + fmt(n * SCREEN) + '</span></div>'
@@ -1606,7 +1624,8 @@ function setExtra(n) { extraSpots = n; renderSettings(); renderOrderItems(); ren
 // ── Silk: Shopify / YMQ tier reference (kept from the Silk Screen calculator) ──
 let ymqOpen = false, ymqCosts = { std:7.47, x2:8.50, x3:10.56 };
 function ymqCalc(blankCost, qty) {
-  const rate = RATES[numColors], minQ = MINS[numColors], spots = numSides + extraSpots, div = blankCost < 3 ? 0.50 : 0.55;
+  const minQ = MINS[numColors], effectiveQty = qty < minQ ? minQ : qty;
+  const rate = TBDPricing.silkRate(numColors, effectiveQty), spots = numSides + extraSpots, div = blankCost < 3 ? 0.50 : 0.55;
   const blankRetail = Math.ceil((blankCost / div + SHIP_IN / qty) * 10) / 10;
   const pcv = qty < minQ ? (rate * minQ * spots) / qty : rate * spots;
   const printAddon = Math.ceil((pcv * 2 + SHIP_OUT / qty) * 10) / 10;
@@ -1827,7 +1846,7 @@ function renderOrderItems() {
     + '<div class="oi-suggest" id="oiac-' + it.id + '" hidden></div>'
     + itemControlsHTML(it)
     + supplierFieldHTML(it, M)
-    + '<div class="oi-sale"><span>Sale price</span><span>$</span><input type="number" step="0.01" min="0" placeholder="—" class="' + (saleOf(it) ? 'on' : '') + '" value="' + esc(it.sale || "") + '" oninput="this.classList.toggle(\'on\',parseFloat(this.value)>0);onSale(\'' + it.id + '\',this.value)"><span class="muted small">per piece (XS–XL) · optional</span></div>'
+    + '<div class="oi-sale"><span>Sale cost</span><span>$</span><input type="number" step="0.01" min="0" placeholder="—" class="' + (saleOf(it) ? 'on' : '') + '" value="' + esc(it.sale || "") + '" oninput="this.classList.toggle(\'on\',parseFloat(this.value)>0);onSale(\'' + it.id + '\',this.value)"><span class="muted small">vendor sale blank cost (XS–XL) · optional</span></div>'
     + '<div id="oiresult-' + it.id + '"></div></div>').join("");
   orderItems.forEach(updateItemInfo);
   updateOrderResults();
@@ -2115,7 +2134,7 @@ function renderQuote() {
           else if (ls[0]) L.push("*" + colorName(c) + "*: " + L0.pcs(itemQty(c)) + " · " + priceTxt(ls[0].r) + L0.each);
         });
       } else if (tiersOn) {
-        M.tiers.forEach((t, i) => { const pr = M.tierPrice(it, t); if (pr == null) return; const sp = salePrice(it, pr);
+        M.tiers.forEach((t, i) => { const pr = M.tierPrice(it, t); if (pr == null) return; const sp = salePrice(it, pr, t);
           L.push((i === M.tiers.length - 1 ? L0.plus(t) : L0.pcs(t)) + ": " + (sp != null ? "~" + fmt(pr) + "~ *" + fmt(sp) + "*" : fmt(pr)) + L0.each); });
         // Bigger sizes only when "+ 2XL / 3XL" is on for this style.
         if (hasSizes(it)) { const t0 = M.tiers[0], base = M.tierPrice(it, t0), ups = ["x2","x3"].map(z => SIZE_LABEL[z] + " +" + fmt(M.tierPrice(it, t0, z) - base)); L.push(ups.join(" · ") + L0.perPc); }

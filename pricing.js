@@ -12,8 +12,18 @@
   const CONFIG = {
     freeShipMin: 200,   // blanks from one supplier at this amount or more ship free
     silk: {
-      rates: { 1: 1.10, 2: 1.30, 3: 1.50, 4: 1.50 },  // vendor price per piece, per spot
-      mins:  { 1: 24, 2: 24, 3: 36, 4: 48 },           // vendor minimum (charged even if fewer pieces)
+      // Vendor rate table: each row = [minQty, {colors: rate per piece per spot}]
+      rateTable: [
+        [24,   {1: 0.90, 2: 1.10, 3: 1.30, 4: 1.50, 5: 1.70, 6: 1.90}],
+        [144,  {1: 0.80, 2: 1.00, 3: 1.20, 4: 1.40, 5: 1.60, 6: 1.80}],
+        [288,  {1: 0.70, 2: 0.90, 3: 1.10, 4: 1.30, 5: 1.50, 6: 1.70}],
+        [432,  {1: 0.60, 2: 0.80, 3: 1.00, 4: 1.20, 5: 1.40, 6: 1.60}],
+        [720,  {1: 0.50, 2: 0.70, 3: 0.90, 4: 1.10, 5: 1.30, 6: 1.50}],
+        [1008, {1: 0.45, 2: 0.60, 3: 0.80, 4: 1.00, 5: 1.20, 6: 1.40}],
+        [2501, {1: 0.35, 2: 0.50, 3: 0.70, 4: 0.90, 5: 1.10, 6: 1.30}],
+        [5000, {1: 0.30, 2: 0.40, 3: 0.60, 4: 0.80, 5: 1.00, 6: 1.20}],
+      ],
+      mins:  { 1: 24, 2: 24, 3: 36, 4: 48, 5: 60, 6: 72 },  // vendor minimum per color count
       screen: 15, shipIn: 30, shipOut: 25,
       minPieces: 10, tiers: [10, 15, 20, 25], days: [7, 12],
     },
@@ -61,17 +71,26 @@
   };
 
   // ── Silk Screen: blank ÷ divisor + supplier shipping, print = vendor rate × spots × 2 (vendor minimum absorbed) + client shipping
+  // Rate is looked up from the vendor's tiered table by effective quantity and color count.
+  function silkRate(colors, qty, cfg) {
+    const table = (cfg || CONFIG).silk.rateTable;
+    let rate = table[0][1][colors];  // fallback to first tier
+    for (const row of table) { if (qty >= row[0]) rate = row[1][colors]; else break; }
+    return rate;
+  }
   function silk(a, cfg) {
     const S = (cfg || CONFIG).silk;
     const tq = a.tq, shipQty = a.shipQty || tq, shipIn = a.shipIn == null ? S.shipIn : a.shipIn;
-    const rate = S.rates[a.colors], minQ = S.mins[a.colors], totalSpots = a.spots;
+    const minQ = S.mins[a.colors], totalSpots = a.spots;
+    const effectiveQty = tq < minQ ? minQ : tq;         // below minimum → vendor charges for minQ
+    const rate = silkRate(a.colors, effectiveQty, cfg);
     const divisor = a.blankCost < 3 ? 0.50 : 0.55;
     const blankRetail = ceil10(a.blankCost / divisor + shipIn / shipQty);
     const printCostVendor = tq < minQ ? (rate * minQ * totalSpots) / tq : rate * totalSpots;
     const printAddon = ceil10(printCostVendor * 2 + S.shipOut / tq);
     const perPiece = blankRetail + printAddon;
     const unitCost = a.blankCost + shipIn / shipQty + printCostVendor + S.shipOut / tq;
-    return { perPiece, unitCost, divisor, shipQty, shipIn, blankRetail, printAddon };
+    return { perPiece, unitCost, divisor, shipQty, shipIn, blankRetail, printAddon, rate };
   }
   function silkSetup(colors, spots, cfg) { return colors * spots * (cfg || CONFIG).silk.screen; }
 
@@ -238,7 +257,7 @@
     return { from, up };
   }
 
-  const api = { CONFIG, stylePrices, embDeco, ceil10, round10, silk, silkSetup, dtf, houseCfg, emb, v2Tier, v2Fees, v2Base, v2Price, chooseMethod, quoteOrder, blankCost, supplierKey };
+  const api = { CONFIG, stylePrices, embDeco, ceil10, round10, silk, silkRate, silkSetup, dtf, houseCfg, emb, v2Tier, v2Fees, v2Base, v2Price, chooseMethod, quoteOrder, blankCost, supplierKey };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.TBDPricing = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

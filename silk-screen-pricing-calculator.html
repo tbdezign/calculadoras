@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Silk Screen Pricing Calculator - TBDEZIGN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #F5F5F0; color: #1A1A1A; min-height: 100vh; padding: 24px 16px; }
+  .container { max-width: 620px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 2px; }
+  .subtitle { font-size: 13px; color: #999; margin-bottom: 24px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 12px; border: 1px solid #E8E8E8; }
+  .card-label { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+  .row { display: flex; gap: 12px; }
+  .field { flex: 1; }
+  .field label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; }
+  .field input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: 'SF Mono', 'Fira Code', monospace; text-align: center; outline: none; transition: border-color 0.2s; }
+  .field input:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  .field .computed { padding: 10px 12px; background: #F5F5F0; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; font-family: 'SF Mono', 'Fira Code', monospace; text-align: center; font-weight: 600; }
+  .hint { font-size: 11px; color: #999; margin-top: 6px; font-family: 'SF Mono', 'Fira Code', monospace; }
+  .hint-right { text-align: right; }
+  .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn { flex: 1; min-width: 50px; padding: 10px 0; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; background: #F0F0F0; color: #666; }
+  .btn:hover { background: #E0E0E0; }
+  .btn.active { background: #1A1A1A; color: #fff; }
+  .info-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+  .info-row span { font-size: 12px; color: #999; }
+  .mono { font-family: 'SF Mono', 'Fira Code', monospace; }
+  .setup-row { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 12px; border-top: 1px solid #F0F0F0; }
+  .setup-row .label { font-size: 14px; color: #666; }
+  .setup-row .value { font-size: 14px; font-family: 'SF Mono', 'Fira Code', monospace; font-weight: 600; }
+  .setup-row .value.waived { color: #999; text-decoration: line-through; }
+  .tabs { display: flex; border-bottom: 1px solid #E8E8E8; }
+  .tab { flex: 1; padding: 12px 0; text-align: center; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: none; color: #999; border-bottom: 2px solid transparent; transition: all 0.15s; }
+  .tab.active { color: #1A1A1A; border-bottom-color: #1A1A1A; }
+  .tab-content { padding: 20px; }
+
+  /* Toggle switch */
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .toggle-row .toggle-label { font-size: 13px; color: #555; }
+  .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle .slider { position: absolute; inset: 0; background: #ccc; border-radius: 24px; cursor: pointer; transition: 0.2s; }
+  .toggle .slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.2s; }
+  .toggle input:checked + .slider { background: #2E7D32; }
+  .toggle input:checked + .slider::before { transform: translateX(20px); }
+  .reorder-note { font-size: 11px; color: #2E7D32; font-weight: 500; }
+
+  /* Tier table */
+  .tier-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+  .tier-table th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #E8E8E8; }
+  .tier-table th.right, .tier-table td.right { text-align: right; }
+  .tier-table td { padding: 10px; border-bottom: 1px solid #F0F0F0; font-family: 'SF Mono', 'Fira Code', monospace; }
+  .tier-table td.label-cell { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-weight: 500; color: #555; }
+  .tier-table .blank-price { color: #1A1A1A; font-weight: 600; }
+  .tier-table .addon-price { color: #2563EB; font-weight: 600; }
+  .tier-table .total-price { color: #1A1A1A; font-weight: 700; font-size: 15px; }
+  .tier-table .profit-cell { color: #2E7D32; }
+  .tier-table .margin-cell { color: #2E7D32; font-size: 11px; }
+  .tier-table .rate-cell { color: #888; font-size: 11px; }
+  .tier-table tr:last-child td { border-bottom: none; }
+  .tier-table tr.absorb td { background: #FFFDE7; }
+
+  .custom-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 18px; font-family: 'SF Mono', 'Fira Code', monospace; text-align: center; outline: none; margin-bottom: 12px; }
+  .custom-input:focus { border-color: #2563EB; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  .hero-box { border: 2px solid #2563EB; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 16px; background: rgba(37,99,235,0.03); }
+  .hero-box .big { font-size: 32px; font-weight: 700; letter-spacing: -1px; }
+  .hero-box .unit { font-size: 14px; color: #999; }
+  .hero-box .stats { display: flex; justify-content: center; gap: 32px; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(37,99,235,0.15); }
+  .hero-box .stat-val { font-size: 16px; font-weight: 700; font-family: 'SF Mono', 'Fira Code', monospace; }
+  .hero-box .stat-val.green { color: #2E7D32; }
+  .hero-box .stat-label { font-size: 11px; color: #999; }
+
+  .breakdown { padding: 4px 12px 12px; }
+  .breakdown .section-label { font-size: 10px; font-weight: 700; color: #bbb; text-transform: uppercase; letter-spacing: 0.5px; margin: 8px 0 4px; }
+  .breakdown .section-label:first-child { margin-top: 0; }
+  .breakdown .line { display: flex; justify-content: space-between; padding: 3px 0; font-size: 12px; }
+  .breakdown .line .l { color: #888; }
+  .breakdown .line .v { font-family: 'SF Mono', 'Fira Code', monospace; color: #555; }
+  .breakdown .line.total { border-top: 1px solid #F0F0F0; margin-top: 6px; padding-top: 6px; }
+  .breakdown .line.total .l { font-weight: 600; color: #1A1A1A; }
+  .breakdown .line.total .v { font-weight: 700; color: #1A1A1A; }
+  .breakdown .line.green .l, .breakdown .line.green .v { color: #2E7D32; }
+  .breakdown .line.blue .l, .breakdown .line.blue .v { color: #2563EB; font-weight: 600; }
+
+  .config-bar { background: #1A1A1A; border-radius: 12px; padding: 16px 20px; margin-top: 12px; color: #fff; }
+  .config-bar .config-title { font-size: 11px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .config-bar .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 13px; }
+  .config-bar .config-grid .ck { color: #888; }
+  .config-bar .config-grid .cv { text-align: right; font-family: 'SF Mono', 'Fira Code', monospace; }
+  .footer { text-align: center; font-size: 11px; color: #bbb; margin: 20px 0 8px; line-height: 1.5; }
+  .legend { display: flex; gap: 16px; justify-content: center; margin-bottom: 12px; font-size: 11px; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .legend .dot-blank { background: #1A1A1A; }
+  .legend .dot-addon { background: #2563EB; }
+
+  @media (max-width: 480px) {
+    body { padding: 16px 12px; }
+    .hero-box .big { font-size: 26px; }
+    .tier-table { font-size: 12px; }
+    .tier-table td, .tier-table th { padding: 8px 6px; }
+    .btn { min-width: 40px; padding: 8px 0; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Silk Screen Pricing</h1>
+  <p class="subtitle">Blank retail includes $30 supplier shipping. Print add-on includes $25 client shipping. All vendor tiers.</p>
+
+  <!-- Blank Shirt -->
+  <div class="card">
+    <div class="card-label">Blank Shirt Cost</div>
+    <div class="row">
+      <div class="field">
+        <label>XS - XL</label>
+        <input type="number" id="costStd" step="0.01" min="0" value="7.47" oninput="recalc()">
+      </div>
+      <div class="field">
+        <label>2XL</label>
+        <input type="number" id="cost2xl" step="0.01" min="0" value="8.50" oninput="recalc()">
+      </div>
+      <div class="field">
+        <label>3XL</label>
+        <input type="number" id="cost3xl" step="0.01" min="0" value="10.56" oninput="recalc()">
+      </div>
+    </div>
+    <div class="hint hint-right" id="blankHint"></div>
+  </div>
+
+  <!-- Print Options -->
+  <div class="card">
+    <div class="card-label">Print Options</div>
+
+    <!-- Reorder toggle -->
+    <div class="toggle-row">
+      <label class="toggle"><input type="checkbox" id="reorderToggle" onchange="toggleReorder(this.checked)"><span class="slider"></span></label>
+      <span class="toggle-label">Reorder <span class="reorder-note" id="reorderNote" style="display:none">— screen setup waived</span></span>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <label style="display:block;font-size:12px;color:#888;margin-bottom:6px">Ink colors</label>
+      <div class="btn-group" id="colorBtns">
+        <button class="btn active" onclick="setColors(1)">1</button>
+        <button class="btn" onclick="setColors(2)">2</button>
+        <button class="btn" onclick="setColors(3)">3</button>
+        <button class="btn" onclick="setColors(4)">4</button>
+        <button class="btn" onclick="setColors(5)">5</button>
+        <button class="btn" onclick="setColors(6)">6</button>
+      </div>
+      <div class="info-row">
+        <span>Vendor min</span>
+        <span class="mono" id="vendorInfo">24 pcs</span>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="display:block;font-size:12px;color:#888;margin-bottom:6px">Placement</label>
+      <div class="btn-group" id="sideBtns">
+        <button class="btn active" onclick="setSides(1)">One side</button>
+        <button class="btn" onclick="setSides(2)">Front + Back</button>
+      </div>
+    </div>
+    <div>
+      <label style="display:block;font-size:12px;color:#888;margin-bottom:6px">Extra spots (sleeves, etc.)</label>
+      <div class="btn-group" id="extraBtns">
+        <button class="btn active" onclick="setExtra(0)">None</button>
+        <button class="btn" onclick="setExtra(1)">+1 Spot</button>
+        <button class="btn" onclick="setExtra(2)">+2 Spots</button>
+      </div>
+    </div>
+    <div class="setup-row">
+      <span class="label">Screen setup (one-time)</span>
+      <span class="value" id="setupDisplay">1 x $15 = $15</span>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="tabs">
+      <button class="tab active" id="tabTiers" onclick="setTab('tiers')">Tier Pricing</button>
+      <button class="tab" id="tabCustom" onclick="setTab('custom')">Custom Qty</button>
+    </div>
+
+    <div class="tab-content" id="tiersContent">
+      <div class="legend">
+        <span><span class="dot dot-blank"></span> Blank retail (Shopify price)</span>
+        <span><span class="dot dot-addon"></span> Print add-on (YMQ)</span>
+      </div>
+      <table class="tier-table" id="tierTable"></table>
+    </div>
+
+    <div class="tab-content" id="customContent" style="display:none">
+      <input type="number" class="custom-input" id="customQty" min="10" value="50" oninput="recalc()">
+      <div id="customResult"></div>
+    </div>
+  </div>
+
+  <!-- Config Bar -->
+  <div class="config-bar">
+    <div class="config-title">Current Config</div>
+    <div class="config-grid" id="configGrid"></div>
+  </div>
+
+  <p class="footer">
+    Blank retail = cost / divisor (0.50 under $3, 0.55 for $3+) + $30/qty<br>
+    Print add-on = vendor rate &times; spots &times; 2 (min absorbed if under vendor min) + $25/qty<br>
+    Customer sees: blank price + print options = total per piece, free shipping
+  </p>
+</div>
+
+<script>
+// Full vendor rate table: [minQty, {colors: rate per piece per spot}]
+const RATE_TABLE = [
+  [24,   {1: 0.90, 2: 1.10, 3: 1.30, 4: 1.50, 5: 1.70, 6: 1.90}],
+  [144,  {1: 0.80, 2: 1.00, 3: 1.20, 4: 1.40, 5: 1.60, 6: 1.80}],
+  [288,  {1: 0.70, 2: 0.90, 3: 1.10, 4: 1.30, 5: 1.50, 6: 1.70}],
+  [432,  {1: 0.60, 2: 0.80, 3: 1.00, 4: 1.20, 5: 1.40, 6: 1.60}],
+  [720,  {1: 0.50, 2: 0.70, 3: 0.90, 4: 1.10, 5: 1.30, 6: 1.50}],
+  [1008, {1: 0.45, 2: 0.60, 3: 0.80, 4: 1.00, 5: 1.20, 6: 1.40}],
+  [2501, {1: 0.35, 2: 0.50, 3: 0.70, 4: 0.90, 5: 1.10, 6: 1.30}],
+  [5000, {1: 0.30, 2: 0.40, 3: 0.60, 4: 0.80, 5: 1.00, 6: 1.20}],
+];
+const MINS = {1: 24, 2: 24, 3: 36, 4: 48, 5: 60, 6: 72};
+const SCREEN = 15, SHIP_IN = 30, SHIP_OUT = 25;
+
+let numColors = 1, numSides = 1, extraSpots = 0, isReorder = false, currentTab = 'tiers';
+
+function fmt(n) { return '$' + Number(n).toFixed(2); }
+
+function silkRate(colors, qty) {
+  let rate = RATE_TABLE[0][1][colors];
+  for (const row of RATE_TABLE) { if (qty >= row[0]) rate = row[1][colors]; else break; }
+  return rate;
+}
+
+function calc(blankCost, colors, sides, extra, qty) {
+  const minQ = MINS[colors], totalSpots = sides + extra;
+  const effectiveQty = qty < minQ ? minQ : qty;
+  const rate = silkRate(colors, effectiveQty);
+
+  // Blank retail: auto-divisor based on cost (0.50 under $3, 0.55 for $3+)
+  const autoDivisor = blankCost < 3 ? 0.50 : 0.55;
+  const blankMarkup = blankCost / autoDivisor;
+  const markupMethod = '/ ' + autoDivisor;
+  const shipInPerPc = SHIP_IN / qty;
+  const blankRetailRaw = blankMarkup + shipInPerPc;
+  const blankRetail = Math.ceil(blankRetailRaw * 10) / 10;
+
+  // Print cost: if below vendor min, charge minQ × rate then divide by actual qty
+  const printCostVendor = qty < minQ ? (rate * minQ * totalSpots) / qty : rate * totalSpots;
+  const printCharge = printCostVendor * 2;
+
+  // Print add-on includes $25 client shipping, rounded up to nearest $0.10
+  const clientShipPerPc = SHIP_OUT / qty;
+  const printAddonRaw = printCharge + clientShipPerPc;
+  const printAddon = Math.ceil(printAddonRaw * 10) / 10;
+
+  // Total per piece
+  const perPiece = blankRetail + printAddon;
+
+  // Profit calc
+  const yourCost = blankCost + shipInPerPc + printCostVendor + clientShipPerPc;
+  const profit = perPiece - yourCost;
+  const margin = perPiece > 0 ? (profit / perPiece) * 100 : 0;
+
+  return {
+    blankRetail, blankRetailRaw, blankMarkup, shipInPerPc, markupMethod,
+    printAddon, printAddonRaw, printCharge, clientShipPerPc,
+    perPiece, printCostVendor, yourCost, profit, margin, rate,
+    total: perPiece * qty, totalProfit: profit * qty,
+    absorbing: qty < minQ
+  };
+}
+
+// Build display tiers: 10-23 (absorbed), then all vendor tiers, then 5000+
+function getTiers(colors) {
+  const minQ = MINS[colors];
+  const tiers = [];
+  // Below-minimum tiers (10-23 for 1-2 colors, etc.)
+  if (minQ <= 24) {
+    tiers.push({label:'10–23 pcs', qty:10, absorb:true});
+  } else if (minQ <= 36) {
+    tiers.push({label:'10–35 pcs', qty:10, absorb:true});
+  } else if (minQ <= 48) {
+    tiers.push({label:'10–47 pcs', qty:10, absorb:true});
+  } else if (minQ <= 60) {
+    tiers.push({label:'10–59 pcs', qty:10, absorb:true});
+  } else {
+    tiers.push({label:'10–71 pcs', qty:10, absorb:true});
+  }
+  // Vendor tiers
+  const tierLabels = [
+    {min:24,   next:144,  label:'24–143 pcs'},
+    {min:144,  next:288,  label:'144–287 pcs'},
+    {min:288,  next:432,  label:'288–431 pcs'},
+    {min:432,  next:720,  label:'432–719 pcs'},
+    {min:720,  next:1008, label:'720–1,007 pcs'},
+    {min:1008, next:2501, label:'1,008–2,500 pcs'},
+    {min:2501, next:5000, label:'2,501–4,999 pcs'},
+    {min:5000, next:null, label:'5,000+ pcs'},
+  ];
+  for (const t of tierLabels) {
+    if (t.min >= minQ || t.min === RATE_TABLE[0][0]) {
+      tiers.push({label: t.label, qty: t.min, absorb: false});
+    }
+  }
+  return tiers;
+}
+
+function setColors(n) {
+  numColors = n;
+  document.querySelectorAll('#colorBtns .btn').forEach((b,i) => b.classList.toggle('active', i === n-1));
+  recalc();
+}
+function setSides(n) {
+  numSides = n;
+  document.querySelectorAll('#sideBtns .btn').forEach((b,i) => b.classList.toggle('active', i === n-1));
+  recalc();
+}
+function setExtra(n) {
+  extraSpots = n;
+  document.querySelectorAll('#extraBtns .btn').forEach((b,i) => b.classList.toggle('active', i === n));
+  recalc();
+}
+function toggleReorder(on) {
+  isReorder = on;
+  document.getElementById('reorderNote').style.display = on ? '' : 'none';
+  recalc();
+}
+
+function setTab(t) {
+  currentTab = t;
+  document.getElementById('tabTiers').classList.toggle('active', t === 'tiers');
+  document.getElementById('tabCustom').classList.toggle('active', t === 'custom');
+  document.getElementById('tiersContent').style.display = t === 'tiers' ? '' : 'none';
+  document.getElementById('customContent').style.display = t === 'custom' ? '' : 'none';
+}
+
+function makeLine(label, value, cls) {
+  const val = typeof value === 'number' ? fmt(value) : value;
+  return '<div class="line ' + (cls||'') + '"><span class="l">' + label + '</span><span class="v">' + val + '</span></div>';
+}
+
+function recalc() {
+  const costs = [
+    { label: 'XS - XL', cost: parseFloat(document.getElementById('costStd').value) || 0 },
+    { label: '2XL', cost: parseFloat(document.getElementById('cost2xl').value) || 0 },
+    { label: '3XL', cost: parseFloat(document.getElementById('cost3xl').value) || 0 }
+  ];
+
+  // Hint
+  const hints = costs.map(c => {
+    const d = c.cost < 3 ? 0.50 : 0.55;
+    return c.label + ': ' + fmt(c.cost) + ' / ' + d + ' = ' + fmt(c.cost / d);
+  });
+  document.getElementById('blankHint').textContent = hints.join('  |  ');
+
+  const minQ = MINS[numColors];
+  document.getElementById('vendorInfo').textContent = minQ + ' pcs';
+
+  const totalSpots = numSides + extraSpots;
+  const screens = numColors * totalSpots;
+  const setupTotal = screens * SCREEN;
+  const setupEl = document.getElementById('setupDisplay');
+  if (isReorder) {
+    setupEl.innerHTML = '<span class="waived">' + screens + ' x ' + fmt(SCREEN) + ' = ' + fmt(setupTotal) + '</span> <span style="color:#2E7D32;font-weight:600">$0 (reorder)</span>';
+  } else {
+    setupEl.textContent = screens + ' x ' + fmt(SCREEN) + ' = ' + fmt(setupTotal);
+  }
+
+  // Tiers
+  const tiers = getTiers(numColors);
+  let tableHTML = '<tr><th>Size</th><th>Tier</th><th class="right">Rate</th><th class="right">Blank</th><th class="right">Print</th><th class="right">Total</th><th class="right">Profit</th></tr>';
+
+  costs.forEach(c => {
+    tiers.forEach((t, ti) => {
+      const r = calc(c.cost, numColors, numSides, extraSpots, t.qty);
+      tableHTML += '<tr' + (t.absorb ? ' class="absorb"' : '') + (ti === 0 ? ' style="border-top:2px solid #ddd"' : '') + '>'
+        + (ti === 0 ? '<td class="label-cell" rowspan="' + tiers.length + '" style="vertical-align:top;font-weight:700">' + c.label + '</td>' : '')
+        + '<td class="label-cell">' + t.label + (t.absorb ? ' <span style="font-size:10px;color:#E65100">min absorbed</span>' : '') + '</td>'
+        + '<td class="right rate-cell">' + fmt(r.rate) + '</td>'
+        + '<td class="right blank-price">' + fmt(r.blankRetail) + '</td>'
+        + '<td class="right addon-price">' + fmt(r.printAddon) + '</td>'
+        + '<td class="right total-price">' + fmt(r.perPiece) + '</td>'
+        + '<td class="right profit-cell">' + fmt(r.profit) + ' <span class="margin-cell">(' + r.margin.toFixed(0) + '%)</span></td>'
+        + '</tr>';
+    });
+  });
+
+  document.getElementById('tierTable').innerHTML = tableHTML;
+
+  // Custom qty
+  const cq = Math.max(10, parseInt(document.getElementById('customQty').value) || 10);
+  const cr = calc(costs[0].cost, numColors, numSides, extraSpots, cq);
+  const cr2 = calc(costs[1].cost, numColors, numSides, extraSpots, cq);
+  const cr3 = calc(costs[2].cost, numColors, numSides, extraSpots, cq);
+  const rate = cr.rate;
+
+  document.getElementById('customResult').innerHTML =
+    '<div class="hero-box"><div style="font-size:13px;color:#999;margin-bottom:8px">' + cq + ' pieces' + (cr.absorbing ? ' <span style="color:#E65100">(below vendor min ' + minQ + ', absorbing)</span>' : '') + '</div>'
+    + '<div style="display:flex;justify-content:center;gap:24px">'
+    + '<div><div class="stat-val">' + fmt(cr.perPiece) + '</div><div class="stat-label">XS-XL</div></div>'
+    + '<div><div class="stat-val">' + fmt(cr2.perPiece) + '</div><div class="stat-label">2XL</div></div>'
+    + '<div><div class="stat-val">' + fmt(cr3.perPiece) + '</div><div class="stat-label">3XL</div></div>'
+    + '</div>'
+    + '<div class="stats">'
+    + '<div><div class="stat-val" style="color:#2563EB">' + fmt(cr.printAddon) + '</div><div class="stat-label">print add-on (all sizes)</div></div>'
+    + '<div><div class="stat-val green">' + fmt(cr.totalProfit) + '</div><div class="stat-label">profit (XS-XL)</div></div>'
+    + '</div></div>'
+    + '<div class="breakdown">'
+    + '<div class="section-label">Vendor rate at ' + cq + ' pcs</div>'
+    + makeLine(numColors + ' color' + (numColors > 1 ? 's' : '') + ' × ' + fmt(rate) + '/pc/spot', fmt(rate) + '/pc/spot')
+    + '<div class="section-label">Blank Retail per size group</div>'
+    + makeLine('XS-XL: ' + fmt(costs[0].cost) + ' ' + cr.markupMethod + ' + $30/' + cq, cr.blankRetail)
+    + makeLine('2XL: ' + fmt(costs[1].cost) + ' ' + cr2.markupMethod + ' + $30/' + cq, cr2.blankRetail)
+    + makeLine('3XL: ' + fmt(costs[2].cost) + ' ' + cr3.markupMethod + ' + $30/' + cq, cr3.blankRetail)
+    + '<div class="section-label">Print Add-on (same for all sizes)</div>'
+    + makeLine('Vendor print' + (cr.absorbing ? ' (min ' + minQ + ' × ' + fmt(rate) + ' × ' + totalSpots + ' spot' + (totalSpots > 1 ? 's' : '') + ' / ' + cq + ')' : ' (' + fmt(rate) + ' × ' + totalSpots + ' spot' + (totalSpots > 1 ? 's' : '') + ')'), cr.printCostVendor)
+    + makeLine('× 2 markup', cr.printCharge)
+    + makeLine('Client shipping ($25 / ' + cq + ')', cr.clientShipPerPc)
+    + makeLine('Add-on total (rounded up)', cr.printAddon, 'blue')
+    + (isReorder ? '' : '<div class="section-label">Screen Setup (one-time)</div>' + makeLine(screens + ' screens × ' + fmt(SCREEN), setupTotal))
+    + '</div>';
+
+  // Config bar
+  document.getElementById('configGrid').innerHTML =
+    '<span class="ck">Colors</span><span class="cv">' + numColors + '</span>'
+    + '<span class="ck">Placement</span><span class="cv">' + (numSides === 1 ? 'One side' : 'Front + Back') + (extraSpots > 0 ? ' + ' + extraSpots + ' extra' : '') + '</span>'
+    + '<span class="ck">Total spots</span><span class="cv">' + totalSpots + '</span>'
+    + '<span class="ck">Screens</span><span class="cv">' + screens + (isReorder ? ' (waived — reorder)' : ' × ' + fmt(SCREEN) + ' = ' + fmt(setupTotal)) + '</span>'
+    + '<span class="ck">Vendor min</span><span class="cv">' + minQ + ' pcs</span>'
+    + '<span class="ck">Vendor rate (' + cq + ' pcs)</span><span class="cv">' + fmt(rate) + '/pc/spot</span>';
+}
+
+recalc();
+</script>
+</body>
+</html>
