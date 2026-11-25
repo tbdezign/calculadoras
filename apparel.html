@@ -600,7 +600,8 @@ const METHOD_KEYS = ["silk", "dtf", "v2", "emb"];
 let method = "silk";
 let numColors = 1, numSides = 1, extraSpots = 0;            // Silk Screen print options
 let tierPref = { silk:true, dtf:false, v2:true, emb:true };  // tier breaks on/off per method
-let shipMode = "auto", freeShipMin = TBDPricing.CONFIG.freeShipMin;   // supplier shipping: auto (free at freeShipMin in blanks) / on (always charge) / off (free)
+let shipMode = "auto", freeShipMin = TBDPricing.CONFIG.freeShipMin, suppShipAmt = null;   // suppShipAmt: supplier shipping for this quote (null = the method's default)
+   // supplier shipping: auto (free at freeShipMin in blanks) / on (always charge) / off (free)
 let quoteMode = "options", quoteLang = "pt", splitSuppliers = false;
 let v2Protection = "";                                       // Vendor 2 purchase protection
 let dtfSrc = "v1"; // DTF production: "v1" = Vendor 1, "house" = made in-house (own heat press)
@@ -1151,7 +1152,7 @@ function bestSupplierMix(entries, shipAmt) {   // entries: [{ id, opts: [{ n, ke
   supPlanMemo = { sig, plan };
   return plan;
 }
-const SUPP_SHIP = () => method === "emb" ? embSet.suppShip : method === "silk" ? SHIP_IN : 30;
+const SUPP_SHIP = () => method === "emb" ? embSet.suppShip : suppShipAmt != null ? suppShipAmt : method === "silk" ? SHIP_IN : 30;
 function orderSupplierPlan() {
   return bestSupplierMix(validItems().map(it => { const p = prod(it); return { id: String(it.id), opts: itemOptions(it, method, p, sizeQtys(it), (it.supplier || "").trim()) }; }), SUPP_SHIP());
 }
@@ -1210,15 +1211,15 @@ function comboKey(it) { const st = comboStats(); return TBDPricing.supplierKey(s
 function comboOut(tq) { const st = comboStats(); return st.maxOut * tq / Math.max(1, tq + st.total - totalQty()); }
 // Run something as if another quote were open (no screen updates), e.g. to price it for the combined message.
 function withQuoteState(sq, fn) {
-  const keep = { method, numColors, numSides, extraSpots, tierPref, quoteMode, splitSuppliers, v2Protection, embSet, dtfSrc, orderItems, shipMode, freeShipMin, fp: mk.frontPlace, os: mk.oneSide };
+  const keep = { method, numColors, numSides, extraSpots, tierPref, quoteMode, splitSuppliers, v2Protection, embSet, dtfSrc, orderItems, shipMode, freeShipMin, suppShipAmt, fp: mk.frontPlace, os: mk.oneSide };
   const frozen = comboStats(); comboFrozen = frozen;
   try {
     method = sq.method; numColors = sq.numColors; numSides = sq.numSides; extraSpots = sq.extraSpots; tierPref = { ...sq.tierPref }; quoteMode = "final";
     splitSuppliers = sq.splitSuppliers; v2Protection = sq.v2Protection; embSet = { ...sq.embSet }; dtfSrc = sq.dtfSrc || "v1"; orderItems = sq.orderItems || [];
-    shipMode = sq.shipMode || "auto"; freeShipMin = sq.freeShipMin != null ? sq.freeShipMin : 200; mk.frontPlace = sq.frontPlace; mk.oneSide = sq.oneSide;
+    shipMode = sq.shipMode || "auto"; freeShipMin = sq.freeShipMin != null ? sq.freeShipMin : 200; suppShipAmt = sq.suppShipAmt != null ? sq.suppShipAmt : null; mk.frontPlace = sq.frontPlace; mk.oneSide = sq.oneSide;
     return fn();
   } finally {
-    ({ method, numColors, numSides, extraSpots, tierPref, quoteMode, splitSuppliers, v2Protection, embSet, dtfSrc, orderItems, shipMode, freeShipMin } = keep);
+    ({ method, numColors, numSides, extraSpots, tierPref, quoteMode, splitSuppliers, v2Protection, embSet, dtfSrc, orderItems, shipMode, freeShipMin, suppShipAmt } = keep);
     mk.frontPlace = keep.fp; mk.oneSide = keep.os; comboFrozen = null;
   }
 }
@@ -1361,8 +1362,8 @@ function dtfUplift(t) {
   const n = t || tq; let prof = 0;
   its.forEach(it => {
     const c = itemCost(it, "std"), share = itemQty(it) / tq;
-    const r = t ? dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, dtfExtraSize(it), tierSuppShip(c, t, 30))
-                : dtfCalc(c, dtfPl(it), tq, shipQtyFor(it), it.extraSpots || 0, dtfExtraSize(it), suppShipFor(it, 30));
+    const r = t ? dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, dtfExtraSize(it), tierSuppShip(c, t, SUPP_SHIP()))
+                : dtfCalc(c, dtfPl(it), tq, shipQtyFor(it), it.extraSpots || 0, dtfExtraSize(it), suppShipFor(it, SUPP_SHIP()));
     prof += (r.perPiece - r.unitCost) * share * n;
   });
   const min = dtfRates().minProfit || 0;
@@ -1452,8 +1453,8 @@ const METHODS = {
     label:"Silk Screen", min:PCFG.silk.minPieces, tiers:PCFG.silk.tiers, split:true,
     views: it => silkViews(),
     print: it => T().silk + " · " + T().colors(numColors) + " · " + placeText(silkViews(), extraSpots, it),
-    price(it, size) { const c = sizeCost(it, size), r = silkCalc(c, totalQty(), shipQtyFor(it), suppShipFor(it, SHIP_IN)); return { ...r, detail: fmt(c) + "÷" + r.divisor + (r.shipIn ? " + $" + r.shipIn + "/" + r.shipQty : " + free supplier ship") + " + print + $25/" + totalQty() }; },
-    tierPrice(it, t, size) { return silkCalc(sizeCost(it, size), t, tierShipQty(t), tierSuppShip(sizeCost(it, "std"), t, SHIP_IN)).perPiece; },
+    price(it, size) { const c = sizeCost(it, size), r = silkCalc(c, totalQty(), shipQtyFor(it), suppShipFor(it, SUPP_SHIP())); return { ...r, detail: fmt(c) + "÷" + r.divisor + (r.shipIn ? " + $" + r.shipIn + "/" + r.shipQty : " + free supplier ship") + " + print + $25/" + totalQty() }; },
+    tierPrice(it, t, size) { return silkCalc(sizeCost(it, size), t, tierShipQty(t), tierSuppShip(sizeCost(it, "std"), t, SUPP_SHIP())).perPiece; },
     setup() { const n = numColors * (numSides + extraSpots), multi = validItems().length > 1, L = T();
       return { total: n * SCREEN, cost: 0, lines: ["Screen setup: " + fmt(n * SCREEN) + (n > 1 ? " (" + L.screens(n) + ")" : ""), (multi ? L.once : L.oneTime(n)) + L.kept(n)] }; },
     ship: () => T().ship(PCFG.silk.days[0], PCFG.silk.days[1], true), tierNote: () => T().tierNote,
@@ -1462,11 +1463,11 @@ const METHODS = {
     get label() { return dtfLabel(); }, min:0, tiers:PCFG.dtf.tiers, split:true,
     views: it => dtfPl(it).views,
     print: it => T().dtf + " · " + placeText(dtfPl(it).views, it.extraSpots || 0, it) + dtfSizeText(it),
-    price(it) { const p = { cost: itemCost(it, "std") }, pl = dtfPl(it), r0 = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, dtfExtraSize(it), suppShipFor(it, 30));
+    price(it) { const p = { cost: itemCost(it, "std") }, pl = dtfPl(it), r0 = dtfCalc(p.cost, pl, totalQty(), shipQtyFor(it), it.extraSpots || 0, dtfExtraSize(it), suppShipFor(it, SUPP_SHIP()));
       const up = dtfUplift(), r = up ? { ...r0, perPiece: Math.round((r0.perPiece + up) * 100) / 100 } : r0;
       const ex = dtfExtra()[dtfExtraSize(it)], R = dtfRates();
       return { ...r, detail: fmt(p.cost) + "÷" + r.divisor + (r.shipIn ? " + $30/" + r.shipQty : " + free supplier ship") + " + " + fmt(pl.retail) + ((it.extraSpots||0) > 0 ? " + " + it.extraSpots + "×" + fmt(ex.retail) : "") + " + $20/" + totalQty() + (R.sheetShip ? " + $" + R.sheetShip + " sheet/" + Math.max(totalQty(), R.sheetMinQty || 1) : "") + (up ? " + " + fmt(up) + " (min $" + R.minProfit + " profit)" : "") }; },
-    tierPrice(it, t) { const c = itemCost(it, "std"); return Math.round((dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, dtfExtraSize(it), tierSuppShip(c, t, 30)).perPiece + dtfUplift(t)) * 100) / 100; },
+    tierPrice(it, t) { const c = itemCost(it, "std"); return Math.round((dtfCalc(c, dtfPl(it), t, tierShipQty(t), it.extraSpots || 0, dtfExtraSize(it), tierSuppShip(c, t, SUPP_SHIP())).perPiece + dtfUplift(t)) * 100) / 100; },
     setup: () => null, ship: () => T().ship(PCFG.dtf.days[0], PCFG.dtf.days[1], true), tierNote: () => T().tierNoteMix,
   },
   v2: {
@@ -1574,7 +1575,7 @@ function renderSettingsBody() {
     const R = dtfRates();
     el.innerHTML = '<div class="card-label">' + dtfLabel() + '</div>'
       + '<label class="lbl">Production</label><div class="btn-group">' + ["v1", "house"].map((k, i) => '<button class="btn' + (dtfSrc === k ? ' active' : '') + '" onclick="setDtfSrc(\'' + k + '\')">' + ["Vendor 1", "In-house (heat press)"][i] + '</button>').join("") + '</div>'
-      + '<div class="panel-note">Each style picks its own placement and extra spots below. Supplier shipping ($30) and client shipping ($20)' + (R.sheetShip ? ' and the DTF sheet shipping ($' + R.sheetShip + ', split over at least ' + R.sheetMinQty + ' pcs)' : '') + ' are split across the order.' + (dtfSrc === 'house' ? ' Sizes: small up to 4×4", medium up to 10×10", full up to 15×15".' : '') + (R.minProfit ? ' Every order makes at least $' + R.minProfit + ' profit: small orders get the difference added per piece.' : '') + '</div>';
+      + '<div class="panel-note">Each style picks its own placement and extra spots below. Supplier shipping ($' + SUPP_SHIP() + ') and client shipping ($20)' + (R.sheetShip ? ' and the DTF sheet shipping ($' + R.sheetShip + ', split over at least ' + R.sheetMinQty + ' pcs)' : '') + ' are split across the order.' + (dtfSrc === 'house' ? ' Sizes: small up to 4×4", medium up to 10×10", full up to 15×15".' : '') + (R.minProfit ? ' Every order makes at least $' + R.minProfit + ' profit: small orders get the difference added per piece.' : '') + '</div>';
   } else if (method === "v2") {
     const o = v2Order();
     el.innerHTML = '<div class="card-label">Internal costs <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:400">(not shown in the quote)</span></div>'
@@ -1585,17 +1586,18 @@ function renderSettingsBody() {
     el.innerHTML = '<div class="card-label">Embroidery</div>'
       + '<div class="fee-row"><span>Embroidery price <small>table by total pieces: ' + TBDPricing.CONFIG.emb.table.map(r => r[0] + '+ ' + fmt(r[1])).join(' · ') + ' (up to 9,000 stitches; vendor ' + TBDPricing.CONFIG.emb.table.map(r => fmt(r[3])).join('/') + ' up to 7,000)</small></span></div>'
       + '<div class="fee-row"><span>Digitizing <small>$5 cost / $20 retail per different logo, once</small></span><label class="switch"><input type="checkbox" ' + (embSet.dig ? 'checked' : '') + ' onchange="embSet.dig=this.checked;updateOrderResults()"><span></span></label></div>'
-      + '<div class="fee-row"><span>Supplier shipping <small>÷ total pcs, added to price</small></span><input type="number" step="0.01" min="0" value="' + embSet.suppShip + '" oninput="embSet.suppShip=parseFloat(this.value)||0;updateOrderResults()"></div>'
       + '<div class="fee-row"><span>Client shipping <small>÷ total pcs, added to price</small></span><input type="number" step="0.01" min="0" value="' + embSet.clientShip + '" oninput="embSet.clientShip=parseFloat(this.value)||0;updateOrderResults()"></div>';
   }
 }
 function shipCtlHTML() {
   const b = (v, l) => '<button class="btn' + (shipMode === v ? ' active' : '') + '" onclick="setShipMode(\'' + v + '\')">' + l + '</button>';
   return '<div class="ship-ctl" style="margin-top:12px;padding-top:12px;border-top:1px solid #F0F0F0"><label class="lbl">Supplier shipping</label><div class="btn-group">' + b("auto", "Auto") + b("on", "Charge") + b("off", "Free") + '</div>'
+    + (shipMode !== "off" ? '<div class="fee-row" style="margin-top:8px"><span>Shipping cost <small>what the supplier charges for this order · ÷ pieces, added to the price</small></span><input type="number" step="0.01" min="0" value="' + SUPP_SHIP() + '" oninput="setSuppShip(this.value)"></div>' : '')
     + (shipMode === "auto" ? '<div class="fee-row" style="margin-top:8px"><span>Free when blanks reach <small>vendor blank cost × pieces</small></span><input type="number" step="1" min="0" value="' + freeShipMin + '" oninput="freeShipMin=parseFloat(this.value)||0;updateOrderResults()"></div>'
       : '<div class="info-row"><span>' + (shipMode === "on" ? "Always added to the price, whatever the order size." : "Never added. Use when the supplier waives shipping.") + '</span></div>') + '</div>';
 }
 function setShipMode(m) { shipMode = m; renderSettings(); updateOrderResults(); }
+function setSuppShip(v) { const n = Math.max(0, parseFloat(v) || 0); if (method === "emb") embSet.suppShip = n; else suppShipAmt = n; updateOrderResults(); }
 function setColors(n) { numColors = n; renderSettings(); updateOrderResults(); }
 function setDtfSrc(k) { dtfSrc = k; renderMethodTabs(); renderQuoteTabs(); renderSettings(); renderOrderItems(); updateOrderResults(); }
 function setSides(n) { numSides = n; mk.sig = ""; renderSettings(); updateOrderResults(); renderMockup(); }
@@ -2164,12 +2166,12 @@ const newQid = () => "aq" + Date.now().toString(36) + Math.random().toString(36)
 function blankQuote(m) {
   return { qid:newQid(), name:"", method:m || method, numColors:1, numSides:1, extraSpots:0, tierPref:{ silk:true, dtf:false, v2:true, emb:true },
            quoteMode:"options", quoteLang:"pt", splitSuppliers:false, v2Protection:"", embSet:{ rate:TBDPricing.CONFIG.emb.rate, dig:true, suppShip:TBDPricing.CONFIG.emb.suppShip, clientShip:TBDPricing.CONFIG.emb.clientShip },
-           orderItems:null, frontPlace:"lc", oneSide:"front", logos:{ front:null, back:null, side:null, rside:null }, boxes:{}, shipMode:"auto", freeShipMin:TBDPricing.CONFIG.freeShipMin };
+           orderItems:null, frontPlace:"lc", oneSide:"front", logos:{ front:null, back:null, side:null, rside:null }, boxes:{}, shipMode:"auto", freeShipMin:TBDPricing.CONFIG.freeShipMin, suppShipAmt:null };
 }
 function snapshotQuote() {
   const cur = quotes[activeQ] || {};
   return { qid:cur.qid || newQid(), name:cur.name || "", combo:cur.combo || null, method, numColors, numSides, extraSpots, tierPref:{ ...tierPref }, quoteMode, quoteLang, splitSuppliers, v2Protection, embSet:{ ...embSet }, dtfSrc,
-           orderItems, frontPlace:mk.frontPlace, oneSide:mk.oneSide, logos:mk.logos, boxes:mk.boxes, shipMode, freeShipMin };
+           orderItems, frontPlace:mk.frontPlace, oneSide:mk.oneSide, logos:mk.logos, boxes:mk.boxes, shipMode, freeShipMin, suppShipAmt };
 }
 function applyQuote(s) {
   method = s.method; numColors = s.numColors; numSides = s.numSides; extraSpots = s.extraSpots;
@@ -2177,7 +2179,7 @@ function applyQuote(s) {
   v2Protection = s.v2Protection; embSet = { ...s.embSet }; dtfSrc = s.dtfSrc || "v1";
   orderItems = s.orderItems || [newItem()]; s.orderItems = orderItems;
   mk.frontPlace = s.frontPlace; mk.oneSide = s.oneSide; mk.logos = s.logos; mk.boxes = s.boxes;
-  shipMode = s.shipMode || "auto"; freeShipMin = s.freeShipMin != null ? s.freeShipMin : 200;
+  shipMode = s.shipMode || "auto"; freeShipMin = s.freeShipMin != null ? s.freeShipMin : 200; suppShipAmt = s.suppShipAmt != null ? s.suppShipAmt : null;
   mk.edit = null; mk.sig = ""; mk.pasteTarget = null; showCatalog = false; editProduct = null;
   q("qName").value = s.name || "";
   renderAll();
