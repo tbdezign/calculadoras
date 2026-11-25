@@ -2775,12 +2775,42 @@ function cleanBackgroundCanvas(img) {
   ox.drawImage(c, x0, y0, sw, sh, Math.round((S - sw * k) / 2), Math.round((S - sh * k) / 2), Math.round(sw * k), Math.round(sh * k));
   return out;
 }
+// When the background can't be removed (not plain enough), still give the photo the same framing as the cleaned ones:
+// trim to the garment and center it on a square of the background color, filling 88%, so every photo shows the same size.
+function frameCanvas(img) {
+  const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const cx = c.getContext("2d", { willReadFrequently: true }); cx.drawImage(img, 0, 0);
+  const p = cx.getImageData(0, 0, W, H).data;
+  const rs = [], gs = [], bs = [], step = Math.max(1, Math.floor((W + H) / 800));
+  const sample = (x, y) => { const i = (y * W + x) * 4; rs.push(p[i]); gs.push(p[i+1]); bs.push(p[i+2]); };
+  for (let x = 0; x < W; x += step) { sample(x, 0); sample(x, H - 1); }
+  for (let y = 0; y < H; y += step) { sample(0, y); sample(W - 1, y); }
+  const med = a => a.sort((m, n) => m - n)[a.length >> 1], br = med(rs), bg = med(gs), bb = med(bs);
+  // the garment = rows/columns where enough pixels differ from the background
+  const far = i => Math.abs(p[i]-br) + Math.abs(p[i+1]-bg) + Math.abs(p[i+2]-bb) > 36;
+  const colN = new Uint32Array(W), rowN = new Uint32Array(H);
+  for (let y = 0; y < H; y += 2) for (let x = 0; x < W; x += 2) if (far((y * W + x) * 4)) { colN[x]++; rowN[y]++; }
+  const lim = n => Math.max(2, n * 0.01);
+  let x0 = 0, x1 = W - 1, y0 = 0, y1 = H - 1;
+  while (x0 < W && colN[x0] < lim(H / 2)) x0++; while (x1 > x0 && colN[x1] < lim(H / 2)) x1--;
+  while (y0 < H && rowN[y0] < lim(W / 2)) y0++; while (y1 > y0 && rowN[y1] < lim(W / 2)) y1--;
+  if (x1 - x0 < W * 0.1 || y1 - y0 < H * 0.1) return null;
+  const sw = x1 - x0 + 1, sh = y1 - y0 + 1, side = Math.max(sw, sh) / 0.88;
+  const S = Math.min(2400, Math.round(side)), k = S / side;
+  const out = document.createElement("canvas"); out.width = S; out.height = S;
+  const ox = out.getContext("2d"); ox.fillStyle = `rgb(${br},${bg},${bb})`; ox.fillRect(0, 0, S, S);
+  ox.imageSmoothingQuality = "high";
+  ox.drawImage(c, x0, y0, sw, sh, Math.round((S - sw * k) / 2), Math.round((S - sh * k) / 2), Math.round(sw * k), Math.round(sh * k));
+  return out;
+}
 async function removeBackground(key, btn) {
   const rec = photoLib[key]; if (!rec) return;
   if (btn) { btn.disabled = true; btn.textContent = "Removing…"; }
   try {
     const img = await getPhotoImg(rec); if (!img) throw new Error("load");
-    const out = cleanBackgroundCanvas(img);
+    let out = cleanBackgroundCanvas(img), framed = false;
+    if (!out) { out = frameCanvas(img); framed = true; }
     if (!out) { mkMsg("Couldn't find a plain background around the shirt in this photo, so it was left as it is.", true); renderMockRows(true); return; }
     const blob = await new Promise(r => out.toBlob(r, "image/jpeg", 0.95));
     if (mkDb && mkAssets) {
@@ -2792,7 +2822,7 @@ async function removeBackground(key, btn) {
       await localPut(key, next); photoLib[key] = { ...next, src: URL.createObjectURL(blob) };
     }
     Object.keys(mk.boxes).forEach(k => delete mk.boxes[k]);
-    mkMsg("Background removed. Logo positions for this photo were reset, since the photo was trimmed.");
+    mkMsg(framed ? "The background isn't plain enough to remove, so the photo was only re-framed to match the others (Undo restores it)." : "Background removed. Logo positions for this photo were reset, since the photo was trimmed.");
     renderLib(); renderMockRows(true); renderEditor();
   } catch (e) { mkMsg("Couldn't remove the background. Try again.", true); renderMockRows(true); }
 }
@@ -2801,12 +2831,13 @@ async function cleanAllBackgrounds(btn) {
   const keys = Object.keys(photoLib).filter(k => !photoLib[k].origBlob && !photoLib[k].origAssetId);
   if (!keys.length || !confirm("Remove the background from " + keys.length + " photos? Each one keeps its original (Undo under the photo). Saved logo positions on these photos are reset.")) return;
   if (btn) btn.disabled = true;
-  let done = 0, skipped = 0;
+  let done = 0, skipped = 0, framedN = 0;
   for (const key of keys) {
     mkMsg("Removing backgrounds… " + (done + skipped + 1) + " of " + keys.length);
     const rec = photoLib[key];
     try {
-      const img = await getPhotoImg(rec), out = img && cleanBackgroundCanvas(img);
+      const img = await getPhotoImg(rec); let out = img && cleanBackgroundCanvas(img);
+      if (!out && img) { out = frameCanvas(img); if (out) framedN++; }
       if (!out) { skipped++; continue; }
       const blob = await new Promise(r => out.toBlob(r, "image/jpeg", 0.95));
       const { src, ...st } = rec, next = { ...st, blob, origBlob: rec.blob, place: {} };
@@ -2815,7 +2846,7 @@ async function cleanAllBackgrounds(btn) {
     } catch (e) { skipped++; }
   }
   Object.keys(mk.boxes).forEach(k => delete mk.boxes[k]);
-  mkMsg("Background removed from " + done + " photo" + (done === 1 ? "" : "s") + (skipped ? ". " + skipped + " had no plain background and were kept as they are." : "."));
+  mkMsg("Background removed from " + (done - framedN) + " photo" + (done - framedN === 1 ? "" : "s") + (framedN ? ". " + framedN + " had no plain background and were only re-framed to match" : "") + (skipped ? ". " + skipped + " couldn't be changed" : "") + ".");
   renderLib(); mk.sig = ""; renderMockRows(true); renderEditor();
 }
 async function undoBackground(key) {
@@ -2910,7 +2941,7 @@ async function saveGarmentPhoto(file, code, color, side) {
     const c = document.createElement("canvas"); c.width = Math.round(src.naturalWidth*s); c.height = Math.round(src.naturalHeight*s);
     const cx = c.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0,0,c.width,c.height); cx.drawImage(src,0,0,c.width,c.height);
     const orig = await new Promise(r => c.toBlob(r, "image/jpeg", 0.9));
-    let cleaned = null; try { cleaned = cleanBackgroundCanvas(c); } catch (e) {}
+    let cleaned = null; try { cleaned = cleanBackgroundCanvas(c) || frameCanvas(c); } catch (e) {}
     const blob = cleaned ? await new Promise(r => cleaned.toBlob(r, "image/jpeg", 0.9)) : orig;
     await storePhoto(code, color, side, blob, null, cleaned ? orig : null);
     orderItems.forEach(o => { if (o.code.toUpperCase() === code && slugPart(o.color) === slugPart(color)) delete mk.boxes[boxKey(o, side)]; });
