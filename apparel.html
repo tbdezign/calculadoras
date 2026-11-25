@@ -425,7 +425,7 @@
     </div>
     <datalist id="supplierList"><option value="S&amp;S Activewear"><option value="SanMar"></datalist>
     <div id="orderItems"></div>
-    <button class="add-btn" onclick="addOrderItem()">+ Add style</button>
+    <div style="display:flex;gap:8px;align-items:center"><input id="addCodeInput" placeholder="Style code" autocomplete="off" style="flex:1;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;text-transform:uppercase" onkeydown="if(event.key==='Enter'){addOrderItem();event.preventDefault()}"><button class="add-btn" onclick="addOrderItem()" style="margin:0;white-space:nowrap">+ Add style</button></div>
   </div>
 
   <div id="orderSummary" hidden></div>
@@ -1661,7 +1661,22 @@ function renderYmqTable() {
 // ════════════════════════════════════════════
 // ORDER BUILDER
 // ════════════════════════════════════════════
-function addOrderItem() { orderItems.push(newItem()); renderOrderItems(); }
+function addOrderItem() {
+  const inp = q("addCodeInput"), code = (inp ? inp.value : "").toUpperCase().trim();
+  const it = newItem(); if (code) it.code = code;
+  orderItems.push(it); renderOrderItems();
+  if (code) updateItemInfo(it);
+  if (inp) inp.value = "";
+  // scroll to new item and focus the right field
+  requestAnimationFrame(() => {
+    const el = document.querySelector('.order-item[data-id="' + it.id + '"]');
+    if (el) el.scrollIntoView({ behavior:"smooth", block:"center" });
+    setTimeout(() => {
+      const target = code ? q("oiq-" + it.id) : q("oic-" + it.id);
+      if (target) target.focus();
+    }, 350);
+  });
+}
 // Order of the styles: the quote message and the mockup follow this order (drag ☰ or use ▲▼)
 function reorderDone() { mk.sig = ""; renderOrderItems(); renderMockRows(true); renderQuote(); }
 function moveOrderItem(id, d) {
