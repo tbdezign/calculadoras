@@ -33,6 +33,7 @@
   .setup-row { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; margin-top: 12px; border-top: 1px solid #F0F0F0; }
   .setup-row .label { font-size: 14px; color: #666; }
   .setup-row .value { font-size: 14px; font-family: 'SF Mono','Fira Code',monospace; font-weight: 600; }
+  .setup-row .waived { color: #999; } .setup-row .waived s { text-decoration: line-through; }
   .tabs { display: flex; border-bottom: 1px solid #E8E8E8; }
   .tab { flex: 1; padding: 12px 0; text-align: center; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: none; color: #999; border-bottom: 2px solid transparent; transition: all 0.15s; font-family: inherit; }
   .tab.active { color: #051024; border-bottom-color: #051024; }
@@ -598,7 +599,7 @@ function q(id) { return document.getElementById(id); }
 // ════════════════════════════════════════════
 const METHOD_KEYS = ["silk", "dtf", "v2", "emb"];
 let method = "silk";
-let numColors = 1, numSides = 1, extraSpots = 0;            // Silk Screen print options
+let numColors = 1, numSides = 1, extraSpots = 0, isReorder = false; // Silk Screen print options
 let tierPref = { silk:true, dtf:false, v2:true, emb:true };  // tier breaks on/off per method
 let shipMode = "auto", freeShipMin = TBDPricing.CONFIG.freeShipMin, suppShipAmt = null;   // suppShipAmt: supplier shipping for this quote (null = the method's default)
    // supplier shipping: auto (free at freeShipMin in blanks) / on (always charge) / off (free)
@@ -1474,6 +1475,7 @@ const METHODS = {
     price(it, size) { const c = sizeCost(it, size), r = silkCalc(c, totalQty(), shipQtyFor(it), suppShipFor(it, SUPP_SHIP())); return { ...r, detail: fmt(c) + "÷" + r.divisor + (r.shipIn ? " + $" + r.shipIn + "/" + r.shipQty : " + free supplier ship") + " + print + $25/" + totalQty() }; },
     tierPrice(it, t, size) { return silkCalc(sizeCost(it, size), t, tierShipQty(t), tierSuppShip(sizeCost(it, "std"), t, SUPP_SHIP())).perPiece; },
     setup() { const n = numColors * (numSides + extraSpots), multi = validItems().length > 1, L = T();
+      if (isReorder) return { total: 0, cost: 0, lines: ["Screen setup: waived (reorder)"] };
       return { total: n * SCREEN, cost: 0, lines: ["Screen setup: " + fmt(n * SCREEN) + (n > 1 ? " (" + L.screens(n) + ")" : ""), (multi ? L.once : L.oneTime(n)) + L.kept(n)] }; },
     ship: () => T().ship(PCFG.silk.days[0], PCFG.silk.days[1], true), tierNote: () => T().tierNote,
   },
@@ -1586,7 +1588,8 @@ function renderSettingsBody() {
       + '<div class="info-row"><span>Vendor rate</span><span class="mono">' + fmt(TBDPricing.silkRate(numColors, totalQty() || 24)) + '/pc/spot (' + (totalQty() || 0) + ' pcs) · Min ' + MINS[numColors] + ' pcs</span></div>'
       + '<label class="lbl" style="margin-top:12px">Placement</label><div class="btn-group">' + btns("setSides", [1,2], numSides, ["One side","Front + Back"]) + '</div>'
       + '<label class="lbl" style="margin-top:12px">Extra spots (sleeves, etc.)</label><div class="btn-group">' + btns("setExtra", [0,1,2], extraSpots, ["None","+1 Spot","+2 Spots"]) + '</div>'
-      + '<div class="setup-row"><span>Screen setup (one-time)</span><span class="mono strong">' + n + ' x ' + fmt(SCREEN) + ' = ' + fmt(n * SCREEN) + '</span></div>'
+      + '<div class="fee-row" style="margin-top:14px"><span>Reorder <small>waive screen setup for repeat orders</small></span><label class="switch"><input type="checkbox" ' + (isReorder ? 'checked' : '') + ' onchange="setReorder(this.checked)"><span></span></label></div>'
+      + '<div class="setup-row"><span>Screen setup (one-time)</span><span class="mono strong' + (isReorder ? ' waived' : '') + '">' + (isReorder ? '<s>' + n + ' x ' + fmt(SCREEN) + ' = ' + fmt(n * SCREEN) + '</s> waived' : n + ' x ' + fmt(SCREEN) + ' = ' + fmt(n * SCREEN)) + '</span></div>'
       + '<details class="ymq" id="ymqBox"' + (ymqOpen ? ' open' : '') + ' ontoggle="ymqOpen=this.open;if(this.open)renderYmq()"><summary>Shopify / YMQ tier reference</summary><div id="ymqBody"></div></details>';
     if (ymqOpen) renderYmq();
   } else if (method === "dtf") {
@@ -1620,6 +1623,7 @@ function setColors(n) { numColors = n; renderSettings(); updateOrderResults(); }
 function setDtfSrc(k) { dtfSrc = k; renderMethodTabs(); renderQuoteTabs(); renderSettings(); renderOrderItems(); updateOrderResults(); }
 function setSides(n) { numSides = n; mk.sig = ""; renderSettings(); updateOrderResults(); renderMockup(); }
 function setExtra(n) { extraSpots = n; renderSettings(); renderOrderItems(); renderPlacement(); mk.sig = ""; renderMockRows(true); }
+function setReorder(v) { isReorder = v; renderSettings(); updateOrderResults(); }
 
 // ── Silk: Shopify / YMQ tier reference (kept from the Silk Screen calculator) ──
 let ymqOpen = false, ymqCosts = { std:7.47, x2:8.50, x3:10.56 };
