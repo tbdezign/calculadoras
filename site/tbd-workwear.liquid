@@ -101,8 +101,8 @@
   .ww-add { margin-top: auto; padding: 8px; border-radius: 8px; border: 1.5px solid #051024; background: #fff; color: #051024; font-weight: 600; font-size: 13px; }
   .ww-add:hover { background: #051024; color: #fff; }
   .ww-line { border: 1px solid #e3e3e3; border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; gap: 18px; align-items: stretch; }
-  /* the photo box is as tall as the line */
-  .ww-lpic { flex: 0 0 250px; min-height: 220px; border: 0; padding: 0; margin: 0; box-shadow: none; outline: none; border-radius: 10px; background: #fff; display: flex; align-items: center; justify-content: center; cursor: zoom-in; overflow: hidden; }
+  /* the photo box has a fixed size, so every color and side shows the same and the line doesn't jump */
+  .ww-lpic { flex: 0 0 250px; height: 300px; align-self: flex-start; border: 0; padding: 0; margin: 0; box-shadow: none; outline: none; border-radius: 10px; background: #fff; display: flex; align-items: center; justify-content: center; cursor: zoom-in; overflow: hidden; }
   .ww-lpic img { width: 100%; height: 100%; object-fit: contain; }
   .ww-lpic svg { width: 78%; height: 78%; }
   /* line photo gallery: front / back / side of the chosen color */
@@ -118,7 +118,7 @@
   .ww-gdots span.on { background: #051024; }
   .ww-gside { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: 600; color: #4b5563; background: rgba(255,255,255,.9); border: 1px solid #e5e7eb; border-radius: 999px; padding: 1px 8px; pointer-events: none; }
   .ww-lpic:focus-visible { outline: 2px solid #2a9fd6; outline-offset: 2px; }
-  .ww-lbody { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; gap: 14px; }
+  .ww-lbody { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-start; gap: 14px; }
   .ww-lsec { display: flex; flex-direction: column; gap: 8px; }
   .ww-lab { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #6b7280; }
   .ww-lhead { display: flex; justify-content: space-between; align-items: center; gap: 6px 12px; flex-wrap: wrap; }
@@ -270,7 +270,7 @@
     .ww-cta { padding: 8px; }
     .ww-aside { position: static; }
     .ww-line { flex-direction: column; gap: 10px; }
-    .ww-lpic { flex: none; width: 100%; max-width: 200px; min-height: 0; aspect-ratio: 1; align-self: center; }
+    .ww-lpic { flex: none; width: 100%; max-width: 200px; height: auto; min-height: 0; aspect-ratio: 1; align-self: center; }
     .ww-tbl table { font-size: 13px; }
     .ww-tbl th, .ww-tbl td { padding: 8px 9px; }
     .ww-tbl tbody th { white-space: normal; min-width: 96px; }
