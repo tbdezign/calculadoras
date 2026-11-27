@@ -197,6 +197,9 @@
   .ww-tlform { min-width: 0; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; }
   .ww-tllab { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
   .ww-tlfor { font-weight: 600; color: #1a7698; }
+  .ww-tlstyh { display: flex; align-items: center; gap: 8px; width: 100%; padding: 0; margin-bottom: 8px; border: 0; background: none; color: #051024; text-align: left; font-size: 14px; font-weight: 600; }
+  .ww-tlstyh small { margin-left: auto; font-size: 12.5px; font-weight: 600; color: #1a7698; }
+  .ww-tlstyh svg { width: 12px; height: 12px; color: #1a7698; transition: transform .15s; }
   .ww-tlpres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
   .ww-tlpre { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 92px; padding: 8px; border-radius: 12px; border: 1.5px solid #e3e7ec; background: #232c44; overflow: hidden; }
   .ww-tlpre:hover { border-color: #41a9cc; }
@@ -261,6 +264,9 @@
     .ww-tlstage { min-height: 0; height: 116px; padding: 10px; }
     .ww-tlprevh .ww-tllab { font-size: 13px; }
     .ww-tltabs .ww-pill { padding: 4px 10px; font-size: 12px; }
+    .ww-tlsplit { font-size: 13px; }
+    .ww-tlsplit small { display: none; }
+    .ww-tlprev .ww-tlwarn { margin: 0; padding: 7px 10px; font-size: 12.5px; }
   }
   @media (max-width: 640px) { .ww-tlctl { padding-left: 0; } .ww-tlpres { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ww-tlfl { width: min(300px, 80vw); } .ww-tlbg { padding: 0; } .ww-tlbox { border-radius: 0; } }
   .ww-upload img { max-height: 64px; max-width: 160px; object-fit: contain; padding: 6px; border-radius: 6px; background: #9aa3ad repeating-conic-gradient(#b8c0c8 0 25%, #9aa3ad 0 50%) 0 0 / 14px 14px; }
@@ -1554,6 +1560,7 @@
       T.lines[0].caps = true; T.lines[1].caps = true; T.lines[1].space = true;
     }
     var tn2 = tlTones(); if (!tn2.mixed) { T.split = false; T.tone = tn2.dark.length ? 'dark' : 'light'; }
+    if (O.tl && T.stylesOpen === undefined) T.stylesOpen = false;   // editing a logo already made: styles start closed
     return (O.tlDraft = T);
   }
   function loadTlFonts() {
@@ -1626,7 +1633,8 @@
       s2.innerHTML = ''; s2.appendChild(c);
     };
     go(); tlFontsReady(T, hover).then(function () { if (O.tlDraft === T && O.tlHover === hover) go(); });
-    var info = document.getElementById('ww-tl-info'); if (info) info.innerHTML = tlInfo(T);
+    var info = document.getElementById('ww-tl-info'); if (info) info.innerHTML = tlInfo(T, 'note');
+    var wn = document.getElementById('ww-tl-warn'); if (wn) wn.innerHTML = tlInfo(T, 'warn');
     // the style thumbnails follow the text as it is typed
     var n1 = (T.lines[0] && T.lines[0].text) || 'Your Name', n2 = (T.lines[1] && T.lines[1].text) || 'tagline';
     [].forEach.call(app.querySelectorAll('.ww-tlpre'), function (b) {
@@ -1636,7 +1644,7 @@
     });
   }
   // one warning (a color that won't show), then one note about how it prints
-  function tlInfo(T) {
+  function tlInfo(T, part) {
     var tn = tlTones(), n = Math.max(tlInksFor(T, 'dark').length, T.split ? tlInksFor(T, 'light').length : 0), h = '', warn = '';
     if (tlFilled(T).length) (T.split ? ['dark', 'light'] : ['dark']).forEach(function (tone) {
       var shirts = T.split ? tn[tone] : tn.dark.concat(tn.light);
@@ -1646,7 +1654,7 @@
         if (bad.length) warn = tlInk(k)[0] + ' text won’t show on ' + bad.map(function (sh) { return sh.name; }).join(' and ') + ' shirts. ' + (tn.mixed && !T.split ? 'Check the box above to pick different colors.' : 'Pick another color.');
       });
     });
-    if (warn) h += '<div class="ww-tlwarn" role="alert">⚠ ' + esc(warn) + '</div>';
+    if (part === 'warn') return warn ? '<div class="ww-tlwarn" role="alert">⚠ ' + esc(warn) + '</div>' : '';
     if (tn.mixed) h += '<div class="ww-tlnote"><b>Prints in full color.</b> Mixing light and dark shirts? No extra cost, and each shirt color can have its own text colors.</div>';
     else if (n) h += '<div class="ww-tlnote"><b>' + n + (n === 1 ? ' color.' : ' colors.') + '</b> ' + (n <= 3 ? 'Could qualify for screen printing. We’ll check and refund the difference if it does.' : 'Prints in full color (DTF).') + '</div>';
     return h;
@@ -1674,9 +1682,12 @@
       + '<div class="ww-tlhead"><b>Design your business name</b><button type="button" class="ww-tlx" data-tlclose aria-label="Close">×</button></div>'
       + '<div class="ww-tlbody"><div class="ww-tlform">';
     // styles to start from
-    h += '<div><div class="ww-tllab">Start from a style</div><div class="ww-tlpres">' + TL_PRESETS.map(function (p, i) {
+    var stOpen = T.stylesOpen !== false;
+    h += '<div><button type="button" class="ww-tlstyh" data-tlstyles aria-expanded="' + stOpen + '"><span>' + (stOpen ? 'Start from a style' : 'Styles') + '</span><small>' + (stOpen ? 'Hide' : 'Show 6 styles') + '</small><svg viewBox="0 0 12 12" aria-hidden="true" style="transform:rotate(' + (stOpen ? 180 : 0) + 'deg)"><path d="M2.5 4.5 L6 8 L9.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>';
+    if (stOpen) h += '<div class="ww-tlpres">' + TL_PRESETS.map(function (p, i) {
       return '<button type="button" class="ww-tlpre" data-tlpreset="' + i + '"><span style="' + tlPreCss(p, 0, name1) + '">' + esc(name1) + '</span><span style="' + tlPreCss(p, 1, name2) + '">' + esc(name2) + '</span><small>' + p[0] + '</small></button>';
-    }).join('') + '</div></div>';
+    }).join('') + '</div>';
+    h += '</div>';
     // lines
     h += '<div class="ww-tllines"><div class="ww-tllab" style="margin:0">Text</div>';
     T.lines.forEach(function (ln, i) {
@@ -1709,9 +1720,9 @@
     var ground = (T.tone === 'light' ? tn.light[0] : tn.dark[0]) || { hex: T.tone === 'light' ? '#ffffff' : '#232c44' };
     h += '</div><div class="ww-tlside"><div class="ww-tlprev"><div class="ww-tlprevh"><span class="ww-tllab" style="margin:0">Preview on:</span>'
       + (tn.mixed ? '<div class="ww-tltabs" role="tablist" aria-label="Your shirt colors">' + tabs.map(function (t) { return '<button type="button" role="tab" aria-selected="' + (T.tone === t[0]) + '" class="' + chip(T.tone === t[0]) + '" data-tltone="' + t[0] + '"><i style="background:' + t[1][0].hex + '"></i>' + esc(t[1].map(function (s) { return s.name; }).join(' · ')) + '</button>'; }).join('') + '</div>' : '<span class="ww-tltabs"><span class="ww-pill on" style="cursor:default"><i style="background:' + tabs[0][1][0].hex + '"></i>' + esc(tabs[0][1].map(function (s) { return s.name; }).join(' · ')) + '</span></span>')
-      + '</div><div class="ww-tlstage" id="ww-tl-stage" style="background:' + ground.hex + '"></div></div><div class="ww-tlmore">';
+      + '</div><div class="ww-tlstage" id="ww-tl-stage" style="background:' + ground.hex + '"></div>';
     if (tn.mixed) h += '<label class="ww-tlsplit"><input type="checkbox" id="ww-tl-split"' + (T.split ? ' checked' : '') + '><span><b>Different text colors for light and dark shirts</b><br><small>Your order has ' + esc(shirtTones().map(function (s) { return s.name; }).join(', ')) + ' shirts. Pick a tab above to set the colors for each.</small></span></label>';
-    h += '<div id="ww-tl-info">' + tlInfo(T) + '</div></div></div></div>'
+    h += '<div id="ww-tl-warn">' + tlInfo(T, 'warn') + '</div></div><div class="ww-tlmore"><div id="ww-tl-info">' + tlInfo(T, 'note') + '</div></div></div></div>'
       + '<div class="ww-tlfoot"><div class="ww-tlproof"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="#e5f3e0"/><path d="M6 10.3l2.6 2.6L14 7.5" fill="none" stroke="#3f7a1e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Free proof before we print. <small>Next: choose where it goes.</small></span></div><button type="button" class="ww-btn ghost" data-tlclose>Cancel</button><button type="button" class="ww-btn" data-tluse>Use this logo</button></div>'
       + '</div></div>';
     return h;
@@ -1800,7 +1811,8 @@
       var T = tlDraft(), edit = T.split ? T.tone : 'dark', lnOf = function (id) { return T.lines.filter(function (l) { return String(l.id) === String(id); })[0]; };
       var two = function (v) { var i = v.indexOf('|'); return [lnOf(v.slice(0, i)), v.slice(i + 1)]; };
       var setInk = function (obj, k) { if (T.split) obj[edit] = k; else { obj.dark = k; obj.light = k; } };
-      if (ds.tlpreset) { var pr = TL_PRESETS[+ds.tlpreset][1]; T.lines.forEach(function (l, i) { var p2 = pr[Math.min(i, 1)]; l.font = p2.font; l.size = i > 1 ? Math.min(p2.size, 18) : p2.size; l.caps = p2.caps; l.space = p2.space; }); tlRender(); return; }
+      if ('tlstyles' in ds) { T.stylesOpen = T.stylesOpen === false; tlRender(); return; }
+      if (ds.tlpreset) { T.stylesOpen = false; var pr = TL_PRESETS[+ds.tlpreset][1]; T.lines.forEach(function (l, i) { var p2 = pr[Math.min(i, 1)]; l.font = p2.font; l.size = i > 1 ? Math.min(p2.size, 18) : p2.size; l.caps = p2.caps; l.space = p2.space; }); tlRender(); return; }
       if (ds.tlfonts) { O.tlFontsFor = String(O.tlFontsFor) === ds.tlfonts ? null : +ds.tlfonts; O.tlHover = null; T.sel = +ds.tlfonts; tlRender(); return; }
       if (ds.tlfont) { var f2 = two(ds.tlfont); if (f2[0]) f2[0].font = f2[1]; O.tlFontsFor = null; O.tlHover = null; tlRender(); return; }
       if (ds.tlcaps) { var l1 = lnOf(ds.tlcaps); l1.caps = !l1.caps; tlRender(); return; }
