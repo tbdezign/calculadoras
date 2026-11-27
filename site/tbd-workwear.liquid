@@ -888,7 +888,7 @@
         + '</div>'
         + '<button class="ww-ch' + (O.logoMode === 'none' ? ' on' : '') + '" data-lmode="none"><b>I don’t have a logo</b><span>Two ways to go. Pick one below.</span></button></div>';
       h += '<input type="file" id="ww-file" accept=".png,.jpg,.jpeg,.pdf,.ai,.svg,.eps,image/*,application/pdf" style="position:absolute;left:-9999px">';
-      if (O.logoMode === 'later') h += '<div class="ww-msg amber" style="margin-bottom:8px">We hold your order until your logo arrives. Send it to <b>info@tbdezign.com</b> or <a href="https://wa.me/19548714646" target="_blank" rel="noopener">WhatsApp</a> with your order number.<br><b>Price:</b> we charge full-color print since we haven’t seen your logo. ' + REFUND + '</div>';
+      if (O.logoMode === 'later') h += '<div class="ww-msg amber" style="margin-bottom:8px">We hold your order until your logo arrives. Send it to <b>info@tbdezign.com</b> or <a href="https://wa.me/19548714646" target="_blank" rel="noopener">WhatsApp</a> with your order number.' + (O.deco === 'emb' ? '' : '<br><b>Price:</b> we charge full-color print since we haven’t seen your logo. ' + REFUND) + '</div>';
       if (O.logoMode === 'none') h += noLogoHtml();
       if (O.logoMode === 'have') {
       h += (O.logo ? '<div style="margin:-6px 0 4px"><button class="ww-link" style="padding:0;font-size:13px;color:#4b5563" data-rmlogo>Remove this logo</button></div>' : '');
@@ -1762,7 +1762,7 @@
       + '</div>';
     if (O.noLogo === 'text' && O.logo && O.logo.text) h += '<div class="ww-tlcard">' + tlThumbs() + '<div style="flex:1;min-width:150px"><b>Your text logo</b><br><small style="color:#4b5563">' + esc(tlFontNames(O.logo.text)) + ' · ' + O.inks + (O.inks === 1 ? ' color' : ' colors') + (O.logo.alt ? ' · light and dark shirt versions' : '') + '</small></div><div class="ww-pills" style="margin:0"><button class="ww-link" style="padding:0" data-tlopen>Edit</button><button class="ww-link" style="padding:0;color:#4b5563" data-rmtext>Remove</button></div></div>'
       + '<div class="ww-fine" style="margin-top:10px">Next, you choose where it goes and see it on your shirt.</div>';
-    if (O.noLogo === 'design') h += '<div class="ww-msg grey" style="margin-top:16px"><b>How it works:</b> pay with your order and fill out a short brand questionnaire. In 3–5 business days you get 2–3 original concepts, with unlimited revisions on the one you choose. You receive the final files (PDF, PNG, JPG, EPS) plus a color palette and font guide. Your order goes into production after you approve the logo.<br><b>Total wait:</b> logo first (3–5 business days), then production time.<br><small>' + REFUND + '</small></div>';
+    if (O.noLogo === 'design') h += '<div class="ww-msg grey" style="margin-top:16px"><b>How it works:</b> pay with your order and fill out a short brand questionnaire. In 3–5 business days you get 2–3 original concepts, with unlimited revisions on the one you choose. You receive the final files (PDF, PNG, JPG, EPS) plus a color palette and font guide. Your order goes into production after you approve the logo.<br><b>Total wait:</b> logo first (3–5 business days), then production time.' + (O.deco === 'emb' ? '' : '<br><small>' + REFUND + '</small>') + '</div>';
     if (O.textOpen) h += tlModal();
     return h;
   }
