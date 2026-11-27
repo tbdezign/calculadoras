@@ -1635,7 +1635,10 @@
       var s2 = document.getElementById('ww-tl-stage'); if (!s2) return;
       if (!tlFilled(T).length) { s2.innerHTML = '<span style="color:' + (view === 'light' ? '#6b7280' : '#c9d1da') + ';font-size:15px">Type your business name</span>'; return; }
       // fit the stage: on a phone the preview stays at the top while editing, so it is short
-      var many = tlFilled(T).length > 1, mark = many ? { id: T.sel, color: view === 'light' ? 'rgba(5,16,36,.55)' : 'rgba(255,255,255,.75)' } : null;
+      // picking another line flashes a dashed box around it in the preview for a moment
+      if (T._lastSel !== undefined && T._lastSel !== T.sel) { O.tlMarkUntil = Date.now() + 1200; clearTimeout(O.tlMarkTimer); O.tlMarkTimer = setTimeout(tlPaint, 1250); }
+      T._lastSel = T.sel;
+      var many = tlFilled(T).length > 1, mark = many && Date.now() < (O.tlMarkUntil || 0) ? { id: T.sel, color: view === 'light' ? 'rgba(5,16,36,.55)' : 'rgba(255,255,255,.75)' } : null;
       var c = tlDraw(T, view, 2, hover, mark), small = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
       var maxH = small ? 92 : 240, maxW = (s2.clientWidth > 150 ? s2.clientWidth : 480) - 24, k = Math.min(1, maxH / (c.height / 2), maxW / (c.width / 2));
       c.style.cssText = 'display:block;max-width:100%;height:auto;width:' + Math.round(c.width / 2 * k) + 'px';
