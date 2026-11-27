@@ -770,7 +770,8 @@
     } else if (O.step === 3) {
       h += '<h2 class="ww-h2">3. Your logo</h2><p class="ww-p">Upload your logo. PNG, JPG, PDF or AI.</p>'
         + '<label class="ww-upload' + (O.logo ? ' on' : '') + '" for="ww-file">' + (O.logo ? (O.logo.url ? '<img src="' + (cleanLogo() || O.logo.url) + '" alt="Your logo">' : '<b>LOGO</b>') + '<span><b>' + esc(O.logo.name) + '</b><br><small style="color:#4b5563">Tap to change the file</small></span>' : '<span><b>Upload your logo</b></span>') + '</label>'
-        + '<input type="file" id="ww-file" accept=".png,.jpg,.jpeg,.pdf,.ai,.svg,.eps,image/*,application/pdf" style="position:absolute;left:-9999px">';
+        + '<input type="file" id="ww-file" accept=".png,.jpg,.jpeg,.pdf,.ai,.svg,.eps,image/*,application/pdf" style="position:absolute;left:-9999px">'
+        + (O.logo ? '<div style="margin-top:8px"><button class="ww-link" style="padding:0;font-size:13px;color:#4b5563" data-rmlogo>Remove this logo</button></div>' : '');
       if (O.logo && O.deco === 'emb') {
         if (O.logo.effects && !O.keepEmb) h += '<div class="ww-msg amber ww-save" style="margin-top:16px"><div>Your logo has gradients or shading. Embroidery simplifies those. Want it exactly like your file? Printed keeps every detail.</div><div class="ww-pills" style="margin:0"><button class="ww-pill on" data-deco="print">Switch to printed</button><button class="ww-pill" data-keepemb>Keep embroidery</button></div></div>';
         var tss = threadSwaps(), many = shirtTones().length > 1;
@@ -1374,6 +1375,13 @@
     if (ds.dd) { F.open = F.open === ds.dd ? null : ds.dd; renderCatalog(); return; }
     if (ds.f) { var a = F[ds.f], i = a.indexOf(ds.v); if (i >= 0) a.splice(i, 1); else a.push(ds.v); renderCatalog(); return; }
     if ('clear' in ds) { F.type = []; F.fit = []; F.mat = []; F.fam = []; F.open = null; renderCatalog(); return; }
+    if ('rmlogo' in ds) {
+      // back to no logo: everything we learned from the file goes too
+      O.logo = null; O.logoType = null; O.inks = 1; O.manualInks = false; O.dropAns = {}; O.majorFix = null; O.threadNote = ''; O.threadOpen = false; O.keepEmb = false; O.confirmed = false;
+      O.quote = null; O.qSilk = O.qDtf = null; O.upsell = null;
+      var fi = document.getElementById('ww-file'); if (fi) fi.value = '';
+      saveState(); renderPanel(); renderAside(); return;
+    }
     if (ds.pm === 'silk' || ds.pm === 'dtf') { O.pick = ds.pm; O.quote = (ds.pm === 'dtf' ? O.qDtf : O.qSilk) || O.quote; renderPanel(); renderAside(); return; }
     if ('pick' in ds) { O.pickOpen = !O.pickOpen; O.showAll = false; renderPanel(); return; }
     if (ds.slide) { var tr = document.getElementById('ww-track'); if (tr) tr.scrollBy({ left: +ds.slide * tr.clientWidth * 0.9, behavior: 'smooth' }); return; }
