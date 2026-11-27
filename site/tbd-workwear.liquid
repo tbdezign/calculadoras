@@ -1612,6 +1612,13 @@
     };
     go(); tlFontsReady(T, hover).then(function () { if (O.tlDraft === T && O.tlHover === hover) go(); });
     var info = document.getElementById('ww-tl-info'); if (info) info.innerHTML = tlInfo(T);
+    // the style thumbnails follow the text as it is typed
+    var n1 = (T.lines[0] && T.lines[0].text) || 'Your Name', n2 = (T.lines[1] && T.lines[1].text) || 'tagline';
+    [].forEach.call(app.querySelectorAll('.ww-tlpre'), function (b) {
+      var p = TL_PRESETS[+b.dataset.tlpreset], sp = b.querySelectorAll('span'); if (!p || sp.length < 2) return;
+      if (sp[0].textContent !== n1) { sp[0].textContent = n1; sp[0].style.cssText = tlPreCss(p, 0, n1); }
+      if (sp[1].textContent !== n2) { sp[1].textContent = n2; sp[1].style.cssText = tlPreCss(p, 1, n2); }
+    });
   }
   // one warning (a color that won't show), then one note about how it prints
   function tlInfo(T) {
@@ -1636,6 +1643,11 @@
     bg = app.querySelector('.ww-tlbg'); if (bg) bg.scrollTop = top;
     if (focusSel) { var el = app.querySelector(focusSel); if (el) { el.focus(); try { var n = el.value.length; el.setSelectionRange(n, n); } catch (e) {} } }
   }
+  // a style thumbnail's text: it shrinks so the whole name fits (about 140px wide)
+  function tlPreCss(p, row, text) {
+    var st = p[1][row], k = row ? .55 : .38, w = text.length * st.size * (st.caps ? .72 : .55) * (st.space ? 1.35 : 1);
+    return tlCss(st, st.size * Math.min(k, 140 / Math.max(1, w)), row ? 'teal' : 'white') + 'max-width:100%;overflow:hidden';
+  }
   // the popup editor
   function tlModal() {
     var T = tlDraft(), tn = tlTones(), edit = T.split ? T.tone : 'dark';
@@ -1648,9 +1660,7 @@
       + '<div class="ww-tlbody"><div class="ww-tlform">';
     // styles to start from
     h += '<div><div class="ww-tllab">Start from a style</div><div class="ww-tlpres">' + TL_PRESETS.map(function (p, i) {
-      // the text shrinks so the whole name fits the thumbnail (about 150px wide)
-      var fit = function (st, text, k) { var w = text.length * st.size * (st.caps ? .72 : .55) * (st.space ? 1.35 : 1); return st.size * Math.min(k, 140 / Math.max(1, w)); };
-      return '<button type="button" class="ww-tlpre" data-tlpreset="' + i + '"><span style="' + tlCss(p[1][0], fit(p[1][0], name1, .38), 'white') + 'max-width:100%;overflow:hidden">' + esc(name1) + '</span><span style="' + tlCss(p[1][1], fit(p[1][1], name2, .55), 'teal') + 'max-width:100%;overflow:hidden">' + esc(name2) + '</span><small>' + p[0] + '</small></button>';
+      return '<button type="button" class="ww-tlpre" data-tlpreset="' + i + '"><span style="' + tlPreCss(p, 0, name1) + '">' + esc(name1) + '</span><span style="' + tlPreCss(p, 1, name2) + '">' + esc(name2) + '</span><small>' + p[0] + '</small></button>';
     }).join('') + '</div></div>';
     // lines
     h += '<div class="ww-tllines"><div class="ww-tllab" style="margin:0">Text</div>';
@@ -1886,7 +1896,6 @@
     O.tlHover = hv; tlPaint();
   });
   app.addEventListener('change', function (e) {
-    if (e.target.classList && e.target.classList.contains('ww-tltext')) { tlRender(); return; }   // the style thumbnails show the new text
     if (e.target.id !== 'ww-tl-split') return;
     var T = tlDraft(), flip = function (k) { return lum(tlInk(k)[1]) > 215 ? 'navy' : k; };
     if (T.split) { T.split = false; T.lines.forEach(function (l) { l.ink.light = l.ink.dark; }); T.frameInk.light = T.frameInk.dark; }
