@@ -68,6 +68,7 @@
       sheetMinQty: 10,    // small orders share a sheet with other orders: split over at least 10 pieces
       minProfit: 30,      // every in-house order makes at least this much: small orders get the difference spread over their pieces
     },
+    logoDesign: 150,    // Custom Logo Design added to a workwear order ("I don't have a logo" → "Create a logo for me"): one-time, no shipping
     siteDtf: "house",   // DTF production used by quoteOrder (website + agent): "house" = own heat press, "v1" = Vendor 1
     v2: { blindShip: 10, shipping: 16, shipThreshold: 59, tiers: [2, 4, 8, 16] },
   };
@@ -248,13 +249,14 @@
       }
     }
     if (dtfSrc) out.dtfSrc = dtfSrc;
+    if (order.logoDesign) out.design = C0.logoDesign;
     const newSpots = order.reorder ? 0 : spotsForSetup;
     if (method === "silk") { const colors = Math.max(1, Math.min(3, +order.colors || 1)); out.setup = silkSetup(colors, newSpots, C); out.setupLabel = "Screen setup"; }
     // Digitizing is charged separately (not on the website); pass chargeDigitizing: true to include it.
     if (method === "emb" && order.chargeDigitizing) { out.setup = newSpots * C.emb.digRetail; out.cost += newSpots * C.emb.digCost; out.setupLabel = "Digitizing"; }
     if (order.reorder) out.reorder = true;
     out.subtotal = Math.round(out.subtotal * 100) / 100;
-    out.total$ = Math.round((out.subtotal + out.setup) * 100) / 100;
+    out.total$ = Math.round((out.subtotal + out.setup + (out.design || 0)) * 100) / 100;
     out.cost = Math.round(out.cost * 100) / 100;
     if (other) out.note = "Other placement: confirm the price difference with the client.";
     return out;

@@ -4,7 +4,7 @@
 // Shopify access: Dev Dashboard app "TBDezign Apparel Checkout" (write_draft_orders, read_orders, write_products, write_publications), client credentials grant.
 // Two ways out: mode "cart" returns cart lines (price variants on hidden products) for /cart/add.js; otherwise a draft-order checkout link.
 // Secrets: SHOPIFY_SHOP, SHOPIFY_CLIENT_ID, SHOPIFY_CLIENT_SECRET. The token lasts 24h and is renewed here.
-import "https://cdn.jsdelivr.net/gh/tbdezign/calculadoras@f13dcfb/pricing.js";
+import "./pricing.js";  // the website's copy of pricing.js (next to this file). The root pricing.js has the newer silk rate table, not on the site yet.
 const P = (globalThis as any).TBDPricing;
 
 const CORS = {
@@ -551,7 +551,7 @@ Deno.serve(async (req) => {
     // 1. price again on the server
     const total = order.items.reduce((s: number, it: any) => s + (+it?.qty?.std || 0) + (+it?.qty?.x2 || 0) + (+it?.qty?.x3 || 0), 0);
     const method = order.method || P.chooseMethod({ deco: order.deco, logoType: order.logoType, colors: order.colors, mixedShades: !!order.mixedShades, total });
-    const q = P.quoteOrder({ ...order, method }, { [method]: await products(method) });
+    const q = P.quoteOrder({ ...order, method, dtfSrc: undefined }, { [method]: await products(method) });
     if (q.errors.length) return json({ error: "pricing", detail: q.errors }, 400);
 
     // 2. logo files
@@ -589,7 +589,7 @@ Deno.serve(async (req) => {
         const ls = q.lines.filter((l: any) => l.code === code);
         sts[code] = await ensureStyle(code, cleanName(ls[0].name), [...new Set(ls.map((l: any) => l.color).filter(Boolean))] as string[]);
       }
-      const setup = q.setup > 0 ? await ensureSetup() : null;
+      const setup = q.setup > 0 || q.design > 0 ? await ensureSetup() : null;
       // not on the Online Store yet (missing app permission): the page falls back to the direct checkout
       if (Object.values(sts).some((st: any) => !st.published) || (setup && !setup.published)) return json({ fallback: true, reason: "not published" });
       const num = (gid: string) => +String(gid).split("/").pop()!;
@@ -601,7 +601,11 @@ Deno.serve(async (req) => {
         props._ww = ref;
         items.push({ id: num(vid), quantity: l.q, properties: props });
       }
-      if (setup) {
+      if (setup && q.design > 0) {
+        const vid = await priceVariant(setup, "SETUP", "", q.design, "Custom Logo Design · $" + money(q.design), "Type", { requiresShipping: false });
+        items.push({ id: num(vid), quantity: 1, properties: { _ww: ref, _fee: "1" } });
+      }
+      if (setup && q.setup > 0) {
         const label = (method === "emb" ? "Digitizing" : "Screen setup") + " · $" + money(q.setup);
         const vid = await priceVariant(setup, "SETUP", "", q.setup, label, "Type", { requiresShipping: false });
         items.push({ id: num(vid), quantity: 1, properties: { _ww: ref, _fee: "1" } });
@@ -640,6 +644,10 @@ Deno.serve(async (req) => {
         originalUnitPriceWithCurrency: { amount: money(l.unit), currencyCode: "USD" },
         customAttributes: lineProps(l, sz),
       };
+    });
+    if (q.design > 0) lineItems.push({
+      title: "Custom Logo Design (one-time)", quantity: 1, requiresShipping: false, taxable: true,
+      originalUnitPriceWithCurrency: { amount: money(q.design), currencyCode: "USD" },
     });
     if (q.setup > 0) lineItems.push({
       title: (method === "emb" ? "Digitizing" : "Screen setup") + " (one-time)", quantity: 1, requiresShipping: false, taxable: true,

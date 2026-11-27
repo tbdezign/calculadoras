@@ -2,7 +2,7 @@
 // Public (the website calls it). Returns retail prices only — never costs, vendors or memos.
 // pricing.js is loaded straight from the calculators' repo, pinned to a commit: the function and the calculators run the same file.
 // When pricing.js changes: push, then change the commit below and redeploy.
-import "https://cdn.jsdelivr.net/gh/tbdezign/calculadoras@f13dcfb/pricing.js";
+import "./pricing.js";  // the website's copy of pricing.js (next to this file). The root pricing.js has the newer silk rate table, not on the site yet.
 const P = (globalThis as any).TBDPricing;
 
 const CORS = {
@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
   try {
     const total = order.items.reduce((s: number, it: any) => s + (+it?.qty?.std || 0) + (+it?.qty?.x2 || 0) + (+it?.qty?.x3 || 0), 0);
     const method = order.method || P.chooseMethod({ deco: order.deco, logoType: order.logoType, colors: order.colors, mixedShades: !!order.mixedShades, total });
-    const q = P.quoteOrder({ ...order, method }, { [method]: await products(method) });
+    const q = P.quoteOrder({ ...order, method, dtfSrc: undefined }, { [method]: await products(method) });
     // Public answer: no cost, no vendor data.
     const { cost, ...pub } = q;
     pub.lines = q.lines.map((l: any) => ({ code: l.code, name: l.name, color: l.color, size: l.size, q: l.q, unit: l.unit, amount: l.amount }));
