@@ -166,6 +166,18 @@
   .ww-pill.on { background: #051024; border-color: #051024; color: #fff; }
   .ww-upload { width: 100%; padding: 22px; border-radius: 12px; border: 1.5px dashed #c9d1da; background: #fafbfc; color: #051024; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 12px; }
   .ww-upload.on { border-color: #1a7698; }
+  .ww-ch, .ww-upload, .ww-link, .ww-pill, .ww-tlsw, .ww label[for] { cursor: pointer; }
+  .ww-ch { transition: border-color .15s, box-shadow .15s; }
+  .ww-ch:not(.on):hover { border-color: #9fb3c2; box-shadow: 0 2px 10px rgba(5,16,36,.06); }
+  .ww-link:hover { text-decoration: underline; }
+  .ww-have { display: flex; flex-direction: column; align-items: flex-start; }
+  .ww-ch .ww-upbtn { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 9px 16px; border-radius: 999px; border: 1.5px dashed #1a7698; color: #1a7698; font-weight: 600; font-size: 14px; background: #fff; }
+  .ww-ch.ww-have:hover .ww-upbtn { background: #eef7fb; border-style: solid; }
+  .ww-ch .ww-havefile { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 8px 10px; border-radius: 10px; background: #fff; border: 1px solid #e3e7ec; max-width: 100%; }
+  .ww-havefile img { max-height: 52px; max-width: 120px; object-fit: contain; padding: 4px; border-radius: 6px; background: #9aa3ad repeating-conic-gradient(#b8c0c8 0 25%, #9aa3ad 0 50%) 0 0 / 12px 12px; }
+  .ww-ch .ww-havefile span { color: #051024; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .ww-ch .ww-havefile small { font-size: 12px; color: #4b5563; }
+  .ww-filetag { font-size: 12px; padding: 10px; border-radius: 6px; background: #eef1f4; }
   .ww-tlbg { position: fixed; inset: 0; z-index: 9998; background: rgba(5,16,36,.55); display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow: auto; }
   .ww-tlbox { width: min(880px, 100%); background: #fff; border-radius: 18px; box-shadow: 0 20px 60px rgba(5,16,36,.3); overflow: hidden; text-align: left; }
   .ww-tlhead { display: flex; justify-content: space-between; align-items: center; padding: 16px 22px; border-bottom: 1px solid #eef0f2; font-family: 'Montserrat', sans-serif; font-size: 18px; }
@@ -796,13 +808,15 @@
       loadEst();
     } else if (O.step === 3) {
       h += '<h2 class="ww-h2">3. Your logo</h2><p class="ww-p">Upload your logo, or tell us you don\u2019t have one yet.</p>'
-        + '<div class="ww-choice" style="margin-bottom:16px"><button class="ww-ch' + (O.logoMode !== 'none' ? ' on' : '') + '" data-lmode="have"><b>I have a logo</b><span>PNG, JPG, PDF or AI.</span></button>'
+        + '<div class="ww-choice" style="margin-bottom:16px"><label class="ww-ch ww-have' + (O.logoMode !== 'none' ? ' on' : '') + '" for="ww-file"><b>I have a logo</b><span>PNG, JPG, PDF or AI.</span>'
+        + (O.logoMode !== 'none' && O.logo ? '<span class="ww-havefile">' + (O.logo.url ? '<img src="' + (cleanLogo() || O.logo.url) + '" alt="Your logo">' : '<b class="ww-filetag">FILE</b>') + '<span><b>' + esc(O.logo.name) + '</b><br><small>Click to change the file</small></span></span>'
+          : '<span class="ww-upbtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>Upload your logo</span>')
+        + '</label>'
         + '<button class="ww-ch' + (O.logoMode === 'none' ? ' on' : '') + '" data-lmode="none"><b>I don\u2019t have a logo</b><span>No problem. Pick an option below.</span></button></div>';
+      h += '<input type="file" id="ww-file" accept=".png,.jpg,.jpeg,.pdf,.ai,.svg,.eps,image/*,application/pdf" style="position:absolute;left:-9999px">';
       if (O.logoMode === 'none') h += noLogoHtml();
       if (O.logoMode !== 'none') {
-      h += '<label class="ww-upload' + (O.logo ? ' on' : '') + '" for="ww-file">' + (O.logo ? (O.logo.url ? '<img src="' + (cleanLogo() || O.logo.url) + '" alt="Your logo">' : '<b>LOGO</b>') + '<span><b>' + esc(O.logo.name) + '</b><br><small style="color:#4b5563">Tap to change the file</small></span>' : '<span><b>Upload your logo</b></span>') + '</label>'
-        + '<input type="file" id="ww-file" accept=".png,.jpg,.jpeg,.pdf,.ai,.svg,.eps,image/*,application/pdf" style="position:absolute;left:-9999px">'
-        + (O.logo ? '<div style="margin-top:8px"><button class="ww-link" style="padding:0;font-size:13px;color:#4b5563" data-rmlogo>Remove this logo</button></div>' : '');
+      h += (O.logo ? '<div style="margin:-6px 0 4px"><button class="ww-link" style="padding:0;font-size:13px;color:#4b5563" data-rmlogo>Remove this logo</button></div>' : '');
       if (O.logo && O.deco === 'emb') {
         if (O.logo.effects && !O.keepEmb) h += '<div class="ww-msg amber ww-save" style="margin-top:16px"><div>Your logo has gradients or shading. Embroidery simplifies those. Want it exactly like your file? Printed keeps every detail.</div><div class="ww-pills" style="margin:0"><button class="ww-pill on" data-deco="print">Switch to printed</button><button class="ww-pill" data-keepemb>Keep embroidery</button></div></div>';
         var tss = threadSwaps(), many = shirtTones().length > 1;
@@ -1530,6 +1544,8 @@
   // ── events ──
   function lineById(id) { return O.lines.filter(function (l) { return String(l.id) === String(id); })[0]; }
   app.addEventListener('click', function (e) {
+    var hv = e.target.closest('label.ww-have');
+    if (hv && O.logoMode === 'none') setTimeout(function () { O.logoMode = 'have'; if (O.logo && O.logo.text) clearLogo(); saveState(); renderPanel(); renderAside(); requote(); }, 0);
     var b = e.target.closest('button'); if (!b || !app.contains(b)) { if (F.open) { F.open = null; renderCatalog(); } return; }
     var ds = b.dataset;
     if (ds.galstep) { var gt = b.closest('[data-gal]').querySelector('.ww-gtrack'); gt.scrollBy({ left: +ds.galstep * gt.clientWidth, behavior: 'smooth' }); return; }
@@ -1618,7 +1634,7 @@
   app.addEventListener('change', function (e) {
     if (e.target.id === 'ww-sort') { F.sort = e.target.value; renderCatalog(); return; }
     if (e.target.id === 'ww-conf') { O.confirmed = e.target.checked; renderSteps(); var nb = app.querySelector('[data-next]'); if (nb) nb.disabled = !stepOk(O.step); }
-    if (e.target.id === 'ww-file' && e.target.files[0]) readLogo(e.target.files[0]);
+    if (e.target.id === 'ww-file' && e.target.files[0]) { O.logoMode = 'have'; O.textOpen = false; readLogo(e.target.files[0]); }
     if (e.target.dataset && e.target.dataset.xfile && e.target.files[0]) {
       var xf = e.target.files[0], xk = e.target.dataset.xfile; xl(xk).logo = { name: xf.name, url: null, file: xf };
       if (/^image\//.test(xf.type)) { var xr = new FileReader(); xr.onload = function () { xl(xk).logo.url = xr.result; xl(xk).logo.data = xr.result; renderPanel(); }; xr.readAsDataURL(xf); } else { keepData(xl(xk).logo, xf); renderPanel(); }
