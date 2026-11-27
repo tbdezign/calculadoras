@@ -1575,7 +1575,8 @@
     return 'font-family:\'' + f[1] + '\',sans-serif;font-weight:' + f[2] + ';font-size:' + Math.round(size) + 'px;line-height:1.15;white-space:nowrap;color:' + tlInk(ink)[1] + ';letter-spacing:' + tlSpacing(ln) + 'em;' + (ln.caps ? 'text-transform:uppercase;' : '');
   }
   // draws the logo on a transparent canvas: K = pixels per editor px (preview 2, print file 8)
-  function tlDraw(T, tone, K, hover) {
+  // mark (preview only): { id, color } draws a dashed box around the line being edited
+  function tlDraw(T, tone, K, hover, mark) {
     var c = document.createElement('canvas'), x = c.getContext('2d');
     var rows = tlFilled(T).map(function (ln) {
       var f = tlFont(hover && hover.id === ln.id ? hover.font : ln.font), S = ln.size * K, txt = ln.caps ? ln.text.toUpperCase() : ln.text;
@@ -1602,7 +1603,7 @@
       x.fillStyle = r.ink; x.textBaseline = 'alphabetic'; x.textAlign = 'left';
       x.fillText(r.txt, left + r.bw + r.bg, y + r.a);
       if (r.ln.rule) { var by = y + r.a - (r.a * .38) - r.bh / 2; x.fillRect(left, by, r.bw, r.bh); x.fillRect(left + r.bw + r.bg + r.w + r.bg, by, r.bw, r.bh); }
-      c.rows.push({ id: r.ln.id, top: y, bottom: y + r.a + r.d });   // where each line sits, for picking it by clicking the preview
+      c.rows.push({ id: r.ln.id, top: y, bottom: y + r.a + r.d, left: left, right: left + r.full });   // where each line sits, for picking it by clicking the preview
       y += r.a + r.d;
     });
     if (fr !== 'none') {
@@ -1612,6 +1613,12 @@
       else if (fr === 'box') x.strokeRect(L, Tp, R - L, B - Tp);
       else if (fr === 'round') { var rr = 22 * K; x.beginPath(); x.moveTo(L + rr, Tp); x.arcTo(R, Tp, R, B, rr); x.arcTo(R, B, L, B, rr); x.arcTo(L, B, L, Tp, rr); x.arcTo(L, Tp, R, Tp, rr); x.closePath(); x.stroke(); }
       else { x.beginPath(); x.arc(c.width / 2, c.height / 2, c.width / 2 - K - b / 2, 0, Math.PI * 2); x.stroke(); }
+    }
+    var mk = mark && c.rows.filter(function (r) { return r.id === mark.id; })[0];
+    if (mk) {
+      var p2 = 4 * K, mx = Math.max(1, mk.left - p2), my = Math.max(1, mk.top - p2 * .6);
+      x.save(); x.setLineDash([5 * K, 4 * K]); x.lineWidth = 1.5 * K; x.strokeStyle = mark.color;
+      x.strokeRect(mx, my, Math.min(c.width - 1, mk.right + p2) - mx, Math.min(c.height - 1, mk.bottom + p2 * .6) - my); x.restore();
     }
     return c;
   }
@@ -1628,7 +1635,8 @@
       var s2 = document.getElementById('ww-tl-stage'); if (!s2) return;
       if (!tlFilled(T).length) { s2.innerHTML = '<span style="color:' + (view === 'light' ? '#6b7280' : '#c9d1da') + ';font-size:15px">Type your business name</span>'; return; }
       // fit the stage: on a phone the preview stays at the top while editing, so it is short
-      var c = tlDraw(T, view, 2, hover), small = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
+      var many = tlFilled(T).length > 1, mark = many ? { id: T.sel, color: view === 'light' ? 'rgba(5,16,36,.55)' : 'rgba(255,255,255,.75)' } : null;
+      var c = tlDraw(T, view, 2, hover, mark), small = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
       var maxH = small ? 92 : 240, maxW = Math.max(100, s2.clientWidth - 24), k = Math.min(1, maxH / (c.height / 2), maxW / (c.width / 2));
       c.style.cssText = 'display:block;width:' + Math.round(c.width / 2 * k) + 'px;height:' + Math.round(c.height / 2 * k) + 'px';
       s2.innerHTML = ''; s2.appendChild(c);
@@ -1793,7 +1801,7 @@
     var hv = e.target.closest('label[for="ww-file"]');
     if (hv && O.logoMode !== 'have') setTimeout(function () { O.logoMode = 'have'; if (O.logo && O.logo.text) clearLogo(); saveState(); renderPanel(); renderAside(); requote(); }, 0);
     if (O.tlFontsFor != null && !(e.target.closest('.ww-tlfl') || e.target.closest('[data-tlfonts]'))) { O.tlFontsFor = null; O.tlHover = null; if (!e.target.closest('button')) { tlRender(); return; } }
-    if (O.textOpen && e.target.classList && e.target.classList.contains('ww-tlbg')) { O.textOpen = false; O.tlDraft = null; O.tlFontsFor = null; O.tlHover = null; renderPanel(); return; }   // click outside the popup closes it
+    if (O.textOpen && e.target.classList && e.target.classList.contains('ww-tlbg')) { O.textOpen = false; O.tlDraft = null; O.tlFontsFor = null; O.tlHover = null; if (!(O.logo && O.logo.text)) O.noLogo = null; renderPanel(); return; }   // click outside the popup closes it
     var b = e.target.closest('button'); if (!b || !app.contains(b)) { if (F.open) { F.open = null; renderCatalog(); } return; }
     var ds = b.dataset;
     if (ds.galstep) { var gt = b.closest('[data-gal]').querySelector('.ww-gtrack'); gt.scrollBy({ left: +ds.galstep * gt.clientWidth, behavior: 'smooth' }); return; }
@@ -1810,7 +1818,7 @@
       if (ds.lmode === 'have' && O.logo && O.logo.text) clearLogo();
       if (ds.lmode === 'none' && O.logo && !O.logo.text) clearLogo();
       if (ds.lmode === 'later' && O.logo) clearLogo();
-      if (ds.lmode === 'none' && O.noLogo === 'later') O.noLogo = null;
+      if (ds.lmode === 'none' && (O.noLogo === 'later' || (O.noLogo === 'text' && !(O.logo && O.logo.text)))) O.noLogo = null;   // nothing picked until they click an option
       saveState(); renderPanel(); renderAside(); requote(); return;
     }
     if (ds.nolog) {
@@ -1821,7 +1829,7 @@
       saveState(); renderPanel(); renderAside(); requote(); return;
     }
     if ('tlopen' in ds) { O.textOpen = true; O.tlFocused = 0; loadTlFonts(); renderPanel(); return; }
-    if ('tlclose' in ds) { O.textOpen = false; O.tlDraft = null; O.tlFontsFor = null; O.tlHover = null; renderPanel(); return; }
+    if ('tlclose' in ds) { O.textOpen = false; O.tlDraft = null; O.tlFontsFor = null; O.tlHover = null; if (!(O.logo && O.logo.text)) O.noLogo = null; renderPanel(); return; }
     if (O.textOpen && b.closest('.ww-tlbox')) {
       var T = tlDraft(), edit = T.split ? T.tone : 'dark', lnOf = function (id) { return T.lines.filter(function (l) { return String(l.id) === String(id); })[0]; };
       var two = function (v) { var i = v.indexOf('|'); return [lnOf(v.slice(0, i)), v.slice(i + 1)]; };
