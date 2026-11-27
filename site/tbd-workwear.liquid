@@ -1637,9 +1637,10 @@
       // fit the stage: on a phone the preview stays at the top while editing, so it is short
       var many = tlFilled(T).length > 1, mark = many ? { id: T.sel, color: view === 'light' ? 'rgba(5,16,36,.55)' : 'rgba(255,255,255,.75)' } : null;
       var c = tlDraw(T, view, 2, hover, mark), small = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
-      var maxH = small ? 92 : 240, maxW = Math.max(100, s2.clientWidth - 24), k = Math.min(1, maxH / (c.height / 2), maxW / (c.width / 2));
+      var maxH = small ? 92 : 240, maxW = (s2.clientWidth > 150 ? s2.clientWidth : Math.min(480, window.innerWidth - 60)) - 24, k = Math.min(1, maxH / (c.height / 2), maxW / (c.width / 2));
       c.style.cssText = 'display:block;width:' + Math.round(c.width / 2 * k) + 'px;height:' + Math.round(c.height / 2 * k) + 'px';
       s2.innerHTML = ''; s2.appendChild(c);
+      if (s2.clientWidth <= 150 && !go.again) { go.again = 1; requestAnimationFrame(go); }   // laid out yet? paint again at the real width
       // click a line in the preview to edit it
       if (c.rows.length > 1) {
         c.style.cursor = 'pointer'; c.title = 'Click a line to edit it';
