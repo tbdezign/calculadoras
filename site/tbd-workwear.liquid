@@ -187,12 +187,14 @@
   .ww-ch .ww-havefile small { font-size: 12px; color: #4b5563; }
   .ww-filetag { font-size: 12px; padding: 10px; border-radius: 6px; background: #eef1f4; }
   .ww-tlbg { position: fixed; inset: 0; z-index: 9998; background: rgba(5,16,36,.55); display: flex; align-items: flex-start; justify-content: center; padding: 32px 14px; overflow: auto; }
-  .ww-tlbox { width: min(1120px, 100%); background: #fff; border-radius: 18px; box-shadow: 0 20px 60px rgba(5,16,36,.3); text-align: left; }
+  .ww-tlbox { overflow: visible; width: min(1120px, 100%); background: #fff; border-radius: 18px; box-shadow: 0 20px 60px rgba(5,16,36,.3); text-align: left; }
   .ww-tlbox button { cursor: pointer; font-family: inherit; }
   .ww-tlhead { display: flex; justify-content: space-between; align-items: center; padding: 16px 22px; border-bottom: 1px solid #eef0f2; font-family: 'Montserrat', sans-serif; font-size: 19px; }
   .ww-tlx { width: 36px; height: 36px; border-radius: 50%; border: 0; background: #f3f4f6; font-size: 20px; line-height: 1; color: #051024; }
-  .ww-tlbody { display: flex; flex-wrap: wrap; }
-  .ww-tlform { flex: 1 1 460px; min-width: 0; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; border-right: 1px solid #eef0f2; }
+  .ww-tlbody { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; }
+  .ww-tlside { position: sticky; top: 0; z-index: 3; background: #fafbfc; border-left: 1px solid #eef0f2; }
+  .ww-tlmore { padding: 0 22px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .ww-tlform { min-width: 0; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; }
   .ww-tllab { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
   .ww-tlfor { font-weight: 600; color: #1a7698; }
   .ww-tlpres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -234,12 +236,12 @@
   .ww-tlsws { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
   .ww-tlsw { width: 24px; height: 24px; border-radius: 50%; padding: 0; border: 1px solid #c9d1da; }
   .ww-tlsw.on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #051024; }
-  .ww-tlprev { flex: 1 1 380px; min-width: 0; padding: 20px 22px; background: #fafbfc; display: flex; flex-direction: column; gap: 10px; }
+  .ww-tlprev { min-width: 0; padding: 20px 22px 10px; background: #fafbfc; display: flex; flex-direction: column; gap: 10px; }
   .ww-tlprevh { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
   .ww-tltabs { display: flex; gap: 6px; flex-wrap: wrap; }
   .ww-tltabs .ww-pill { margin: 0; display: inline-flex; align-items: center; gap: 6px; }
   .ww-tltabs i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid #c9d1da; display: inline-block; }
-  .ww-tlstage { min-height: 340px; padding: 24px 16px; border-radius: 12px; border: 1px solid #e2e2e2; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
+  .ww-tlstage { min-height: 280px; padding: 20px 12px; border-radius: 12px; border: 1px solid #e2e2e2; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
   .ww-tlsplit { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; cursor: pointer; line-height: 1.4; }
   .ww-tlsplit input { width: 18px; height: 18px; margin-top: 1px; accent-color: #1a7698; flex: none; }
   .ww-tlsplit small { color: #4b5563; font-size: 12.5px; }
@@ -250,6 +252,16 @@
   .ww-tlcard { margin-top: 16px; display: flex; align-items: center; gap: 16px; padding: 14px; border-radius: 12px; border: 1.5px solid #1a7698; background: #fafbfc; flex-wrap: wrap; }
   .ww-tlthumb { width: 150px; height: 80px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 10px; border: 1px solid #e2e2e2; box-sizing: border-box; }
   .ww-tlthumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  @media (max-width: 760px) {
+    .ww-tlbody { grid-template-columns: minmax(0, 1fr); }
+    .ww-tlside { display: contents; }
+    .ww-tlprev { order: -1; grid-row: 1; position: sticky; top: 0; z-index: 3; padding: 10px 14px; gap: 8px; box-shadow: 0 6px 14px rgba(5,16,36,.12); border-bottom: 1px solid #e3e7ec; }
+    .ww-tlform { grid-row: 2; padding: 16px 14px; }
+    .ww-tlmore { grid-row: 3; padding: 0 14px 16px; }
+    .ww-tlstage { min-height: 0; height: 116px; padding: 10px; }
+    .ww-tlprevh .ww-tllab { font-size: 13px; }
+    .ww-tltabs .ww-pill { padding: 4px 10px; font-size: 12px; }
+  }
   @media (max-width: 640px) { .ww-tlctl { padding-left: 0; } .ww-tlpres { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ww-tlfl { width: min(300px, 80vw); } .ww-tlbg { padding: 0; } .ww-tlbox { border-radius: 0; } }
   .ww-upload img { max-height: 64px; max-width: 160px; object-fit: contain; padding: 6px; border-radius: 6px; background: #9aa3ad repeating-conic-gradient(#b8c0c8 0 25%, #9aa3ad 0 50%) 0 0 / 14px 14px; }
   .ww-dotc { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid #c9d1da; vertical-align: -2px; margin-right: 3px; }
@@ -1607,7 +1619,10 @@
     var hover = O.tlHover, view = T.tone, go = function () {
       var s2 = document.getElementById('ww-tl-stage'); if (!s2) return;
       if (!tlFilled(T).length) { s2.innerHTML = '<span style="color:' + (view === 'light' ? '#6b7280' : '#c9d1da') + ';font-size:15px">Type your business name</span>'; return; }
-      var c = tlDraw(T, view, 2, hover); c.style.cssText = 'max-width:100%;max-height:320px;width:' + c.width / 2 + 'px;height:auto';
+      // fit the stage: on a phone the preview stays at the top while editing, so it is short
+      var c = tlDraw(T, view, 2, hover), small = window.matchMedia && window.matchMedia('(max-width: 760px)').matches;
+      var maxH = small ? 92 : 240, maxW = Math.max(100, s2.clientWidth - 24), k = Math.min(1, maxH / (c.height / 2), maxW / (c.width / 2));
+      c.style.cssText = 'display:block;width:' + Math.round(c.width / 2 * k) + 'px;height:' + Math.round(c.height / 2 * k) + 'px';
       s2.innerHTML = ''; s2.appendChild(c);
     };
     go(); tlFontsReady(T, hover).then(function () { if (O.tlDraft === T && O.tlHover === hover) go(); });
@@ -1692,11 +1707,11 @@
     // preview
     var tabs = tn.mixed ? [['dark', tn.dark], ['light', tn.light]] : [[T.tone, T.tone === 'dark' ? tn.dark : tn.light]];
     var ground = (T.tone === 'light' ? tn.light[0] : tn.dark[0]) || { hex: T.tone === 'light' ? '#ffffff' : '#232c44' };
-    h += '</div><div class="ww-tlprev"><div class="ww-tlprevh"><span class="ww-tllab" style="margin:0">Preview on:</span>'
+    h += '</div><div class="ww-tlside"><div class="ww-tlprev"><div class="ww-tlprevh"><span class="ww-tllab" style="margin:0">Preview on:</span>'
       + (tn.mixed ? '<div class="ww-tltabs" role="tablist" aria-label="Your shirt colors">' + tabs.map(function (t) { return '<button type="button" role="tab" aria-selected="' + (T.tone === t[0]) + '" class="' + chip(T.tone === t[0]) + '" data-tltone="' + t[0] + '"><i style="background:' + t[1][0].hex + '"></i>' + esc(t[1].map(function (s) { return s.name; }).join(' · ')) + '</button>'; }).join('') + '</div>' : '<span class="ww-tltabs"><span class="ww-pill on" style="cursor:default"><i style="background:' + tabs[0][1][0].hex + '"></i>' + esc(tabs[0][1].map(function (s) { return s.name; }).join(' · ')) + '</span></span>')
-      + '</div><div class="ww-tlstage" id="ww-tl-stage" style="background:' + ground.hex + '"></div>';
+      + '</div><div class="ww-tlstage" id="ww-tl-stage" style="background:' + ground.hex + '"></div></div><div class="ww-tlmore">';
     if (tn.mixed) h += '<label class="ww-tlsplit"><input type="checkbox" id="ww-tl-split"' + (T.split ? ' checked' : '') + '><span><b>Different text colors for light and dark shirts</b><br><small>Your order has ' + esc(shirtTones().map(function (s) { return s.name; }).join(', ')) + ' shirts. Pick a tab above to set the colors for each.</small></span></label>';
-    h += '<div id="ww-tl-info">' + tlInfo(T) + '</div></div></div>'
+    h += '<div id="ww-tl-info">' + tlInfo(T) + '</div></div></div></div>'
       + '<div class="ww-tlfoot"><div class="ww-tlproof"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="#e5f3e0"/><path d="M6 10.3l2.6 2.6L14 7.5" fill="none" stroke="#3f7a1e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Free proof before we print. <small>Next: choose where it goes.</small></span></div><button type="button" class="ww-btn ghost" data-tlclose>Cancel</button><button type="button" class="ww-btn" data-tluse>Use this logo</button></div>'
       + '</div></div>';
     return h;
