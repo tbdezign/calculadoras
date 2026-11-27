@@ -178,29 +178,65 @@
   .ww-ch .ww-havefile span { color: #051024; font-size: 14px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .ww-ch .ww-havefile small { font-size: 12px; color: #4b5563; }
   .ww-filetag { font-size: 12px; padding: 10px; border-radius: 6px; background: #eef1f4; }
-  .ww-tlbg { position: fixed; inset: 0; z-index: 9998; background: rgba(5,16,36,.55); display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow: auto; }
-  .ww-tlbox { width: min(880px, 100%); background: #fff; border-radius: 18px; box-shadow: 0 20px 60px rgba(5,16,36,.3); overflow: hidden; text-align: left; }
-  .ww-tlhead { display: flex; justify-content: space-between; align-items: center; padding: 16px 22px; border-bottom: 1px solid #eef0f2; font-family: 'Montserrat', sans-serif; font-size: 18px; }
+  .ww-tlbg { position: fixed; inset: 0; z-index: 9998; background: rgba(5,16,36,.55); display: flex; align-items: flex-start; justify-content: center; padding: 32px 14px; overflow: auto; }
+  .ww-tlbox { width: min(1120px, 100%); background: #fff; border-radius: 18px; box-shadow: 0 20px 60px rgba(5,16,36,.3); text-align: left; }
+  .ww-tlbox button { cursor: pointer; font-family: inherit; }
+  .ww-tlhead { display: flex; justify-content: space-between; align-items: center; padding: 16px 22px; border-bottom: 1px solid #eef0f2; font-family: 'Montserrat', sans-serif; font-size: 19px; }
   .ww-tlx { width: 36px; height: 36px; border-radius: 50%; border: 0; background: #f3f4f6; font-size: 20px; line-height: 1; color: #051024; }
   .ww-tlbody { display: flex; flex-wrap: wrap; }
-  .ww-tlform { flex: 1 1 340px; min-width: 0; padding: 20px 22px; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid #eef0f2; }
-  .ww-tlform label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; }
-  .ww-tlform label small { font-weight: 400; color: #4b5563; font-size: 13px; }
-  .ww-tlform input { font-size: 16px; padding: 11px 12px; border: 1.5px solid #d6dbe1; border-radius: 10px; color: #051024; font-family: inherit; }
+  .ww-tlform { flex: 1 1 460px; min-width: 0; padding: 20px 22px; display: flex; flex-direction: column; gap: 18px; border-right: 1px solid #eef0f2; }
   .ww-tllab { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
-  .ww-tlcols { display: flex; flex-wrap: wrap; gap: 18px; }
-  .ww-tlsws { display: flex; flex-wrap: wrap; gap: 8px; max-width: 200px; align-items: center; }
-  .ww-tlsws.small { max-width: none; gap: 6px; }
-  .ww-tlsw { width: 28px; height: 28px; border-radius: 50%; padding: 0; border: 1px solid #c9d1da; }
-  .ww-tlsws.small .ww-tlsw { width: 20px; height: 20px; }
+  .ww-tlfor { font-weight: 600; color: #1a7698; }
+  .ww-tlpres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .ww-tlpre { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 92px; padding: 8px; border-radius: 12px; border: 1.5px solid #e3e7ec; background: #232c44; overflow: hidden; }
+  .ww-tlpre:hover { border-color: #41a9cc; }
+  .ww-tlpre small { font-size: 11px; color: #c9d1da; margin-top: 6px; font-family: 'Poppins', sans-serif; }
+  .ww-tllines { display: flex; flex-direction: column; gap: 10px; }
+  .ww-tlln { padding: 12px; border-radius: 12px; border: 1.5px solid #e3e7ec; background: #fff; }
+  .ww-tlln.on { border-color: #1a7698; background: #f5fafc; }
+  .ww-tlrow { display: flex; gap: 8px; align-items: center; }
+  .ww-tlnum { font-size: 12px; font-weight: 600; color: #4b5563; width: 44px; flex: none; }
+  .ww-tltext { flex: 1; min-width: 0; font-size: 16px; padding: 10px 12px; border: 1.5px solid #d6dbe1; border-radius: 10px; color: #051024; font-family: inherit; }
+  .ww-tlrm { width: 34px; height: 34px; border-radius: 8px; border: 1px solid #e3e7ec; background: #fff; color: #4b5563; font-size: 18px; flex: none; }
+  .ww-tlctl { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-start; margin-top: 10px; padding-left: 52px; }
+  .ww-tlf { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #4b5563; position: relative; }
+  .ww-tlf input[type=range] { accent-color: #1a7698; margin: 8px 0 0; }
+  .ww-tlsel { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 15px; padding: 7px 10px; border: 1.5px solid #d6dbe1; border-radius: 8px; color: #051024; background: #fff; min-width: 190px; text-align: left; }
+  .ww-tlsel.on { border-color: #1a7698; }
+  .ww-tlsel svg { width: 12px; height: 12px; flex: none; }
+  .ww-tlfl { position: absolute; z-index: 5; top: 100%; left: 0; margin-top: 4px; width: 300px; max-height: 340px; overflow: auto; background: #fff; border: 1px solid #e3e7ec; border-radius: 12px; box-shadow: 0 12px 30px rgba(5,16,36,.18); padding: 6px; }
+  .ww-tlfg { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #6b7280; padding: 8px 8px 4px; }
+  .ww-tlfo { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px; text-align: left; color: #051024; background: #fff; }
+  .ww-tlfo:hover, .ww-tlfo:focus { background: #f3f4f6; }
+  .ww-tlfo.on { background: #eef7fb; }
+  .ww-tlfo span { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .ww-tlfo small { font-size: 11px; color: #6b7280; flex: none; }
+  .ww-pill.ww-tlst { padding: 6px 10px; font-size: 12px; font-weight: 700; margin: 0; }
+  .ww-pill.ww-tlal { width: 40px; height: 36px; display: flex; align-items: center; justify-content: center; padding: 0; margin: 0; }
+  .ww-tlal svg { width: 18px; height: 18px; }
+  .ww-tladd { align-self: flex-start; padding: 9px 16px; border-radius: 999px; border: 1.5px dashed #1a7698; background: #fff; color: #1a7698; font-weight: 600; font-size: 14px; }
+  .ww-tlcols { display: flex; flex-wrap: wrap; gap: 16px 26px; }
+  .ww-tlsws { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .ww-tlsw { width: 24px; height: 24px; border-radius: 50%; padding: 0; border: 1px solid #c9d1da; }
   .ww-tlsw.on { box-shadow: 0 0 0 2px #fff, 0 0 0 4px #051024; }
-  .ww-tlprev { flex: 1 1 320px; min-width: 0; padding: 20px 22px; background: #fafbfc; }
-  .ww-tlprevh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .ww-tlstage { min-height: 220px; padding: 24px 14px; border-radius: 12px; border: 1px solid #e2e2e2; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
+  .ww-tlprev { flex: 1 1 380px; min-width: 0; padding: 20px 22px; background: #fafbfc; display: flex; flex-direction: column; gap: 10px; }
+  .ww-tlprevh { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .ww-tltabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .ww-tltabs .ww-pill { margin: 0; display: inline-flex; align-items: center; gap: 6px; }
+  .ww-tltabs i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid #c9d1da; display: inline-block; }
+  .ww-tlstage { min-height: 340px; padding: 24px 16px; border-radius: 12px; border: 1px solid #e2e2e2; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
+  .ww-tlsplit { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; cursor: pointer; line-height: 1.4; }
+  .ww-tlsplit input { width: 18px; height: 18px; margin-top: 1px; accent-color: #1a7698; flex: none; }
+  .ww-tlsplit small { color: #4b5563; font-size: 12.5px; }
+  .ww-tlwarn, .ww-tlnote { font-size: 12.5px; padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; }
+  .ww-tlwarn, .ww-tlnote.amber { background: #fff8e6; color: #5c4400; }
+  .ww-tlnote.green { background: #eef6e2; color: #365314; font-weight: 500; }
+  .ww-tlnote.blue { background: #eef4f8; color: #0c4a63; }
   .ww-tlfoot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px; border-top: 1px solid #eef0f2; flex-wrap: wrap; }
   .ww-tlcard { margin-top: 16px; display: flex; align-items: center; gap: 16px; padding: 14px; border-radius: 12px; border: 1.5px solid #1a7698; background: #fafbfc; flex-wrap: wrap; }
-  .ww-tlthumb { width: 150px; height: 80px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 10px; }
+  .ww-tlthumb { width: 150px; height: 80px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 10px; border: 1px solid #e2e2e2; box-sizing: border-box; }
   .ww-tlthumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  @media (max-width: 640px) { .ww-tlctl { padding-left: 0; } .ww-tlpres { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ww-tlfl { width: min(300px, 80vw); } .ww-tlbg { padding: 0; } .ww-tlbox { border-radius: 0; } }
   .ww-upload img { max-height: 64px; max-width: 160px; object-fit: contain; padding: 6px; border-radius: 6px; background: #9aa3ad repeating-conic-gradient(#b8c0c8 0 25%, #9aa3ad 0 50%) 0 0 / 14px 14px; }
   .ww-dotc { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid #c9d1da; vertical-align: -2px; margin-right: 3px; }
   .ww-msg.amber { border: 1.5px solid #e9b949; background: #fff8e6; color: #5c4400; }
@@ -946,7 +982,7 @@
       + (O.step < 5 ? '<button class="ww-btn" data-next' + (stepOk(O.step) ? '' : ' disabled') + '>Continue</button>' : '<button class="ww-btn pay" data-pay' + (O.quote && O.checkout !== 'busy' ? '' : ' disabled') + '>' + (O.checkout === 'busy' ? 'Adding to your cart…' : O.editRef ? 'Update cart' : 'Add to cart') + '</button>') + '</div>'
       + (O.step === 5 ? '<div class="ww-fine" style="text-align:right;margin-top:8px">' + (O.quote ? '<span style="font-size:15px;color:#051024">Total <b>' + money(O.quote.total$) + '</b>' + (O.quote.setup ? ' (incl. ' + money(O.quote.setup) + ' ' + (method() === 'emb' ? 'digitizing' : 'screen setup') + ')' : '') + ' · free shipping</span><br>' : '') + 'You\u2019ll approve a proof before anything prints.</div>' : '');
     p.innerHTML = h;
-    if (O.step === 3 && O.textOpen) { tlPaint(); var tn = document.getElementById('ww-tl-name'); if (tn && !tn.value) tn.focus(); }
+    if (O.step === 3 && O.textOpen) { tlPaint(); if (!O.tlFocused) { O.tlFocused = 1; var tn = app.querySelector('.ww-tltext'); if (tn && !tn.value) tn.focus(); } }
     if (O.step === 5) fitLogos(p);
     initSlider(p); initGalleries(p);
     saveState();
@@ -954,7 +990,7 @@
   // ── keep the order if the page is refreshed (this browser only, 7 days). Cleared when the checkout opens. ──
   var SAVE_KEY = 'tbd-workwear-order', SAVE_FIELDS = ['logoMode', 'noLogo', 'tl', 'reorder', 'reorderNo', 'step', 'lines', 'deco', 'decoPicked', 'logoType', 'inks', 'manualInks', 'placement', 'sleeves', 'sleeveSide', 'otherText', 'otherSpots', 'nextId', 'pick', 'dropAns', 'majorFix', 'threadNote', 'threadOpen', 'keepEmb', 'custNote'];
   function keepData(lg, file) { if (!file || file.size > 4 * 1024 * 1024) return; var r = new FileReader(); r.onload = function () { lg.data = r.result; saveState(); }; r.readAsDataURL(file); }
-  function slimLogo(lg, withData) { if (!lg) return null; var o = {}; for (var k in lg) if (k !== 'img' && k !== 'file' && k !== 'cutUrl' && (withData || (k !== 'data' && k !== 'url'))) o[k] = lg[k]; return o; }
+  function slimLogo(lg, withData) { if (!lg) return null; var o = {}; for (var k in lg) if (k !== 'img' && k !== 'file' && k !== 'cutUrl' && (withData || (k !== 'data' && k !== 'url'))) o[k] = k === 'alt' ? slimLogo(lg.alt, withData) : lg[k]; return o; }
   var saveTimer = null;
   function saveState() {
     clearTimeout(saveTimer);
@@ -996,6 +1032,7 @@
     var ph = photoFor(st, color, side), pl = (ph && ph.place && ph.place[spot]) || DEF[spot], hex = hexOf(st, color);
     var dark = !/white|natural|silver|grey|gray|light|ceil|sand|oatmeal|yellow|pink/i.test(color);
     lg = lg || O.logo;
+    if (lg === O.logo && lg && lg.alt && lg.alt.url && isLight(hex)) lg = lg.alt;   // text logo: the light-shirt version
     var ts = lg === O.logo ? threadSwapFor({ hex: hex, name: color }) : null, lurl = lg && lg.url ? (ts && !O.threadNote ? logoOnShirt(ts.c, ts.shirt.hex, ts.altHex) || shirtLogo(lg) : shirtLogo(lg)) : '';
     label += ' · ' + ({ emb: 'Embroidered', silk: 'Screen printed', dtf: 'DTF printed' })[method()] ;
     var logo = lurl ? '<img src="' + lurl + '" alt="">' : '<span style="background:' + (dark ? '#fff' : '#051024') + ';color:' + (dark ? '#051024' : '#fff') + '">LOGO</span>';
@@ -1206,14 +1243,21 @@
     if (O.logoMode === 'none') {
       if (O.noLogo === 'design') { logo = 'NO LOGO: Custom Logo Design ordered ($150) — send the brand questionnaire, shirts wait for logo approval'; notes.unshift('Custom Logo Design ordered — send the questionnaire (logo.tbdezign.com)'); }
       else if (O.noLogo === 'later') { logo = 'NO LOGO YET: customer will send it after checkout — priced as DTF, refund the difference if it can be silk'; notes.unshift('Logo pending: customer sends it after checkout'); }
-      else if (O.logo && O.logo.text) { var tl = O.logo.text; logo = 'Text logo: "' + tl.name + '"' + (tl.line2 ? ' / "' + tl.line2 + '"' : '') + ' · ' + tlFont(tl.font)[1] + ' letters' + (tlCaps(tl) ? ' (caps)' : '') + ' · ' + tlInk(tl.c1)[0] + (tl.line2 && tl.c2 !== tl.c1 ? ' + ' + tlInk(tl.c2)[0] : '') + ' · ' + O.inks + (O.inks === 1 ? ' color' : ' colors'); }
+      else if (O.logo && O.logo.text) { logo = tlDesc(O.logo.text) + ' · ' + O.inks + (O.inks === 1 ? ' color' : ' colors'); }
     }
     return { placement: placeText(), logo: logo, notes: notes.join(' | '), lineNotes: lineNotes, colorNotes: colorNotes, items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) { return { code: l.code, color: l.color, sizes: l.sizes, hex: hexOf(byCode[l.code], l.color) }; }) };
+  }
+  // the main logo file(s): a text logo with light/dark versions sends both
+  function mainFiles() {
+    var al = O.logo && O.logo.alt;
+    var fl = [{ f: O.logo && O.logo.file, d: O.logo && O.logo.data, role: al ? 'main logo (dark shirts)' : 'main logo', name: O.logo && O.logo.name }];
+    if (al) fl.push({ d: al.data, role: 'main logo (light shirts)', name: al.name });
+    return fl;
   }
   function startCheckout() {
     if (O.checkout === 'busy' || !O.quote) return;
     O.checkout = 'busy'; renderPanel();
-    var fl = [{ f: O.logo && O.logo.file, d: O.logo && O.logo.data, role: 'main logo', name: O.logo && O.logo.name }];
+    var fl = mainFiles();
     extraSpots().forEach(function (k) { var x = xl(k[0]); if (x.diff && x.logo) fl.push({ f: x.logo.file, d: x.logo.data, role: k[1], name: x.logo.name }); });
     Promise.all(fl.map(function (x) { return x.f ? fileData(x.f) : Promise.resolve(x.d || null); })).then(function (datas) {
       var files = fl.map(function (x, i) { return datas[i] ? { role: x.role, name: x.name, data: datas[i] } : null; }).filter(Boolean);
@@ -1225,7 +1269,7 @@
   }
   // ── cart: the server prices the order again and returns the cart lines; the cart groups them by _ww and links back here to edit ──
   function logoFiles() {
-    var fl = [{ f: O.logo && O.logo.file, d: O.logo && O.logo.data, role: 'main logo', name: O.logo && O.logo.name }];
+    var fl = mainFiles();
     extraSpots().forEach(function (k) { var x = xl(k[0]); if (x.diff && x.logo) fl.push({ f: x.logo.file, d: x.logo.data, role: k[1], name: x.logo.name }); });
     return Promise.all(fl.map(function (x) { return x.f ? fileData(x.f) : Promise.resolve(x.d || null); })).then(function (datas) {
       return fl.map(function (x, i) { return datas[i] ? { role: x.role, name: x.name, data: datas[i] } : null; }).filter(Boolean);
@@ -1429,56 +1473,206 @@
     O.quote = null; O.qSilk = O.qDtf = null; O.upsell = null;
     var fi = document.getElementById('ww-file'); if (fi) fi.value = '';
   }
-  var TL_FONTS = [['mont', 'Classic', 'Montserrat', 800, 1], ['bebas', 'Bold', 'Bebas Neue', 400, 1.25], ['play', 'Elegant', 'Playfair Display', 700, 1], ['pac', 'Script', 'Pacifico', 400, .9], ['pop', 'Modern', 'Poppins', 600, 1]];
-  var TL_INKS = { white: ['White', '#ffffff'], black: ['Black', '#111111'], navy: ['Navy', '#1f2a44'], gold: ['Gold', '#e0b44a'], teal: ['Teal', '#41a9cc'], lime: ['Lime', '#91bc4d'], red: ['Red', '#d64545'], gray: ['Light gray', '#c9d1da'] };
+  // ── text logo editor (popup): several lines, each with its own font, size, style and color; align, frame;
+  // when the order has light and dark shirts, each can get its own colors (two versions → two PNG files)
+  var TL_FONTS = [
+    ['montserrat', 'Montserrat', 800, 'Bold & clean'], ['poppins', 'Poppins', 600, 'Bold & clean'], ['raleway', 'Raleway', 800, 'Bold & clean'], ['josefin', 'Josefin Sans', 700, 'Bold & clean'],
+    ['oswald', 'Oswald', 700, 'Tall & strong'], ['bebas', 'Bebas Neue', 400, 'Tall & strong'], ['anton', 'Anton', 400, 'Tall & strong'], ['archivo', 'Archivo Black', 400, 'Tall & strong'],
+    ['righteous', 'Righteous', 400, 'Fun'], ['bungee', 'Bungee', 400, 'Fun'],
+    ['playfair', 'Playfair Display', 900, 'Elegant'], ['cinzel', 'Cinzel', 800, 'Elegant'], ['abril', 'Abril Fatface', 400, 'Elegant'], ['lora', 'Lora', 600, 'Elegant'],
+    ['slab', 'Roboto Slab', 800, 'Slab'], ['alfa', 'Alfa Slab One', 400, 'Slab'],
+    ['pacifico', 'Pacifico', 400, 'Script'], ['dancing', 'Dancing Script', 700, 'Script'], ['vibes', 'Great Vibes', 400, 'Script'], ['satisfy', 'Satisfy', 400, 'Script'], ['lobster', 'Lobster', 400, 'Script'], ['kaushan', 'Kaushan Script', 400, 'Script'],
+    ['marker', 'Permanent Marker', 400, 'Handwritten'], ['caveat', 'Caveat', 700, 'Handwritten']
+  ];
+  var TL_INKS = { white: ['White', '#ffffff'], black: ['Black', '#111111'], navy: ['Navy', '#1f2a44'], royal: ['Royal', '#2554a6'], teal: ['Teal', '#41a9cc'], lime: ['Lime', '#91bc4d'], gold: ['Gold', '#e0b44a'], orange: ['Orange', '#ef7d32'], red: ['Red', '#d64545'], pink: ['Pink', '#ec8fb5'], gray: ['Light gray', '#c9d1da'] };
+  var TL_PRESETS = [
+    ['Classic', [{ font: 'montserrat', size: 40, caps: true, space: false }, { font: 'montserrat', size: 20, caps: true, space: true }]],
+    ['Signature', [{ font: 'pacifico', size: 44, caps: false, space: false }, { font: 'poppins', size: 20, caps: true, space: true }]],
+    ['Bold block', [{ font: 'anton', size: 50, caps: true, space: false }, { font: 'oswald', size: 24, caps: true, space: true }]],
+    ['Elegant', [{ font: 'cinzel', size: 38, caps: true, space: true }, { font: 'lora', size: 24, caps: false, space: false }]],
+    ['Friendly', [{ font: 'righteous', size: 40, caps: false, space: false }, { font: 'caveat', size: 32, caps: false, space: false }]],
+    ['Vintage', [{ font: 'alfa', size: 38, caps: true, space: false }, { font: 'dancing', size: 30, caps: false, space: false }]]
+  ];
+  var TL_FRAMES = [['none', 'None'], ['line', 'Underline'], ['box', 'Box'], ['round', 'Rounded'], ['circle', 'Circle']];
   function tlFont(id) { return TL_FONTS.filter(function (f) { return f[0] === id; })[0] || TL_FONTS[0]; }
   function tlInk(id) { return TL_INKS[id] || TL_INKS.white; }
-  function tlCaps(T) { return T.caps && T.font !== 'pac'; }
-  function tlColors(T) { var a = [tlInk(T.c1)[1]]; if (T.line2 && T.line2.trim() && T.c2 !== T.c1) a.push(tlInk(T.c2)[1]); return a; }
-  // the draft being edited in the popup; starts from the logo already made, or from the first shirt's color
+  // the order's shirts split into dark and light ones
+  function tlTones() {
+    var d = [], l = [];
+    shirtTones().forEach(function (t) { (isLight(t.hex) ? l : d).push(t); });
+    if (!d.length && !l.length) d.push({ hex: '#232c44', name: 'Navy' });
+    return { dark: d, light: l, mixed: d.length > 0 && l.length > 0 };
+  }
+  function tlInkOf(T, ln, tone) { return ln.ink[T.split ? tone : 'dark']; }
+  function tlFrameInk(T, tone) { return T.frameInk[T.split ? tone : 'dark']; }
+  function tlFilled(T) { return T.lines.filter(function (l) { return l.text.trim(); }); }
+  function tlInksFor(T, tone) { var u = {}; tlFilled(T).forEach(function (l) { u[tlInkOf(T, l, tone)] = 1; }); if (T.frame !== 'none') u[tlFrameInk(T, tone)] = 1; return Object.keys(u); }
+  function tlColors(T, tone) { return tlInksFor(T, tone).map(function (k) { return tlInk(k)[1]; }); }
+  function tlLine(id, text, font, size, ink) { return { id: id, text: text, font: font, size: size, caps: false, space: false, rule: false, ink: { dark: ink[0], light: ink[1] } }; }
+  // the draft being edited in the popup; starts from the logo already made, or from the order's shirt colors
   function tlDraft() {
-    if (!O.tlDraft) {
-      var sh = shirtTone(), dark = sh ? lum(sh.hex) < 140 : true;
-      O.tlDraft = O.tl ? JSON.parse(JSON.stringify(O.tl)) : { name: '', line2: '', font: 'mont', caps: true, c1: dark ? 'white' : 'navy', c2: dark ? 'teal' : 'teal', ground: sh ? sh.hex : '#232c44' };
+    if (O.tlDraft) return O.tlDraft;
+    var T = O.tl ? JSON.parse(JSON.stringify(O.tl)) : null;
+    if (T && !T.lines) T = null;   // made with the old one-line editor
+    if (!T) {
+      var tn = tlTones(), onlyLight = !tn.dark.length, a = onlyLight ? 'navy' : 'white';
+      T = { lines: [tlLine(1, '', 'montserrat', 40, [a, 'navy']), tlLine(2, '', 'poppins', 20, ['teal', 'teal'])], align: 'center', frame: 'none', frameInk: { dark: 'teal', light: 'teal' }, split: false, tone: onlyLight ? 'light' : 'dark', sel: 1, nextId: 3 };
+      T.lines[0].caps = true; T.lines[1].caps = true; T.lines[1].space = true;
     }
-    return O.tlDraft;
+    var tn2 = tlTones(); if (!tn2.mixed) { T.split = false; T.tone = tn2.dark.length ? 'dark' : 'light'; }
+    return (O.tlDraft = T);
   }
   function loadTlFonts() {
     if (document.getElementById('ww-tlfonts')) return;
     var l = document.createElement('link'); l.id = 'ww-tlfonts'; l.rel = 'stylesheet';
-    l.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@500;800&family=Bebas+Neue&family=Playfair+Display:wght@500;700&family=Pacifico&family=Poppins:wght@500;600&display=swap';
+    l.href = 'https://fonts.googleapis.com/css2?' + TL_FONTS.map(function (f) { return 'family=' + f[1].replace(/ /g, '+') + (f[2] !== 400 ? ':wght@' + f[2] : ''); }).join('&') + '&display=swap';
     document.head.appendChild(l);
   }
-  function tlStyle(T, size, line2) {
-    var f = tlFont(T.font), caps = tlCaps(T);
-    return 'font-family:\'' + f[2] + '\',sans-serif;font-weight:' + (line2 ? (f[0] === 'bebas' || f[0] === 'pac' ? 400 : 500) : f[3]) + ';font-size:' + Math.round(size * f[4]) + 'px;line-height:1.15;white-space:nowrap;color:' + tlInk(line2 ? T.c2 : T.c1)[1] + ';' + (caps ? 'letter-spacing:' + (line2 ? '.02em' : '.04em') + ';' : '');
+  function tlSpacing(ln) { return ln.space ? (ln.caps ? .22 : .12) : (ln.caps ? .04 : 0); }
+  function tlCss(ln, size, ink) {
+    var f = tlFont(ln.font);
+    return 'font-family:\'' + f[1] + '\',sans-serif;font-weight:' + f[2] + ';font-size:' + Math.round(size) + 'px;line-height:1.15;white-space:nowrap;color:' + tlInk(ink)[1] + ';letter-spacing:' + tlSpacing(ln) + 'em;' + (ln.caps ? 'text-transform:uppercase;' : '');
+  }
+  // draws the logo on a transparent canvas: K = pixels per editor px (preview 2, print file 8)
+  function tlDraw(T, tone, K, hover) {
+    var c = document.createElement('canvas'), x = c.getContext('2d');
+    var rows = tlFilled(T).map(function (ln) {
+      var f = tlFont(hover && hover.id === ln.id ? hover.font : ln.font), S = ln.size * K, txt = ln.caps ? ln.text.toUpperCase() : ln.text;
+      var font = f[2] + ' ' + S + 'px "' + f[1] + '"', sp = tlSpacing(ln) * S;
+      x.font = font; if ('letterSpacing' in x) x.letterSpacing = sp + 'px';
+      var m = x.measureText(txt), w = m.width - ('letterSpacing' in x ? sp : 0);
+      var a = Math.max(m.actualBoundingBoxAscent || 0, S * .72), d = Math.max(m.actualBoundingBoxDescent || 0, S * .22);
+      var bw = ln.rule ? Math.round(S * .9) : 0, bg = ln.rule ? Math.round(S * .35) : 0;
+      return { ln: ln, txt: txt, font: font, sp: sp, w: w, a: a, d: d, bw: bw, bg: bg, bh: Math.max(2 * K, Math.round(S * .07)), full: w + 2 * (bw + bg), ink: tlInk(tlInkOf(T, ln, tone))[1] };
+    });
+    var gap = 6 * K, W = 0, H = 0;
+    rows.forEach(function (r, i) { W = Math.max(W, r.full); H += r.a + r.d + (i ? gap : 0); });
+    var fr = T.frame, b = { none: 0, line: 3, box: 3, round: 3, circle: 4 }[fr] * K;
+    var pad = { none: [6, 6, 6, 6], line: [6, 8, 14, 8], box: [20, 28, 20, 28], round: [20, 32, 20, 32], circle: [0, 0, 0, 0] }[fr].map(function (v) { return v * K; });
+    var cw, ch, ox, oy;
+    if (fr === 'circle') { var D = Math.sqrt(W * W + H * H) + 24 * K; cw = ch = D + 2 * b + 4 * K; ox = (cw - W) / 2; oy = (ch - H) / 2; }
+    else { cw = W + pad[1] + pad[3] + 2 * b + 2 * K; ch = H + pad[0] + pad[2] + 2 * b + 2 * K; ox = K + b + pad[3]; oy = K + b + pad[0]; }
+    c.width = Math.max(1, Math.min(Math.ceil(cw), 8000)); c.height = Math.max(1, Math.min(Math.ceil(ch), 8000));
+    var y = oy;
+    rows.forEach(function (r, i) {
+      if (i) y += gap;
+      var left = T.align === 'left' ? ox : T.align === 'right' ? ox + W - r.full : ox + (W - r.full) / 2;
+      x.font = r.font; if ('letterSpacing' in x) x.letterSpacing = r.sp + 'px';
+      x.fillStyle = r.ink; x.textBaseline = 'alphabetic'; x.textAlign = 'left';
+      x.fillText(r.txt, left + r.bw + r.bg, y + r.a);
+      if (r.ln.rule) { var by = y + r.a - (r.a * .38) - r.bh / 2; x.fillRect(left, by, r.bw, r.bh); x.fillRect(left + r.bw + r.bg + r.w + r.bg, by, r.bw, r.bh); }
+      y += r.a + r.d;
+    });
+    if (fr !== 'none') {
+      x.strokeStyle = x.fillStyle = tlInk(tlFrameInk(T, tone))[1]; x.lineWidth = b;
+      var L = K + b / 2, Tp = K + b / 2, R = c.width - K - b / 2, B = c.height - K - b / 2;
+      if (fr === 'line') x.fillRect(K, c.height - K - b, c.width - 2 * K, b);
+      else if (fr === 'box') x.strokeRect(L, Tp, R - L, B - Tp);
+      else if (fr === 'round') { var rr = 22 * K; x.beginPath(); x.moveTo(L + rr, Tp); x.arcTo(R, Tp, R, B, rr); x.arcTo(R, B, L, B, rr); x.arcTo(L, B, L, Tp, rr); x.arcTo(L, Tp, R, Tp, rr); x.closePath(); x.stroke(); }
+      else { x.beginPath(); x.arc(c.width / 2, c.height / 2, c.width / 2 - K - b / 2, 0, Math.PI * 2); x.stroke(); }
+    }
+    return c;
+  }
+  // fonts are loaded before drawing; the preview repaints when they arrive
+  function tlFontsReady(T, hover) {
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    var want = tlFilled(T).map(function (l) { var f = tlFont(l.font); return f[2] + ' 40px "' + f[1] + '"'; });
+    if (hover) { var hf = tlFont(hover.font); want.push(hf[2] + ' 40px "' + hf[1] + '"'); }
+    return Promise.all(want.map(function (w) { return document.fonts.load(w).catch(function () {}); }));
   }
   function tlPaint() {
-    var T = tlDraft(), n = document.getElementById('ww-tl-pn'), l2 = document.getElementById('ww-tl-pl'), cc = document.getElementById('ww-tl-cc');
-    if (n) { n.textContent = (tlCaps(T) ? T.name.toUpperCase() : T.name) || 'YOUR BUSINESS'; n.style.opacity = T.name ? 1 : .45; }
-    if (l2) l2.textContent = T.line2;
-    if (cc) cc.textContent = tlColors(T).length === 1 ? '1 print color · lowest price' : '2 print colors';
+    var T = O.tlDraft, st = document.getElementById('ww-tl-stage'); if (!T || !st) return;
+    var hover = O.tlHover, view = T.tone, go = function () {
+      var s2 = document.getElementById('ww-tl-stage'); if (!s2) return;
+      if (!tlFilled(T).length) { s2.innerHTML = '<span style="color:' + (view === 'light' ? '#6b7280' : '#c9d1da') + ';font-size:15px">Type your business name</span>'; return; }
+      var c = tlDraw(T, view, 2, hover); c.style.cssText = 'max-width:100%;max-height:320px;width:' + c.width / 2 + 'px;height:auto';
+      s2.innerHTML = ''; s2.appendChild(c);
+    };
+    go(); tlFontsReady(T, hover).then(function () { if (O.tlDraft === T && O.tlHover === hover) go(); });
+    var info = document.getElementById('ww-tl-info'); if (info) info.innerHTML = tlInfo(T);
+  }
+  function tlInfo(T) {
+    var tn = tlTones(), n = Math.max(tlInksFor(T, 'dark').length, T.split ? tlInksFor(T, 'light').length : 0), h = '';
+    if (!T.split && tlFilled(T).length) {
+      var cols = tlInksFor(T, 'dark'), hide = function (list) { return list.filter(function (sh) { return cols.some(function (k) { return cdist(tlInk(k)[1], sh.hex) < 70 || (lum(tlInk(k)[1]) > 215 && isLight(sh.hex)) || (lum(tlInk(k)[1]) < 60 && !isLight(sh.hex) && lum(sh.hex) < 90); }); }); };
+      var bad = hide(tn.dark.concat(tn.light));
+      if (bad.length) h += '<div class="ww-tlwarn">Part of your text won’t show well on your ' + esc(bad.map(function (s) { return s.name; }).join(', ')) + ' shirts.' + (tn.mixed ? ' Turn on different colors below.' : ' Pick another color.') + '</div>';
+    }
+    if (tn.mixed) h += '<div class="ww-tlnote blue">Light and dark shirts in one order print in full color (DTF): same price, and each shirt color can have its own text colors.</div>';
+    else if (n) h += '<div class="ww-tlnote ' + (n <= 3 ? 'green' : 'amber') + '">' + n + (n === 1 ? ' print color' : ' print colors') + (n > 3 ? ' · more than 3 colors prints in full color (DTF).' : '') + '</div>';
+    return h;
+  }
+  // re-render the popup without jumping back to the top
+  function tlRender(focusSel) {
+    var bg = app.querySelector('.ww-tlbg'), top = bg ? bg.scrollTop : 0;
+    renderPanel();
+    bg = app.querySelector('.ww-tlbg'); if (bg) bg.scrollTop = top;
+    if (focusSel) { var el = app.querySelector(focusSel); if (el) { el.focus(); try { var n = el.value.length; el.setSelectionRange(n, n); } catch (e) {} } }
   }
   // the popup editor
   function tlModal() {
-    var T = tlDraft(), grounds = [], seen = {};
-    O.lines.forEach(function (l) { var hx = hexOf(byCode[l.code], l.color); if (!seen[hx]) { seen[hx] = 1; grounds.push([l.color, hx]); } });
-    if (!grounds.length) grounds.push(['Navy', '#232c44']);
+    var T = tlDraft(), tn = tlTones(), edit = T.split ? T.tone : 'dark';
     var chip = function (on) { return 'ww-pill' + (on ? ' on' : ''); };
-    var sw = function (attr, id, hex, on, name) { return '<button class="ww-tlsw' + (on ? ' on' : '') + '" data-' + attr + '="' + id + '" style="background:' + hex + '" title="' + esc(name) + '" aria-label="' + esc(name) + '"></button>'; };
-    return '<div class="ww-tlbg" role="dialog" aria-modal="true" aria-label="Create your logo"><div class="ww-tlbox">'
-      + '<div class="ww-tlhead"><b>Create your logo</b><button class="ww-tlx" data-tlclose aria-label="Close">×</button></div>'
-      + '<div class="ww-tlbody"><div class="ww-tlform">'
-      + '<label>Business name<input id="ww-tl-name" maxlength="30" value="' + esc(T.name) + '" placeholder="Your business name" autocomplete="organization"></label>'
-      + '<label>Second line <small>Optional: phone, website or slogan</small><input id="ww-tl-line2" maxlength="40" value="' + esc(T.line2) + '" placeholder="e.g. (561) 555-0123"></label>'
-      + '<div><div class="ww-tllab">Letters</div><div class="ww-pills">' + TL_FONTS.map(function (f) { return '<button class="' + chip(T.font === f[0]) + '" data-tlfont="' + f[0] + '" style="font-family:\'' + f[2] + '\',sans-serif">' + f[1] + '</button>'; }).join('') + '<button class="' + chip(tlCaps(T)) + '" data-tlcaps style="letter-spacing:.06em">ABC</button></div></div>'
-      + '<div class="ww-tlcols"><div><div class="ww-tllab">Name color</div><div class="ww-tlsws">' + Object.keys(TL_INKS).map(function (k) { return sw('tlc1', k, TL_INKS[k][1], T.c1 === k, TL_INKS[k][0]); }).join('') + '</div></div>'
-      + '<div><div class="ww-tllab">Second line color</div><div class="ww-tlsws">' + Object.keys(TL_INKS).map(function (k) { return sw('tlc2', k, TL_INKS[k][1], T.c2 === k, TL_INKS[k][0]); }).join('') + '</div></div></div>'
-      + '</div><div class="ww-tlprev"><div class="ww-tlprevh"><span class="ww-tllab" style="margin:0">Preview</span><span class="ww-tlsws small">' + grounds.map(function (g) { return sw('tlground', g[1], g[1], T.ground === g[1], g[0] + ' shirt'); }).join('') + '</span></div>'
-      + '<div class="ww-tlstage" style="background:' + esc(T.ground) + '"><div><div id="ww-tl-pn" style="' + tlStyle(T, 28) + '"></div><div id="ww-tl-pl" style="' + tlStyle(T, 13, true) + 'margin-top:6px"></div></div></div>'
-      + '<div class="ww-fine" id="ww-tl-cc" style="margin-top:8px"></div></div></div>'
-      + '<div class="ww-tlfoot"><button class="ww-btn ghost" data-tlclose>Cancel</button><button class="ww-btn" data-tluse>Use this logo</button></div>'
+    var sw = function (attr, val, k, on) { return '<button type="button" class="ww-tlsw' + (on ? ' on' : '') + '" data-' + attr + '="' + val + '" style="background:' + TL_INKS[k][1] + '" title="' + TL_INKS[k][0] + '" aria-label="' + TL_INKS[k][0] + '"></button>'; };
+    var forTone = T.split ? '<b class="ww-tlfor"> · ' + (T.tone === 'dark' ? 'dark' : 'light') + ' shirts</b>' : '';
+    var name1 = (T.lines[0] && T.lines[0].text) || 'Your Name', name2 = (T.lines[1] && T.lines[1].text) || 'tagline';
+    var h = '<div class="ww-tlbg" role="dialog" aria-modal="true" aria-label="Create your logo"><div class="ww-tlbox">'
+      + '<div class="ww-tlhead"><b>Create your logo</b><button type="button" class="ww-tlx" data-tlclose aria-label="Close">×</button></div>'
+      + '<div class="ww-tlbody"><div class="ww-tlform">';
+    // styles to start from
+    h += '<div><div class="ww-tllab">Start from a style</div><div class="ww-tlpres">' + TL_PRESETS.map(function (p, i) {
+      return '<button type="button" class="ww-tlpre" data-tlpreset="' + i + '"><span style="' + tlCss(Object.assign({}, T.lines[0] || {}, p[1][0]), p[1][0].size * .38, 'white') + 'max-width:100%;overflow:hidden;text-overflow:ellipsis">' + esc(name1) + '</span><span style="' + tlCss(p[1][1], p[1][1].size * .55, 'teal') + 'max-width:100%;overflow:hidden">' + esc(name2) + '</span><small>' + p[0] + '</small></button>';
+    }).join('') + '</div></div>';
+    // lines
+    h += '<div class="ww-tllines"><div class="ww-tllab" style="margin:0">Text</div>';
+    T.lines.forEach(function (ln, i) {
+      var open = T.sel === ln.id || T.lines.length === 1, f = tlFont(ln.font);
+      h += '<div class="ww-tlln' + (open ? ' on' : '') + '"><div class="ww-tlrow"><span class="ww-tlnum">Line ' + (i + 1) + '</span>'
+        + '<input class="ww-tltext" data-tlline="' + ln.id + '" id="ww-tl-t' + ln.id + '" maxlength="40" value="' + esc(ln.text) + '" placeholder="' + (i === 0 ? 'Business name' : i === 1 ? 'Slogan or service' : 'Phone or website') + '"' + (i === 0 ? ' autocomplete="organization"' : '') + '>'
+        + (T.lines.length > 1 ? '<button type="button" class="ww-tlrm" data-tlrm="' + ln.id + '" aria-label="Remove this line" title="Remove this line">×</button>' : '') + '</div>';
+      if (open) {
+        h += '<div class="ww-tlctl"><div class="ww-tlf">Font<button type="button" class="ww-tlsel' + (O.tlFontsFor === ln.id ? ' on' : '') + '" data-tlfonts="' + ln.id + '" aria-haspopup="listbox" aria-expanded="' + (O.tlFontsFor === ln.id) + '" style="font-family:\'' + f[1] + '\',sans-serif;font-weight:' + f[2] + '"><span>' + f[1] + '</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 L6 8 L9.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>';
+        if (O.tlFontsFor === ln.id) h += '<div class="ww-tlfl" role="listbox" aria-label="Fonts">' + TL_FONTS.map(function (ff, j) {
+          return (j === 0 || TL_FONTS[j - 1][3] !== ff[3] ? '<div class="ww-tlfg">' + ff[3] + '</div>' : '')
+            + '<button type="button" role="option" aria-selected="' + (ff[0] === ln.font) + '" class="ww-tlfo' + (ff[0] === ln.font ? ' on' : '') + '" data-tlfont="' + ln.id + '|' + ff[0] + '" data-tlfonth="' + ln.id + '|' + ff[0] + '"><span style="font-family:\'' + ff[1] + '\',sans-serif;font-weight:' + ff[2] + ';' + (ln.caps ? 'text-transform:uppercase;' : '') + '">' + esc((ln.text || 'Your text').slice(0, 22)) + '</span><small>' + ff[1] + '</small></button>';
+        }).join('') + '</div>';
+        h += '</div><label class="ww-tlf" style="width:120px">Size<input type="range" class="ww-tlsize" data-tlline="' + ln.id + '" min="10" max="60" value="' + ln.size + '"></label>'
+          + '<div class="ww-tlf">Style<div style="display:flex;gap:6px"><button type="button" class="' + chip(ln.caps) + ' ww-tlst" data-tlcaps="' + ln.id + '" title="All caps">AA</button><button type="button" class="' + chip(ln.space) + ' ww-tlst" data-tlspace="' + ln.id + '" title="Letter spacing">A&#8201;B&#8201;C</button><button type="button" class="' + chip(ln.rule) + ' ww-tlst" data-tlrule="' + ln.id + '" title="Lines on both sides" aria-label="Lines on both sides">&#8212;&#8201;A&#8201;&#8212;</button></div></div>'
+          + '<div class="ww-tlf"><span>Color' + forTone + '</span><div class="ww-tlsws">' + Object.keys(TL_INKS).map(function (k) { return sw('tlink', ln.id + '|' + k, k, ln.ink[edit] === k); }).join('') + '</div></div></div>';
+      }
+      h += '</div>';
+    });
+    if (T.lines.length < 4) h += '<button type="button" class="ww-tladd" data-tladd>+ Add another line</button>';
+    h += '</div>';
+    // align + frame
+    var AL = [['left', 'Left', 'M3 5h14M3 10h9M3 15h12'], ['center', 'Center', 'M3 5h14M5.5 10h9M4 15h12'], ['right', 'Right', 'M3 5h14M8 10h9M5 15h12']];
+    h += '<div class="ww-tlcols"><div><div class="ww-tllab">Align</div><div style="display:flex;gap:6px">' + AL.map(function (a) { return '<button type="button" class="' + chip(T.align === a[0]) + ' ww-tlal" data-tlal="' + a[0] + '" aria-label="' + a[1] + '" title="' + a[1] + '"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="' + a[2] + '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>'; }).join('') + '</div></div>'
+      + '<div><div class="ww-tllab">Frame</div><div class="ww-pills" style="margin:0">' + TL_FRAMES.map(function (f) { return '<button type="button" class="' + chip(T.frame === f[0]) + '" data-tlfr="' + f[0] + '">' + f[1] + '</button>'; }).join('') + '</div></div>'
+      + (T.frame !== 'none' ? '<div><div class="ww-tllab">Frame color' + forTone + '</div><div class="ww-tlsws" style="max-width:230px">' + Object.keys(TL_INKS).map(function (k) { return sw('tlfrink', k, k, T.frameInk[edit] === k); }).join('') + '</div></div>' : '')
+      + '</div>';
+    // preview
+    var tabs = tn.mixed ? [['dark', tn.dark], ['light', tn.light]] : [[T.tone, T.tone === 'dark' ? tn.dark : tn.light]];
+    var ground = (T.tone === 'light' ? tn.light[0] : tn.dark[0]) || { hex: T.tone === 'light' ? '#ffffff' : '#232c44' };
+    h += '</div><div class="ww-tlprev"><div class="ww-tlprevh"><span class="ww-tllab" style="margin:0">Preview</span>'
+      + (tn.mixed ? '<div class="ww-tltabs" role="tablist" aria-label="Shirt colors">' + tabs.map(function (t) { return '<button type="button" role="tab" aria-selected="' + (T.tone === t[0]) + '" class="' + chip(T.tone === t[0]) + '" data-tltone="' + t[0] + '"><i style="background:' + t[1][0].hex + '"></i>' + esc(t[1].map(function (s) { return s.name; }).join(' · ')) + '</button>'; }).join('') + '</div>' : '<small style="color:#4b5563">On your ' + esc(tabs[0][1].map(function (s) { return s.name; }).join(', ')) + ' shirts</small>')
+      + '</div><div class="ww-tlstage" id="ww-tl-stage" style="background:' + ground.hex + '"></div>';
+    if (tn.mixed) h += '<label class="ww-tlsplit"><input type="checkbox" id="ww-tl-split"' + (T.split ? ' checked' : '') + '><span><b>Different text colors for light and dark shirts</b><br><small>Your order has ' + esc(shirtTones().map(function (s) { return s.name; }).join(', ')) + ' shirts. Pick a tab above to set the colors for each.</small></span></label>';
+    h += '<div id="ww-tl-info">' + tlInfo(T) + '</div><p class="ww-fine" style="margin:0">Our team checks every logo and sends you a free proof before printing. Next, you choose where it goes on the shirt.</p></div></div>'
+      + '<div class="ww-tlfoot"><button type="button" class="ww-btn ghost" data-tlclose>Cancel</button><button type="button" class="ww-btn" data-tluse>Use this logo</button></div>'
       + '</div></div>';
+    return h;
+  }
+  function tlDesc(tl) {
+    if (!tl || !tl.lines) return '';
+    var ls = tlFilled(tl).map(function (l) { return '"' + l.text + '" (' + tlFont(l.font)[1] + (l.caps ? ', caps' : '') + (l.space ? ', spaced' : '') + (l.rule ? ', side lines' : '') + ', ' + l.size + 'px, ' + tlInk(l.ink.dark)[0] + (tl.split && l.ink.light !== l.ink.dark ? ' / light shirts ' + tlInk(l.ink.light)[0] : '') + ')'; });
+    return 'Text logo: ' + ls.join(' / ') + ' · align ' + tl.align + (tl.frame !== 'none' ? ' · frame ' + tl.frame + ' ' + tlInk(tl.frameInk.dark)[0] + (tl.split && tl.frameInk.light !== tl.frameInk.dark ? ' / ' + tlInk(tl.frameInk.light)[0] : '') : '') + (tl.split ? ' · 2 versions (dark / light shirts), both files attached' : '');
+  }
+  function tlFontNames(tl) { var seen = {}; return (tl.lines ? tlFilled(tl) : []).map(function (l) { return tlFont(l.font)[1]; }).filter(function (n) { return seen[n] ? 0 : (seen[n] = 1); }).join(' + ') || 'Text'; }
+  function tlThumbs() {
+    var tn = tlTones(), d = tn.dark[0], l = tn.light[0];
+    var one = function (url, hex, name) { return '<div class="ww-tlthumb" style="background:' + hex + '" title="' + esc(name) + '"><img src="' + url + '" alt="Your text logo' + (name ? ' on ' + esc(name) + ' shirts' : '') + '"></div>'; };
+    if (O.logo.alt) return '<div style="display:flex;gap:6px">' + one(O.logo.url, (d || { hex: '#232c44' }).hex, d && d.name) + one(O.logo.alt.url, (l || { hex: '#ffffff' }).hex, l && l.name) + '</div>';
+    var g = d || l || { hex: '#232c44' }; return one(O.logo.url, g.hex, g.name);
   }
   function noLogoHtml() {
     var opt = function (id, title, text, price, pop) { return '<button class="ww-ch' + (O.noLogo === id ? ' on' : '') + '" data-nolog="' + id + '">' + (pop ? '<span class="ww-pop">' + pop + '</span>' : '') + '<b>' + title + '</b><span>' + text + '</span><span class="ww-chfrom" style="font-weight:600;color:#051024">' + price + '</span></button>'; };
@@ -1488,7 +1682,7 @@
       + opt('later', 'I’ll send it later', 'Order now. Email or WhatsApp us your logo after checkout.', 'Priced as full-color print')
       + '</div>';
     if (O.noLogo === 'text') {
-      if (O.logo && O.logo.text) h += '<div class="ww-tlcard"><div class="ww-tlthumb" style="background:' + esc(O.logo.text.ground || '#232c44') + '"><img src="' + O.logo.url + '" alt="Your text logo"></div><div style="flex:1;min-width:150px"><b>Your text logo</b><br><small style="color:#4b5563">' + esc(tlFont(O.logo.text.font)[1]) + ' letters · ' + O.inks + (O.inks === 1 ? ' color' : ' colors') + '</small></div><div class="ww-pills" style="margin:0"><button class="ww-link" style="padding:0" data-tlopen>Edit</button><button class="ww-link" style="padding:0;color:#4b5563" data-rmtext>Remove</button></div></div>'
+      if (O.logo && O.logo.text) h += '<div class="ww-tlcard">' + tlThumbs() + '<div style="flex:1;min-width:150px"><b>Your text logo</b><br><small style="color:#4b5563">' + esc(tlFontNames(O.logo.text)) + ' · ' + O.inks + (O.inks === 1 ? ' color' : ' colors') + (O.logo.alt ? ' · light and dark shirt versions' : '') + '</small></div><div class="ww-pills" style="margin:0"><button class="ww-link" style="padding:0" data-tlopen>Edit</button><button class="ww-link" style="padding:0;color:#4b5563" data-rmtext>Remove</button></div></div>'
         + '<div class="ww-fine" style="margin-top:10px">Next, you choose where it goes and see it on your shirt.</div>';
       else h += '<button class="ww-upload" style="margin-top:16px" data-tlopen><b>Create my text logo</b></button>';
     }
@@ -1497,45 +1691,22 @@
     if (O.textOpen) h += tlModal();
     return h;
   }
-  // text logo → transparent PNG, then it is used exactly like an uploaded logo
-  function makeTextLogo(T) {
-    var f = tlFont(T.font), caps = tlCaps(T), name = caps ? T.name.toUpperCase() : T.name, line2 = (T.line2 || '').trim();
-    var w2 = f[0] === 'bebas' || f[0] === 'pac' ? 400 : 500, S = Math.round(160 * f[4]), S2 = Math.round(S * .44);
-    var fam = '"' + f[2] + '"';
-    var ready = document.fonts && document.fonts.load ? Promise.all([document.fonts.load(f[3] + ' ' + S + 'px ' + fam, name), document.fonts.load(w2 + ' ' + S2 + 'px ' + fam, line2 || 'a')]).catch(function () {}) : Promise.resolve();
-    return ready.then(function () {
-      var c = document.createElement('canvas'), x = c.getContext('2d');
-      var setA = function () { x.font = f[3] + ' ' + S + 'px ' + fam; if ('letterSpacing' in x) x.letterSpacing = caps ? Math.round(S * .04) + 'px' : '0px'; };
-      var setB = function () { x.font = w2 + ' ' + S2 + 'px ' + fam; if ('letterSpacing' in x) x.letterSpacing = caps ? Math.round(S2 * .02) + 'px' : '0px'; };
-      setA(); var m1 = x.measureText(name);
-      var m2 = null; if (line2) { setB(); m2 = x.measureText(line2); }
-      var a1 = m1.actualBoundingBoxAscent || S * .75, d1 = m1.actualBoundingBoxDescent || S * .2;
-      var a2 = m2 ? (m2.actualBoundingBoxAscent || S2 * .75) : 0, d2 = m2 ? (m2.actualBoundingBoxDescent || S2 * .2) : 0, gap = m2 ? S2 * .55 : 0, pad = Math.round(S * .12);
-      var W = Math.ceil(Math.max(m1.width, m2 ? m2.width : 0) + pad * 2), H = Math.ceil(pad * 2 + a1 + d1 + (m2 ? gap + a2 + d2 : 0));
-      c.width = Math.min(W, 8000); c.height = H;
-      x.textAlign = 'center'; x.textBaseline = 'alphabetic';
-      setA(); x.fillStyle = tlInk(T.c1)[1]; x.fillText(name, c.width / 2, pad + a1);
-      if (m2) { setB(); x.fillStyle = tlInk(T.c2)[1]; x.fillText(line2, c.width / 2, pad + a1 + d1 + gap + a2); }
-      return c.toDataURL('image/png');
-    });
-  }
+  // text logo → transparent PNG (one per shirt tone when the colors differ), then it is used like an uploaded logo
   function useTextLogo(close) {
-    var T = O.tl; if (!T) return;
-    makeTextLogo(T).then(function (url) {
+    var T = O.tl; if (!T || !T.lines) return;
+    tlFontsReady(T).then(function () {
+      var url = tlDraw(T, 'dark', 8).toDataURL('image/png'), urlL = T.split ? tlDraw(T, 'light', 8).toDataURL('image/png') : null;
       var img = new Image();
       img.onload = function () {
         clearLogo();
-        var safe = (T.name || 'logo').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 40) || 'logo';
-        O.logo = { name: safe + '-text-logo.png', url: url, data: url, img: img, text: JSON.parse(JSON.stringify(T)) };
-        var want = tlColors(T);
-        try {
-          var cols = logoColors(img);
-          O.logo.fill = cols.fill; O.logo.aspect = cols.aspect;
-          if (cols.list.length === want.length) { O.logo.colors = cols.list; O.logo.share = cols.share; O.logo.edge = cols.edge; }
-          else { O.logo.colors = want; O.logo.share = want.map(function () { return 1 / want.length; }); O.logo.edge = want.map(function () { return 1; }); }
-        } catch (e) { O.logo.colors = want; }
-        O.logoType = 'solid'; O.inks = want.length; O.logo.detected = true; O.manualInks = false;
-        if (close) { O.textOpen = false; O.tlDraft = null; }
+        var first = tlFilled(T)[0], safe = ((first && first.text) || 'logo').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').slice(0, 40) || 'logo';
+        O.logo = { name: safe + (urlL ? '-text-logo-dark-shirts.png' : '-text-logo.png'), url: url, data: url, img: img, text: JSON.parse(JSON.stringify(T)) };
+        if (urlL) O.logo.alt = { name: safe + '-text-logo-light-shirts.png', url: urlL, data: urlL };
+        var want = tlColors(T, 'dark'), n = Math.max(want.length, urlL ? tlColors(T, 'light').length : 0);
+        try { var cols = logoColors(img); O.logo.fill = cols.fill; O.logo.aspect = cols.aspect; } catch (e) {}
+        O.logo.colors = want; O.logo.share = want.map(function () { return 1 / want.length; }); O.logo.edge = want.map(function () { return 1; });
+        O.logoType = 'solid'; O.inks = n; O.logo.detected = true; O.manualInks = false;
+        if (close) { O.textOpen = false; O.tlDraft = null; O.tlFontsFor = null; O.tlHover = null; }
         saveState(); renderPanel(); renderAside(); requote();
       };
       img.src = url;
@@ -1546,6 +1717,7 @@
   app.addEventListener('click', function (e) {
     var hv = e.target.closest('label.ww-have');
     if (hv && O.logoMode === 'none') setTimeout(function () { O.logoMode = 'have'; if (O.logo && O.logo.text) clearLogo(); saveState(); renderPanel(); renderAside(); requote(); }, 0);
+    if (O.tlFontsFor != null && !(e.target.closest('.ww-tlfl') || e.target.closest('[data-tlfonts]'))) { O.tlFontsFor = null; O.tlHover = null; if (!e.target.closest('button')) { tlRender(); return; } }
     var b = e.target.closest('button'); if (!b || !app.contains(b)) { if (F.open) { F.open = null; renderCatalog(); } return; }
     var ds = b.dataset;
     if (ds.galstep) { var gt = b.closest('[data-gal]').querySelector('.ww-gtrack'); gt.scrollBy({ left: +ds.galstep * gt.clientWidth, behavior: 'smooth' }); return; }
@@ -1570,14 +1742,30 @@
       else if (!O.logo) { O.textOpen = true; loadTlFonts(); }
       saveState(); renderPanel(); renderAside(); requote(); return;
     }
-    if ('tlopen' in ds) { O.textOpen = true; loadTlFonts(); renderPanel(); return; }
-    if ('tlclose' in ds) { O.textOpen = false; renderPanel(); return; }
-    if (ds.tlfont || ds.tlc1 || ds.tlc2 || ds.tlground || 'tlcaps' in ds) {
-      var T = tlDraft();
-      if (ds.tlfont) T.font = ds.tlfont; if (ds.tlc1) T.c1 = ds.tlc1; if (ds.tlc2) T.c2 = ds.tlc2; if (ds.tlground) T.ground = ds.tlground; if ('tlcaps' in ds) T.caps = !T.caps;
-      renderPanel(); return;
+    if ('tlopen' in ds) { O.textOpen = true; O.tlFocused = 0; loadTlFonts(); renderPanel(); return; }
+    if ('tlclose' in ds) { O.textOpen = false; O.tlDraft = null; O.tlFontsFor = null; O.tlHover = null; renderPanel(); return; }
+    if (O.textOpen && b.closest('.ww-tlbox')) {
+      var T = tlDraft(), edit = T.split ? T.tone : 'dark', lnOf = function (id) { return T.lines.filter(function (l) { return String(l.id) === String(id); })[0]; };
+      var two = function (v) { var i = v.indexOf('|'); return [lnOf(v.slice(0, i)), v.slice(i + 1)]; };
+      var setInk = function (obj, k) { if (T.split) obj[edit] = k; else { obj.dark = k; obj.light = k; } };
+      if (ds.tlpreset) { var pr = TL_PRESETS[+ds.tlpreset][1]; T.lines.forEach(function (l, i) { var p2 = pr[Math.min(i, 1)]; l.font = p2.font; l.size = i > 1 ? Math.min(p2.size, 18) : p2.size; l.caps = p2.caps; l.space = p2.space; }); tlRender(); return; }
+      if (ds.tlfonts) { O.tlFontsFor = String(O.tlFontsFor) === ds.tlfonts ? null : +ds.tlfonts; O.tlHover = null; T.sel = +ds.tlfonts; tlRender(); return; }
+      if (ds.tlfont) { var f2 = two(ds.tlfont); if (f2[0]) f2[0].font = f2[1]; O.tlFontsFor = null; O.tlHover = null; tlRender(); return; }
+      if (ds.tlcaps) { var l1 = lnOf(ds.tlcaps); l1.caps = !l1.caps; tlRender(); return; }
+      if (ds.tlspace) { var l2 = lnOf(ds.tlspace); l2.space = !l2.space; tlRender(); return; }
+      if (ds.tlrule) { var l3 = lnOf(ds.tlrule); l3.rule = !l3.rule; tlRender(); return; }
+      if (ds.tlink) { var k2 = two(ds.tlink); if (k2[0]) setInk(k2[0].ink, k2[1]); tlRender(); return; }
+      if (ds.tlrm) { T.lines = T.lines.filter(function (l) { return String(l.id) !== ds.tlrm; }); T.sel = T.lines[0].id; tlRender(); return; }
+      if ('tladd' in ds) { var last = T.lines[T.lines.length - 1], id = T.nextId++; T.lines.push({ id: id, text: '', font: last.font === 'montserrat' ? 'poppins' : 'montserrat', size: 16, caps: false, space: false, rule: false, ink: { dark: last.ink.dark, light: last.ink.light } }); T.sel = id; tlRender('#ww-tl-t' + id); return; }
+      if (ds.tlal) { T.align = ds.tlal; tlRender(); return; }
+      if (ds.tlfr) { T.frame = ds.tlfr; tlRender(); return; }
+      if (ds.tlfrink) { setInk(T.frameInk, ds.tlfrink); tlRender(); return; }
+      if (ds.tltone) { T.tone = ds.tltone; tlRender(); return; }
+      if ('tluse' in ds) {
+        if (!tlFilled(T).length) { var ni = app.querySelector('.ww-tltext'); if (ni) ni.focus(); return; }
+        O.tl = JSON.parse(JSON.stringify(T)); b.disabled = true; b.textContent = 'Creating…'; useTextLogo(true); return;
+      }
     }
-    if ('tluse' in ds) { var TD = tlDraft(); if (!TD.name.trim()) { var ni = document.getElementById('ww-tl-name'); if (ni) ni.focus(); return; } O.tl = JSON.parse(JSON.stringify(TD)); b.disabled = true; b.textContent = 'Creating\u2026'; useTextLogo(true); return; }
     if ('rmtext' in ds) { clearLogo(); O.tl = null; O.tlDraft = null; saveState(); renderPanel(); renderAside(); requote(); return; }
     if ('rmlogo' in ds) {
       clearLogo();
@@ -1649,8 +1837,33 @@
     if (t.id === 'ww-reno') { O.reorderNo = t.value; return; }
     if (t.id === 'ww-custnote') { O.custNote = t.value; saveState(); return; }
     if (t.id === 'ww-thread') { O.threadNote = t.value; return; }
-    if (t.id === 'ww-tl-name' || t.id === 'ww-tl-line2') { tlDraft()[t.id === 'ww-tl-name' ? 'name' : 'line2'] = t.value; tlPaint(); return; }
+    if (t.classList.contains('ww-tltext') || t.classList.contains('ww-tlsize')) {
+      var TT = tlDraft(), ll = TT.lines.filter(function (l) { return String(l.id) === t.dataset.tlline; })[0]; if (!ll) return;
+      if (t.classList.contains('ww-tltext')) ll.text = t.value; else ll.size = +t.value;
+      tlPaint(); return;
+    }
     if (t.id === 'ww-other') { O.otherText = t.value; var nb2 = app.querySelector('[data-next]'); if (nb2) nb2.disabled = !stepOk(O.step); renderSteps(); }
+  });
+  // text logo editor: picking a line opens its controls; hovering a font shows it in the preview (a tap picks it on a phone)
+  app.addEventListener('focusin', function (e) {
+    var t = e.target; if (!t.classList || !t.classList.contains('ww-tltext')) return;
+    var T = tlDraft(); if (String(T.sel) === t.dataset.tlline) return;
+    T.sel = +t.dataset.tlline; O.tlFontsFor = null; tlRender('#' + t.id);
+  });
+  app.addEventListener('mouseover', function (e) {
+    if (!O.textOpen || O.tlFontsFor == null) return;
+    var o = e.target.closest && e.target.closest('[data-tlfonth]'), hv = null;
+    if (o) { var v = o.dataset.tlfonth, i = v.indexOf('|'); hv = { id: +v.slice(0, i), font: v.slice(i + 1) }; }
+    else if (e.target.closest && e.target.closest('.ww-tlfl')) return;
+    if (JSON.stringify(hv) === JSON.stringify(O.tlHover)) return;
+    O.tlHover = hv; tlPaint();
+  });
+  app.addEventListener('change', function (e) {
+    if (e.target.id !== 'ww-tl-split') return;
+    var T = tlDraft(), flip = function (k) { return lum(tlInk(k)[1]) > 215 ? 'navy' : k; };
+    if (T.split) { T.split = false; T.lines.forEach(function (l) { l.ink.light = l.ink.dark; }); T.frameInk.light = T.frameInk.dark; }
+    else { T.split = true; T.tone = 'light'; T.lines.forEach(function (l) { l.ink.light = flip(l.ink.dark); }); T.frameInk.light = flip(T.frameInk.dark); }
+    tlRender();
   });
   // an open filter menu closes on any click outside it (header, page, anywhere)
   document.addEventListener('click', function (e) { if (F.open && !(e.target.closest && e.target.closest('.ww-dd'))) { F.open = null; renderCatalog(); } });
