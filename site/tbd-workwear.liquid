@@ -908,10 +908,10 @@
   function saveState() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () {
-      if (!O.lines.length) { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} return; }
+      if (!O.lines.length) { try { sessionStorage.removeItem(SAVE_KEY); } catch (e) {} return; }
       var snap = function (withData) { return JSON.stringify(snapState(withData)); };
-      try { localStorage.setItem(SAVE_KEY, snap(true)); }
-      catch (e) { try { localStorage.setItem(SAVE_KEY, snap(false)); } catch (e2) {} }   // too big for storage: keep everything but the files
+      try { sessionStorage.setItem(SAVE_KEY, snap(true)); }
+      catch (e) { try { sessionStorage.setItem(SAVE_KEY, snap(false)); } catch (e2) {} }   // too big for storage: keep everything but the files
     }, 300);
   }
   function snapState(withData) {
@@ -920,9 +920,12 @@
     for (var k in O.xlogo) o.xlogo[k] = { diff: O.xlogo[k].diff, logo: slimLogo(O.xlogo[k].logo, withData) };
     return o;
   }
+  // The order in progress lives only in this browser tab (sessionStorage): a reload keeps it, closing the tab clears it.
+  // Older saves in localStorage (kept for 7 days before) are removed.
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
   function loadState() {
-    var s; try { s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { s = null; }
-    if (!s || !s.at || Date.now() - s.at > 7 * 864e5) return;
+    var s; try { s = JSON.parse(sessionStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { s = null; }
+    if (!s || !s.at || Date.now() - s.at > 864e5) return;
     applyState(s);
   }
   function applyState(s) {
@@ -934,7 +937,7 @@
       if (O.logo.url) { var im = new Image(); im.onload = function () { O.logo.img = im; if (O.step >= 3) renderPanel(); }; im.src = O.logo.url; }
     }
   }
-  function clearState() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }
+  function clearState() { try { sessionStorage.removeItem(SAVE_KEY); } catch (e) {} }
 
   // logo on the real photo, at the spot saved in the calculator (or a standard spot)
   var DEF = { lc: { cx: .63, cy: .34, maxW: .15, maxH: .12 }, ff: { cx: .5, cy: .47, maxW: .36, maxH: .38 }, fb: { cx: .5, cy: .42, maxW: .38, maxH: .40 }, sl: { cx: .5, cy: .33, maxW: .14, maxH: .10 } };
