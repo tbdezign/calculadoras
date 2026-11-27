@@ -171,6 +171,14 @@
   .ww-ch:not(.on):hover { border-color: #9fb3c2; box-shadow: 0 2px 10px rgba(5,16,36,.06); }
   .ww-link:hover { text-decoration: underline; }
   .ww-have { display: flex; flex-direction: column; align-items: flex-start; }
+  .ww-have .ww-uplink { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; color: #1a7698; font-weight: 600; font-size: 15px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+  .ww-have .ww-uplink:hover { color: #0f5a75; }
+  .ww-have .ww-lowres { display: block; font-size: 12.5px; color: #4b5563; margin-top: 6px; }
+  .ww-have .ww-laterrow { display: block; border-top: 1px solid #eef0f2; margin-top: 14px; padding-top: 12px; }
+  .ww-laterlink { border: 0; background: none; padding: 0; text-align: left; font-size: 13px; color: #1a7698; cursor: pointer; font-family: inherit; }
+  .ww-laterlink u { text-underline-offset: 3px; }
+  .ww-laterlink.on { color: #051024; font-weight: 600; }
+  .ww-ch.ww-have label.ww-havefile { cursor: pointer; }
   .ww-ch .ww-upbtn { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 9px 16px; border-radius: 999px; border: 1.5px dashed #1a7698; color: #1a7698; font-weight: 600; font-size: 14px; background: #fff; }
   .ww-ch.ww-have:hover .ww-upbtn { background: #eef7fb; border-style: solid; }
   .ww-ch .ww-havefile { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 8px 10px; border-radius: 10px; background: #fff; border: 1px solid #e3e7ec; max-width: 100%; }
@@ -195,10 +203,17 @@
   .ww-tlln { padding: 12px; border-radius: 12px; border: 1.5px solid #e3e7ec; background: #fff; }
   .ww-tlln.on { border-color: #1a7698; background: #f5fafc; }
   .ww-tlrow { display: flex; gap: 8px; align-items: center; }
-  .ww-tlnum { font-size: 12px; font-weight: 600; color: #4b5563; width: 44px; flex: none; }
+  .ww-tlnum { display: block; font-size: 13px; font-weight: 600; color: #051024; margin-bottom: 6px; }
+  .ww-tlnum span { font-weight: 400; color: #6b7280; }
+  .ww-tlcolor { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+  .ww-tlcolor > span { font-size: 13px; font-weight: 600; }
+  .ww-tlcolor .ww-tlsw { width: 28px; height: 28px; }
+  .ww-tlproof { flex: 1 1 260px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #051024; }
+  .ww-tlproof svg { width: 20px; height: 20px; flex: none; }
+  .ww-tlproof small { font-size: 14px; font-weight: 400; color: #4b5563; }
   .ww-tltext { flex: 1; min-width: 0; font-size: 16px; padding: 10px 12px; border: 1.5px solid #d6dbe1; border-radius: 10px; color: #051024; font-family: inherit; }
   .ww-tlrm { width: 34px; height: 34px; border-radius: 8px; border: 1px solid #e3e7ec; background: #fff; color: #4b5563; font-size: 18px; flex: none; }
-  .ww-tlctl { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-start; margin-top: 10px; padding-left: 52px; }
+  .ww-tlctl { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-start; margin-top: 10px; }
   .ww-tlf { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #4b5563; position: relative; }
   .ww-tlf input[type=range] { accent-color: #1a7698; margin: 8px 0 0; }
   .ww-tlsel { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 15px; padding: 7px 10px; border: 1.5px solid #d6dbe1; border-radius: 8px; color: #051024; background: #fff; min-width: 190px; text-align: left; }
@@ -228,11 +243,10 @@
   .ww-tlsplit { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; cursor: pointer; line-height: 1.4; }
   .ww-tlsplit input { width: 18px; height: 18px; margin-top: 1px; accent-color: #1a7698; flex: none; }
   .ww-tlsplit small { color: #4b5563; font-size: 12.5px; }
-  .ww-tlwarn, .ww-tlnote { font-size: 12.5px; padding: 8px 10px; border-radius: 8px; margin-bottom: 6px; }
-  .ww-tlwarn, .ww-tlnote.amber { background: #fff8e6; color: #5c4400; }
-  .ww-tlnote.green { background: #eef6e2; color: #365314; font-weight: 500; }
-  .ww-tlnote.blue { background: #eef4f8; color: #0c4a63; }
-  .ww-tlfoot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px; border-top: 1px solid #eef0f2; flex-wrap: wrap; }
+  .ww-tlwarn, .ww-tlnote { font-size: 13px; padding: 9px 12px; border-radius: 8px; margin-bottom: 8px; line-height: 1.45; }
+  .ww-tlwarn { background: #fff8e6; color: #5c4400; border: 1px solid #f0d58a; font-weight: 500; }
+  .ww-tlnote { background: #eef4f8; color: #0c4a63; }
+  .ww-tlfoot { display: flex; justify-content: flex-end; align-items: center; gap: 10px 16px; padding: 14px 22px; border-top: 1px solid #eef0f2; flex-wrap: wrap; }
   .ww-tlcard { margin-top: 16px; display: flex; align-items: center; gap: 16px; padding: 14px; border-radius: 12px; border: 1.5px solid #1a7698; background: #fafbfc; flex-wrap: wrap; }
   .ww-tlthumb { width: 150px; height: 80px; border-radius: 8px; display: flex; align-items: center; justify-content: center; padding: 10px; border: 1px solid #e2e2e2; box-sizing: border-box; }
   .ww-tlthumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
@@ -607,7 +621,11 @@
   function silkFits() { return O.deco === 'print' && O.logoType === 'solid' && inks() <= 3 && total() >= DATA.minimums.silk; }
   // the method our rule picks; the client can still choose DTF over Silk Screen when DTF costs less on this order
   // "I don't have a logo": we make one (Custom Logo Design) or the customer sends it later → priced as DTF until we see it
-  function pending() { return O.logoMode === 'none' && (O.noLogo === 'design' || O.noLogo === 'later'); }
+  // "Create a logo for me" (Custom Logo Design) or "Send it after checkout": priced as DTF until we see the logo
+  function designOrder() { return O.logoMode === 'none' && O.noLogo === 'design'; }
+  function laterOrder() { return O.logoMode === 'later'; }
+  function pending() { return designOrder() || laterOrder(); }
+  var REFUND = 'If your logo is just a few solid colors, it can be screen printed for less, and we refund the difference.';
   function ruleMethod() {
     if (O.deco === 'emb') return 'emb';
     if (O.deco === 'print' && pending()) return 'dtf';
@@ -726,7 +744,7 @@
         return { code: l.code, color: l.color, qty: q };
       }) };
     if (method()) o.method = method();
-    if (O.logoMode === 'none' && O.noLogo === 'design') o.logoDesign = true;
+    if (designOrder()) o.logoDesign = true;
     for (var k in overrides || {}) o[k] = overrides[k];
     return o;
   }
@@ -843,15 +861,18 @@
       h += '<div class="ww-fine" style="margin-top:10px">Estimate with a 1-color left chest logo. Your exact price shows once you add your logo.</div>';
       loadEst();
     } else if (O.step === 3) {
-      h += '<h2 class="ww-h2">3. Your logo</h2><p class="ww-p">Upload your logo, or tell us you don\u2019t have one yet.</p>'
-        + '<div class="ww-choice" style="margin-bottom:16px"><label class="ww-ch ww-have' + (O.logoMode !== 'none' ? ' on' : '') + '" for="ww-file"><b>I have a logo</b><span>PNG, JPG, PDF or AI.</span>'
-        + (O.logoMode !== 'none' && O.logo ? '<span class="ww-havefile">' + (O.logo.url ? '<img src="' + (cleanLogo() || O.logo.url) + '" alt="Your logo">' : '<b class="ww-filetag">FILE</b>') + '<span><b>' + esc(O.logo.name) + '</b><br><small>Click to change the file</small></span></span>'
-          : '<span class="ww-upbtn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>Upload your logo</span>')
-        + '</label>'
-        + '<button class="ww-ch' + (O.logoMode === 'none' ? ' on' : '') + '" data-lmode="none"><b>I don\u2019t have a logo</b><span>No problem. Pick an option below.</span></button></div>';
+      var haveSide = O.logoMode !== 'none';
+      h += '<h2 class="ww-h2">3. Your logo</h2><p class="ww-p">Got a logo? Upload it. No logo? We’ve got you.</p>'
+        + '<div class="ww-choice" style="margin-bottom:16px"><div class="ww-ch ww-have' + (haveSide ? ' on' : '') + '"><b>I have a logo</b><span>PNG, JPG, PDF, AI or EPS. Vector files print sharpest.</span>'
+        + (O.logoMode === 'have' && O.logo ? '<label class="ww-havefile" for="ww-file">' + (O.logo.url ? '<img src="' + (cleanLogo() || O.logo.url) + '" alt="Your logo">' : '<b class="ww-filetag">FILE</b>') + '<span><b>' + esc(O.logo.name) + '</b><br><small>Click to change the file</small></span></label>'
+          : '<label class="ww-uplink" for="ww-file"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>Upload your logo</label><small class="ww-lowres">Low-res? We’ll check it before anything prints.</small>')
+        + '<span class="ww-laterrow"><button type="button" class="ww-laterlink' + (O.logoMode === 'later' ? ' on' : '') + '" data-lmode="later">Don’t have the file on you? <u>Send it after checkout →</u></button></span>'
+        + '</div>'
+        + '<button class="ww-ch' + (O.logoMode === 'none' ? ' on' : '') + '" data-lmode="none"><b>I don’t have a logo</b><span>Two ways to go. Pick one below.</span></button></div>';
       h += '<input type="file" id="ww-file" accept=".png,.jpg,.jpeg,.pdf,.ai,.svg,.eps,image/*,application/pdf" style="position:absolute;left:-9999px">';
+      if (O.logoMode === 'later') h += '<div class="ww-msg amber" style="margin-bottom:8px">We hold your order until your logo arrives. Send it to <b>info@tbdezign.com</b> or <a href="https://wa.me/19548714646" target="_blank" rel="noopener">WhatsApp</a> with your order number.<br><b>Price:</b> we charge full-color print since we haven’t seen your logo. ' + REFUND + '</div>';
       if (O.logoMode === 'none') h += noLogoHtml();
-      if (O.logoMode !== 'none') {
+      if (O.logoMode === 'have') {
       h += (O.logo ? '<div style="margin:-6px 0 4px"><button class="ww-link" style="padding:0;font-size:13px;color:#4b5563" data-rmlogo>Remove this logo</button></div>' : '');
       if (O.logo && O.deco === 'emb') {
         if (O.logo.effects && !O.keepEmb) h += '<div class="ww-msg amber ww-save" style="margin-top:16px"><div>Your logo has gradients or shading. Embroidery simplifies those. Want it exactly like your file? Printed keeps every detail.</div><div class="ww-pills" style="margin:0"><button class="ww-pill on" data-deco="print">Switch to printed</button><button class="ww-pill" data-keepemb>Keep embroidery</button></div></div>';
@@ -911,7 +932,7 @@
       }
     } else if (O.step === 4) {
       var both = ruleMethod() === 'silk' && O.qSilk && O.qDtf, save = both ? printSave() : 0;
-      var why = pending() && m === 'dtf' ? (O.noLogo === 'design' ? 'We\u2019ll design your logo first, so we price it as full-color print. If your new logo can be screen printed, we refund the difference.' : 'We haven\u2019t seen your logo yet, so we price it as full-color print (works with any logo). If it can be screen printed, we refund the difference.')
+      var why = pending() && m === 'dtf' ? (designOrder() ? 'We\u2019ll design your logo first, so we charge full-color print for now. ' + REFUND : 'We haven\u2019t seen your logo yet, so we charge full-color print. ' + REFUND)
         : m === 'silk' ? ''
         : ruleMethod() === 'silk' ? (O.pick ? '' : 'Your logo has ' + inks() + ' colors and your order has ' + t + ' pieces: DTF gives the best price.')
         : m === 'dtf' && O.deco === 'print' && O.logoType === 'solid' && inks() <= 3 && t >= DATA.minimums.silk && mixedShades() ? 'Light and dark shirts need separate screen setups, so DTF keeps your price down.'
@@ -973,7 +994,7 @@
         }
       }
     } else {
-      if (pending()) h += '<div class="ww-msg amber" style="margin-bottom:14px">' + (O.noLogo === 'design' ? '<b>Custom Logo Design included.</b> After checkout you\u2019ll fill out a short brand questionnaire. You get 2\u20133 concepts in 3\u20135 business days, and your shirts go into production after you approve the logo.' : '<b>Send us your logo after checkout</b> to <a href="mailto:info@tbdezign.com">info@tbdezign.com</a> or <a href="https://wa.me/19548714646" target="_blank" rel="noopener">WhatsApp</a>, with your order number. We hold your order until it arrives.') + '</div>';
+      if (pending()) h += '<div class="ww-msg amber" style="margin-bottom:14px">' + (designOrder() ? '<b>Custom Logo Design included.</b> After checkout you\u2019ll fill out a short brand questionnaire. You get 2\u20133 concepts in 3\u20135 business days, and your order goes into production after you approve the logo.' : '<b>Send us your logo after checkout</b> to <a href="mailto:info@tbdezign.com">info@tbdezign.com</a> or <a href="https://wa.me/19548714646" target="_blank" rel="noopener">WhatsApp</a>, with your order number. We hold your order until it arrives.') + '</div>';
       h += '<h2 class="ww-h2">5. Preview</h2><p class="ww-p">This is a quick preview. Our team will create the final proof with correct sizing and any adjustments needed.</p><div class="ww-prevs">' + previews() + '</div>' + '<div class="ww-review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.6-3 8.4-7 10-4-1.6-7-5.4-7-10V6l7-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><div><b>Real people check every order.</b> Our team creates a final proof with correct sizing, edits and adjustments as needed, and sends it for your approval within 1 business day. Nothing prints until you say it looks right.</div></div>'
         + '<div class="ww-q" style="margin-top:20px">Notes for our team <span style="font-weight:400;color:#6b7280">(optional)</span></div><textarea class="ww-note-in" id="ww-custnote" maxlength="800" placeholder="e.g. phone number under the logo, list of services…">' + esc(O.custNote || '') + '</textarea>';
       if (O.checkout === 'error') h += '<div class="ww-msg red" style="margin-top:16px">We couldn\u2019t add your order just now. Please try again in a moment.<br>Still not working? ' + (chatEl() ? '<button type="button" data-chat style="background:none;border:0;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer">Chat with us</button>, email' : 'Email') + ' <a href="mailto:info@tbdezign.com">info@tbdezign.com</a> or message us on <a href="https://wa.me/19548714646" target="_blank" rel="noopener">WhatsApp</a> and we\u2019ll finish your order for you.</div>';
@@ -1018,6 +1039,7 @@
   function applyState(s) {
     SAVE_FIELDS.forEach(function (k) { if (s[k] !== undefined) O[k] = s[k]; });
     O.lines = (O.lines || []).filter(function (l) { return byCode[l.code]; });
+    if (O.logoMode === 'none' && O.noLogo === 'later') { O.logoMode = 'later'; O.noLogo = null; }
     O.xlogo = s.xlogo || {};
     if (s.logo) {
       O.logo = s.logo;
@@ -1240,9 +1262,9 @@
     if (dc && dc.on) lineNotes.push(['Print', 'shirt shows through the ' + cname(dc.c, dc.shirt)]);
     else if (dc && dc.fix === 'swap') lineNotes.push(['Print', cname(dc.c, dc.shirt) + ' printed in ' + (lum(dc.shirt.hex) < 128 ? 'white' : 'black')]);
     if (O.custNote && O.custNote.trim()) notes.unshift('Customer note: ' + O.custNote.trim());
+    if (laterOrder()) { logo = 'NO LOGO YET: customer will send it after checkout — priced as DTF, refund the difference if it can be silk'; notes.unshift('Logo pending: customer sends it after checkout'); }
     if (O.logoMode === 'none') {
       if (O.noLogo === 'design') { logo = 'NO LOGO: Custom Logo Design ordered ($150) — send the brand questionnaire, shirts wait for logo approval'; notes.unshift('Custom Logo Design ordered — send the questionnaire (logo.tbdezign.com)'); }
-      else if (O.noLogo === 'later') { logo = 'NO LOGO YET: customer will send it after checkout — priced as DTF, refund the difference if it can be silk'; notes.unshift('Logo pending: customer sends it after checkout'); }
       else if (O.logo && O.logo.text) { logo = tlDesc(O.logo.text) + ' · ' + O.inks + (O.inks === 1 ? ' color' : ' colors'); }
     }
     return { placement: placeText(), logo: logo, notes: notes.join(' | '), lineNotes: lineNotes, colorNotes: colorNotes, items: O.lines.filter(function (l) { return qtyOf(l) > 0; }).map(function (l) { return { code: l.code, color: l.color, sizes: l.sizes, hex: hexOf(byCode[l.code], l.color) }; }) };
@@ -1591,15 +1613,20 @@
     go(); tlFontsReady(T, hover).then(function () { if (O.tlDraft === T && O.tlHover === hover) go(); });
     var info = document.getElementById('ww-tl-info'); if (info) info.innerHTML = tlInfo(T);
   }
+  // one warning (a color that won't show), then one note about how it prints
   function tlInfo(T) {
-    var tn = tlTones(), n = Math.max(tlInksFor(T, 'dark').length, T.split ? tlInksFor(T, 'light').length : 0), h = '';
-    if (!T.split && tlFilled(T).length) {
-      var cols = tlInksFor(T, 'dark'), hide = function (list) { return list.filter(function (sh) { return cols.some(function (k) { return cdist(tlInk(k)[1], sh.hex) < 70 || (lum(tlInk(k)[1]) > 215 && isLight(sh.hex)) || (lum(tlInk(k)[1]) < 60 && !isLight(sh.hex) && lum(sh.hex) < 90); }); }); };
-      var bad = hide(tn.dark.concat(tn.light));
-      if (bad.length) h += '<div class="ww-tlwarn">Part of your text won’t show well on your ' + esc(bad.map(function (s) { return s.name; }).join(', ')) + ' shirts.' + (tn.mixed ? ' Turn on different colors below.' : ' Pick another color.') + '</div>';
-    }
-    if (tn.mixed) h += '<div class="ww-tlnote blue">Light and dark shirts in one order print in full color (DTF): same price, and each shirt color can have its own text colors.</div>';
-    else if (n) h += '<div class="ww-tlnote ' + (n <= 3 ? 'green' : 'amber') + '">' + n + (n === 1 ? ' print color' : ' print colors') + (n > 3 ? ' · more than 3 colors prints in full color (DTF).' : '') + '</div>';
+    var tn = tlTones(), n = Math.max(tlInksFor(T, 'dark').length, T.split ? tlInksFor(T, 'light').length : 0), h = '', warn = '';
+    if (tlFilled(T).length) (T.split ? ['dark', 'light'] : ['dark']).forEach(function (tone) {
+      var shirts = T.split ? tn[tone] : tn.dark.concat(tn.light);
+      tlInksFor(T, tone).forEach(function (k) {
+        if (warn) return;
+        var hx = tlInk(k)[1], L = lum(hx), bad = shirts.filter(function (sh) { return cdist(hx, sh.hex) < 70 || (L > 215 && isLight(sh.hex)) || (L < 70 && !isLight(sh.hex) && lum(sh.hex) < 90); });
+        if (bad.length) warn = tlInk(k)[0] + ' text won’t show on ' + bad.map(function (sh) { return sh.name; }).join(' and ') + ' shirts. ' + (tn.mixed && !T.split ? 'Check the box above to pick different colors.' : 'Pick another color.');
+      });
+    });
+    if (warn) h += '<div class="ww-tlwarn" role="alert">⚠ ' + esc(warn) + '</div>';
+    if (tn.mixed) h += '<div class="ww-tlnote"><b>Prints in full color.</b> Mixing light and dark shirts? No extra cost, and each shirt color can have its own text colors.</div>';
+    else if (n) h += '<div class="ww-tlnote"><b>' + n + (n === 1 ? ' color.' : ' colors.') + '</b> ' + (n <= 3 ? 'Could qualify for screen printing. We’ll check and refund the difference if it does.' : 'Prints in full color (DTF).') + '</div>';
     return h;
   }
   // re-render the popup without jumping back to the top
@@ -1616,19 +1643,21 @@
     var sw = function (attr, val, k, on) { return '<button type="button" class="ww-tlsw' + (on ? ' on' : '') + '" data-' + attr + '="' + val + '" style="background:' + TL_INKS[k][1] + '" title="' + TL_INKS[k][0] + '" aria-label="' + TL_INKS[k][0] + '"></button>'; };
     var forTone = T.split ? '<b class="ww-tlfor"> · ' + (T.tone === 'dark' ? 'dark' : 'light') + ' shirts</b>' : '';
     var name1 = (T.lines[0] && T.lines[0].text) || 'Your Name', name2 = (T.lines[1] && T.lines[1].text) || 'tagline';
-    var h = '<div class="ww-tlbg" role="dialog" aria-modal="true" aria-label="Create your logo"><div class="ww-tlbox">'
-      + '<div class="ww-tlhead"><b>Create your logo</b><button type="button" class="ww-tlx" data-tlclose aria-label="Close">×</button></div>'
+    var h = '<div class="ww-tlbg" role="dialog" aria-modal="true" aria-label="Design your business name"><div class="ww-tlbox">'
+      + '<div class="ww-tlhead"><b>Design your business name</b><button type="button" class="ww-tlx" data-tlclose aria-label="Close">×</button></div>'
       + '<div class="ww-tlbody"><div class="ww-tlform">';
     // styles to start from
     h += '<div><div class="ww-tllab">Start from a style</div><div class="ww-tlpres">' + TL_PRESETS.map(function (p, i) {
-      return '<button type="button" class="ww-tlpre" data-tlpreset="' + i + '"><span style="' + tlCss(Object.assign({}, T.lines[0] || {}, p[1][0]), p[1][0].size * .38, 'white') + 'max-width:100%;overflow:hidden;text-overflow:ellipsis">' + esc(name1) + '</span><span style="' + tlCss(p[1][1], p[1][1].size * .55, 'teal') + 'max-width:100%;overflow:hidden">' + esc(name2) + '</span><small>' + p[0] + '</small></button>';
+      // the text shrinks so the whole name fits the thumbnail (about 150px wide)
+      var fit = function (st, text, k) { var w = text.length * st.size * (st.caps ? .68 : .55) * (st.space ? 1.18 : 1); return st.size * Math.min(k, 150 / Math.max(1, w)); };
+      return '<button type="button" class="ww-tlpre" data-tlpreset="' + i + '"><span style="' + tlCss(p[1][0], fit(p[1][0], name1, .38), 'white') + 'max-width:100%;overflow:hidden">' + esc(name1) + '</span><span style="' + tlCss(p[1][1], fit(p[1][1], name2, .55), 'teal') + 'max-width:100%;overflow:hidden">' + esc(name2) + '</span><small>' + p[0] + '</small></button>';
     }).join('') + '</div></div>';
     // lines
     h += '<div class="ww-tllines"><div class="ww-tllab" style="margin:0">Text</div>';
     T.lines.forEach(function (ln, i) {
       var open = T.sel === ln.id || T.lines.length === 1, f = tlFont(ln.font);
-      h += '<div class="ww-tlln' + (open ? ' on' : '') + '"><div class="ww-tlrow"><span class="ww-tlnum">Line ' + (i + 1) + '</span>'
-        + '<input class="ww-tltext" data-tlline="' + ln.id + '" id="ww-tl-t' + ln.id + '" maxlength="40" value="' + esc(ln.text) + '" placeholder="' + (i === 0 ? 'Business name' : i === 1 ? 'Slogan or service' : 'Phone or website') + '"' + (i === 0 ? ' autocomplete="organization"' : '') + '>'
+      h += '<div class="ww-tlln' + (open ? ' on' : '') + '"><label class="ww-tlnum" for="ww-tl-t' + ln.id + '">' + (i === 0 ? 'Business name' : i === 1 ? 'Tagline or phone' : 'Extra line') + (i ? ' <span>(optional)</span>' : '') + '</label><div class="ww-tlrow">'
+        + '<input class="ww-tltext" data-tlline="' + ln.id + '" id="ww-tl-t' + ln.id + '" maxlength="40" value="' + esc(ln.text) + '" placeholder="' + (i === 0 ? 'e.g. Florida Cleaning' : i === 1 ? 'e.g. we do it right · (561) 555-0123' : 'e.g. your website') + '"' + (i === 0 ? ' autocomplete="organization"' : '') + '>'
         + (T.lines.length > 1 ? '<button type="button" class="ww-tlrm" data-tlrm="' + ln.id + '" aria-label="Remove this line" title="Remove this line">×</button>' : '') + '</div>';
       if (open) {
         h += '<div class="ww-tlctl"><div class="ww-tlf">Font<button type="button" class="ww-tlsel' + (O.tlFontsFor === ln.id ? ' on' : '') + '" data-tlfonts="' + ln.id + '" aria-haspopup="listbox" aria-expanded="' + (O.tlFontsFor === ln.id) + '" style="font-family:\'' + f[1] + '\',sans-serif;font-weight:' + f[2] + '"><span>' + f[1] + '</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 L6 8 L9.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>';
@@ -1638,7 +1667,7 @@
         }).join('') + '</div>';
         h += '</div><label class="ww-tlf" style="width:120px">Size<input type="range" class="ww-tlsize" data-tlline="' + ln.id + '" min="10" max="60" value="' + ln.size + '"></label>'
           + '<div class="ww-tlf">Style<div style="display:flex;gap:6px"><button type="button" class="' + chip(ln.caps) + ' ww-tlst" data-tlcaps="' + ln.id + '" title="All caps">AA</button><button type="button" class="' + chip(ln.space) + ' ww-tlst" data-tlspace="' + ln.id + '" title="Letter spacing">A&#8201;B&#8201;C</button><button type="button" class="' + chip(ln.rule) + ' ww-tlst" data-tlrule="' + ln.id + '" title="Lines on both sides" aria-label="Lines on both sides">&#8212;&#8201;A&#8201;&#8212;</button></div></div>'
-          + '<div class="ww-tlf"><span>Color' + forTone + '</span><div class="ww-tlsws">' + Object.keys(TL_INKS).map(function (k) { return sw('tlink', ln.id + '|' + k, k, ln.ink[edit] === k); }).join('') + '</div></div></div>';
+          + '</div><div class="ww-tlcolor"><span>Text color' + forTone + '</span><div class="ww-tlsws">' + Object.keys(TL_INKS).map(function (k) { return sw('tlink', ln.id + '|' + k, k, ln.ink[edit] === k); }).join('') + '</div></div>';
       }
       h += '</div>';
     });
@@ -1653,12 +1682,12 @@
     // preview
     var tabs = tn.mixed ? [['dark', tn.dark], ['light', tn.light]] : [[T.tone, T.tone === 'dark' ? tn.dark : tn.light]];
     var ground = (T.tone === 'light' ? tn.light[0] : tn.dark[0]) || { hex: T.tone === 'light' ? '#ffffff' : '#232c44' };
-    h += '</div><div class="ww-tlprev"><div class="ww-tlprevh"><span class="ww-tllab" style="margin:0">Preview</span>'
-      + (tn.mixed ? '<div class="ww-tltabs" role="tablist" aria-label="Shirt colors">' + tabs.map(function (t) { return '<button type="button" role="tab" aria-selected="' + (T.tone === t[0]) + '" class="' + chip(T.tone === t[0]) + '" data-tltone="' + t[0] + '"><i style="background:' + t[1][0].hex + '"></i>' + esc(t[1].map(function (s) { return s.name; }).join(' · ')) + '</button>'; }).join('') + '</div>' : '<small style="color:#4b5563">On your ' + esc(tabs[0][1].map(function (s) { return s.name; }).join(', ')) + ' shirts</small>')
+    h += '</div><div class="ww-tlprev"><div class="ww-tlprevh"><span class="ww-tllab" style="margin:0">Preview on:</span>'
+      + (tn.mixed ? '<div class="ww-tltabs" role="tablist" aria-label="Your shirt colors">' + tabs.map(function (t) { return '<button type="button" role="tab" aria-selected="' + (T.tone === t[0]) + '" class="' + chip(T.tone === t[0]) + '" data-tltone="' + t[0] + '"><i style="background:' + t[1][0].hex + '"></i>' + esc(t[1].map(function (s) { return s.name; }).join(' · ')) + '</button>'; }).join('') + '</div>' : '<span class="ww-tltabs"><span class="ww-pill on" style="cursor:default"><i style="background:' + tabs[0][1][0].hex + '"></i>' + esc(tabs[0][1].map(function (s) { return s.name; }).join(' · ')) + '</span></span>')
       + '</div><div class="ww-tlstage" id="ww-tl-stage" style="background:' + ground.hex + '"></div>';
     if (tn.mixed) h += '<label class="ww-tlsplit"><input type="checkbox" id="ww-tl-split"' + (T.split ? ' checked' : '') + '><span><b>Different text colors for light and dark shirts</b><br><small>Your order has ' + esc(shirtTones().map(function (s) { return s.name; }).join(', ')) + ' shirts. Pick a tab above to set the colors for each.</small></span></label>';
-    h += '<div id="ww-tl-info">' + tlInfo(T) + '</div><p class="ww-fine" style="margin:0">Our team checks every logo and sends you a free proof before printing. Next, you choose where it goes on the shirt.</p></div></div>'
-      + '<div class="ww-tlfoot"><button type="button" class="ww-btn ghost" data-tlclose>Cancel</button><button type="button" class="ww-btn" data-tluse>Use this logo</button></div>'
+    h += '<div id="ww-tl-info">' + tlInfo(T) + '</div></div></div>'
+      + '<div class="ww-tlfoot"><div class="ww-tlproof"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="#e5f3e0"/><path d="M6 10.3l2.6 2.6L14 7.5" fill="none" stroke="#3f7a1e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Free proof before we print. <small>Next: choose where it goes.</small></span></div><button type="button" class="ww-btn ghost" data-tlclose>Cancel</button><button type="button" class="ww-btn" data-tluse>Use this logo</button></div>'
       + '</div></div>';
     return h;
   }
@@ -1677,17 +1706,12 @@
   function noLogoHtml() {
     var opt = function (id, title, text, price, pop) { return '<button class="ww-ch' + (O.noLogo === id ? ' on' : '') + '" data-nolog="' + id + '">' + (pop ? '<span class="ww-pop">' + pop + '</span>' : '') + '<b>' + title + '</b><span>' + text + '</span><span class="ww-chfrom" style="font-weight:600;color:#051024">' + price + '</span></button>'; };
     var h = '<div class="ww-q">What would you like?</div><div class="ww-choice">'
-      + opt('text', 'Just my business name', 'Type it, pick the letters and colors. Ready in a minute.', 'No extra cost', 'Most popular')
-      + opt('design', 'Create a logo for me', 'Our Custom Logo Design: a professional logo made from scratch, yours to keep.', '+ $150 one-time')
-      + opt('later', 'I’ll send it later', 'Order now. Email or WhatsApp us your logo after checkout.', 'Priced as full-color print')
+      + opt('text', 'Just my business name', 'Type it, pick a font and colors. Ready in a minute.', 'No extra cost')
+      + opt('design', 'Create a logo for me', 'Designed from scratch by a real designer. You own the files.', '+ $150 one-time')
       + '</div>';
-    if (O.noLogo === 'text') {
-      if (O.logo && O.logo.text) h += '<div class="ww-tlcard">' + tlThumbs() + '<div style="flex:1;min-width:150px"><b>Your text logo</b><br><small style="color:#4b5563">' + esc(tlFontNames(O.logo.text)) + ' · ' + O.inks + (O.inks === 1 ? ' color' : ' colors') + (O.logo.alt ? ' · light and dark shirt versions' : '') + '</small></div><div class="ww-pills" style="margin:0"><button class="ww-link" style="padding:0" data-tlopen>Edit</button><button class="ww-link" style="padding:0;color:#4b5563" data-rmtext>Remove</button></div></div>'
-        + '<div class="ww-fine" style="margin-top:10px">Next, you choose where it goes and see it on your shirt.</div>';
-      else h += '<button class="ww-upload" style="margin-top:16px" data-tlopen><b>Create my text logo</b></button>';
-    }
-    if (O.noLogo === 'design') h += '<div class="ww-msg grey" style="margin-top:16px"><b>How it works:</b> pay with your order and fill out a short brand questionnaire. In 3–5 business days you get 2–3 original concepts, with unlimited revisions on the one you choose. You receive the final files (PDF, PNG, JPG, EPS) plus a color palette and font guide. Your shirts go into production after you approve the logo.<br><small>Shirts are priced as full-color print; if your new logo can be screen printed, we refund the difference.</small></div>';
-    if (O.noLogo === 'later') h += '<div class="ww-msg amber" style="margin-top:16px">Your order goes through now and we hold it until your logo arrives. After checkout, send it to <b>info@tbdezign.com</b> or <a href="https://wa.me/19548714646" target="_blank" rel="noopener">WhatsApp</a> with your order number.<br><b>Price:</b> since we haven’t seen your logo yet, we price it as full-color print (works with any logo). If it can be screen printed, we refund the difference.</div>';
+    if (O.noLogo === 'text' && O.logo && O.logo.text) h += '<div class="ww-tlcard">' + tlThumbs() + '<div style="flex:1;min-width:150px"><b>Your text logo</b><br><small style="color:#4b5563">' + esc(tlFontNames(O.logo.text)) + ' · ' + O.inks + (O.inks === 1 ? ' color' : ' colors') + (O.logo.alt ? ' · light and dark shirt versions' : '') + '</small></div><div class="ww-pills" style="margin:0"><button class="ww-link" style="padding:0" data-tlopen>Edit</button><button class="ww-link" style="padding:0;color:#4b5563" data-rmtext>Remove</button></div></div>'
+      + '<div class="ww-fine" style="margin-top:10px">Next, you choose where it goes and see it on your shirt.</div>';
+    if (O.noLogo === 'design') h += '<div class="ww-msg grey" style="margin-top:16px"><b>How it works:</b> pay with your order and fill out a short brand questionnaire. In 3–5 business days you get 2–3 original concepts, with unlimited revisions on the one you choose. You receive the final files (PDF, PNG, JPG, EPS) plus a color palette and font guide. Your order goes into production after you approve the logo.<br><b>Total wait:</b> logo first (3–5 business days), then production time.<br><small>' + REFUND + '</small></div>';
     if (O.textOpen) h += tlModal();
     return h;
   }
@@ -1715,9 +1739,10 @@
   // ── events ──
   function lineById(id) { return O.lines.filter(function (l) { return String(l.id) === String(id); })[0]; }
   app.addEventListener('click', function (e) {
-    var hv = e.target.closest('label.ww-have');
-    if (hv && O.logoMode === 'none') setTimeout(function () { O.logoMode = 'have'; if (O.logo && O.logo.text) clearLogo(); saveState(); renderPanel(); renderAside(); requote(); }, 0);
+    var hv = e.target.closest('label[for="ww-file"]');
+    if (hv && O.logoMode !== 'have') setTimeout(function () { O.logoMode = 'have'; if (O.logo && O.logo.text) clearLogo(); saveState(); renderPanel(); renderAside(); requote(); }, 0);
     if (O.tlFontsFor != null && !(e.target.closest('.ww-tlfl') || e.target.closest('[data-tlfonts]'))) { O.tlFontsFor = null; O.tlHover = null; if (!e.target.closest('button')) { tlRender(); return; } }
+    if (O.textOpen && e.target.classList && e.target.classList.contains('ww-tlbg')) { O.textOpen = false; O.tlDraft = null; O.tlFontsFor = null; O.tlHover = null; renderPanel(); return; }   // click outside the popup closes it
     var b = e.target.closest('button'); if (!b || !app.contains(b)) { if (F.open) { F.open = null; renderCatalog(); } return; }
     var ds = b.dataset;
     if (ds.galstep) { var gt = b.closest('[data-gal]').querySelector('.ww-gtrack'); gt.scrollBy({ left: +ds.galstep * gt.clientWidth, behavior: 'smooth' }); return; }
@@ -1733,6 +1758,8 @@
       O.logoMode = ds.lmode;
       if (ds.lmode === 'have' && O.logo && O.logo.text) clearLogo();
       if (ds.lmode === 'none' && O.logo && !O.logo.text) clearLogo();
+      if (ds.lmode === 'later' && O.logo) clearLogo();
+      if (ds.lmode === 'none' && O.noLogo === 'later') O.noLogo = null;
       saveState(); renderPanel(); renderAside(); requote(); return;
     }
     if (ds.nolog) {
