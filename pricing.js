@@ -48,7 +48,8 @@
       digCost: 5, digRetail: 20, suppShip: 30, clientShip: 25,
       minPieces: 6, tiers: [6, 12, 24, 48], days: [7, 10],
     },
-    // DTF made in-house (own heat press — planned, calculator only for now). Same formula as DTF Vendor 1, own rates.
+    // DTF made in-house (own heat press, since Nov 2026). Same formula as DTF Vendor 1, own rates.
+    // The website and the agent price DTF in-house (siteDtf below); the calculator can still pick Vendor 1.
     // vendorCost = our cost per piece: transfer on a 22" gang sheet (~$0.151 per inch + 10% waste) + pressing (~2 min) + supplies.
     dtfHouse: {
       // size = the biggest print for that spot, in inches (shown in the calculator and the quote)
@@ -67,6 +68,7 @@
       sheetMinQty: 10,    // small orders share a sheet with other orders: split over at least 10 pieces
       minProfit: 30,      // every in-house order makes at least this much: small orders get the difference spread over their pieces
     },
+    siteDtf: "house",   // DTF production used by quoteOrder (website + agent): "house" = own heat press, "v1" = Vendor 1
     v2: { blindShip: 10, shipping: 16, shipThreshold: 59, tiers: [2, 4, 8, 16] },
   };
 
@@ -176,11 +178,14 @@
     const f = SIZE_FIELDS[method]; return p[f[size || "std"]] || p[f.std] || 0;
   }
   function quoteOrder(order, products, cfg) {
-    const C = cfg || CONFIG;
+    const C0 = cfg || CONFIG;
     const items = (order.items || []).map(it => ({ ...it, qty: { std: +((it.qty || {}).std) || 0, x2: +((it.qty || {}).x2) || 0, x3: +((it.qty || {}).x3) || 0 } }));
     const pcs = it => it.qty.std + it.qty.x2 + it.qty.x3;
     const total = items.reduce((s, it) => s + pcs(it), 0);
-    const method = order.method || chooseMethod({ deco: order.deco, logoType: order.logoType, colors: order.colors, mixedShades: order.mixedShades, total }, C);
+    const method = order.method || chooseMethod({ deco: order.deco, logoType: order.logoType, colors: order.colors, mixedShades: order.mixedShades, total }, C0);
+    // DTF: in-house rates (own heat press) unless Vendor 1 is asked for (order.dtfSrc = "v1")
+    const dtfSrc = method === "dtf" ? (order.dtfSrc || C0.siteDtf || "v1") : null;
+    const C = dtfSrc === "house" ? houseCfg(C0) : C0;
     const cat = (products || {})[method] || {};
     const missing = items.filter(it => !cat[String(it.code).toUpperCase()]).map(it => it.code);
     // Caps are priced differently in the calculator (side/back spots, no sleeves): not sold through this order flow yet.
@@ -233,6 +238,16 @@
         out.subtotal += r.perPiece * q; out.cost += r.unitCost * q;
       });
     });
+    // In-house DTF: an order that makes less than the minimum profit gets the difference spread over its pieces (rounded up to $0.10).
+    if (method === "dtf" && C.dtf.minProfit) {
+      const prof = out.subtotal - out.cost;
+      const up = prof >= C.dtf.minProfit ? 0 : Math.ceil((C.dtf.minProfit - prof) / total * 10 - 1e-9) / 10;
+      if (up > 0) {
+        out.subtotal = 0;
+        out.lines.forEach(l => { l.unit = Math.round((l.unit + up) * 100) / 100; l.amount = Math.round(l.unit * l.q * 100) / 100; out.subtotal += l.amount; });
+      }
+    }
+    if (dtfSrc) out.dtfSrc = dtfSrc;
     const newSpots = order.reorder ? 0 : spotsForSetup;
     if (method === "silk") { const colors = Math.max(1, Math.min(3, +order.colors || 1)); out.setup = silkSetup(colors, newSpots, C); out.setupLabel = "Screen setup"; }
     // Digitizing is charged separately (not on the website); pass chargeDigitizing: true to include it.
