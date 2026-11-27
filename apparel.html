@@ -107,6 +107,10 @@
   .sc-pic.empty { border-style:dashed; background:#fafbfc; }
   .sc-pic:hover { border-color:#1a7698; }
   .sc-pic.busy { opacity:.5; pointer-events:none; }
+  .sc-pw { position:relative; display:inline-flex; }
+  .pic-x { position:absolute; top:-6px; right:-6px; width:16px; height:16px; border-radius:50%; border:1px solid #ddd; background:#fff; color:#b91c1c; font-size:11px; line-height:14px; padding:0; cursor:pointer; text-align:center; }
+  .pic-x:hover { background:#fee2e2; border-color:#b91c1c; }
+  .mk-sides .sd .pic-x { position:static; margin-left:2px; }
   .sc-x { border:none; background:none; color:#999; font-size:16px; cursor:pointer; padding:0 4px; }
   .site-tag { display:inline-block; font-size:10px; font-weight:600; color:#1a7698; background:#E3F2F6; border:1px solid #b5dbe6; border-radius:4px; padding:0 5px; margin-left:4px; vertical-align:1px; }
   .int-head { font-size:10px; font-weight:700; color:#8a6d1f; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
@@ -775,8 +779,10 @@ function colorPhotosHTML(code, name, i) {
   return '<span class="sc-pics">' + ["front", "back", "side"].map(side => {
     const p = photoLib[photoKey(code, titleCase(name), side)];
     const tip = (p ? "Change " : "Add ") + SIDE_EN[side].toLowerCase() + " photo of " + name;
-    return '<button type="button" class="sc-pic' + (p ? '' : ' empty') + '" id="scpic-' + i + '-' + side + '" title="' + esc(tip) + '" onclick="pickCatPhoto(' + i + ',\'' + side + '\')">'
-      + (p ? '<img src="' + esc(photoSrc(p)) + '" alt="">' : '+ ' + SIDE_EN[side]) + '</button>';
+    const key = photoKey(code, titleCase(name), side);
+    return '<span class="sc-pw"><button type="button" class="sc-pic' + (p ? '' : ' empty') + '" id="scpic-' + i + '-' + side + '" title="' + esc(tip) + '" onclick="pickCatPhoto(' + i + ',\'' + side + '\')">'
+      + (p ? '<img src="' + esc(photoSrc(p)) + '" alt="">' : '+ ' + SIDE_EN[side]) + '</button>'
+      + (p ? '<button type="button" class="pic-x" title="Remove ' + esc(SIDE_EN[side].toLowerCase() + ' photo of ' + name) + '" onclick="removePhoto(\'' + key + '\', this)">×</button>' : '') + '</span>';
   }).join("") + '</span>';
 }
 let catPick = null;
@@ -2363,12 +2369,34 @@ async function localPut(key, rec) {
   // the next sync uploads it (it has no cloudAt yet).
   if (TBDCloud.loggedIn) cloudPutPhoto(key, rec).then(ok => { if (ok) idbDo("readwrite", st => st.put({ ...rec, cloudAt: rec.updatedAt }, key)).catch(() => {}); });
 }
+// Deletes online first: if that fails the photo stays (otherwise the next sync would bring it back).
 async function localDel(key) {
+  if (TBDCloud.loggedIn) {
+    const ok = await TBDCloud.write(async sb => {
+      const d = await sb.from("garment_photos").delete().eq("key", key); if (d.error) return d;
+      return await sb.storage.from("photos").remove([key + ".img", key + "__orig.img"]);
+    });
+    if (!ok) throw new Error("not deleted online");
+  }
   await idbDo("readwrite", st => st.delete(key));
-  if (TBDCloud.loggedIn) await TBDCloud.write(async sb => {
-    const r = await sb.storage.from("photos").remove([key + ".img", key + "__orig.img"]); if (r.error) return r;
-    return await sb.from("garment_photos").delete().eq("key", key);
-  });
+}
+// × on a photo box (catalog colors, Order Builder): tap once, then again to confirm
+async function removePhoto(key, btn) {
+  if (!btn.classList.contains("confirm")) {
+    btn.classList.add("confirm"); btn.textContent = "?"; btn.title = "Tap again to remove";
+    setTimeout(() => { if (btn.isConnected) { btn.classList.remove("confirm"); btn.textContent = "×"; } }, 3000);
+    return;
+  }
+  const p = photoLib[key]; if (!p) return;
+  if (!TBDCloud.loggedIn && localLib) { alert("Log in at the top first, so the photo is removed on every device."); return; }
+  btn.disabled = true;
+  try {
+    if (mkDb) { await mkDb.doc("photos/" + key).delete(); if (mkAssets) { try { await mkAssets.delete(p.assetId); } catch (e) {} } }
+    else if (localLib) await localDel(key);
+    delete photoLib[key]; delete mk.temp[key];
+    renderLib(); mk.sig = ""; renderMockRows(true); renderEditor();
+    mkMsg(p.code + " · " + p.color + " · " + SIDE_EN[p.side] + " photo removed.");
+  } catch (e) { btn.disabled = false; mkMsg("Couldn't remove that photo. Check the internet and try again.", true); }
 }
 function photoMeta(rec) { const { blob, origBlob, src, cloudAt, ...m } = rec; m.hasOrig = !!origBlob; return m; }
 async function cloudPutPhoto(key, rec) {
@@ -2514,7 +2542,7 @@ async function deleteLibPhoto(id, btn) {
     if (mkDb) {
       await mkDb.doc("photos/" + id).delete();
       if (mkAssets) { try { await mkAssets.delete(p.assetId); } catch (e) {} }
-    } else if (localLib) { await localDel(id); delete photoLib[id]; renderLib(); refreshViews(); }
+    } else if (localLib) { await localDel(id); delete photoLib[id]; delete mk.temp[id]; renderLib(); mk.sig = ""; renderMockRows(true); }
     mkMsg("Photo removed from the library.");
   } catch (e) { mkMsg("Couldn't delete that photo. Try again in a moment.", true); }
 }
@@ -2701,7 +2729,8 @@ function sidePhotosHTML(it) {
   if (!it.color || !slugPart(it.color)) return '';
   return '<div class="mk-sides"><span>Photos for ' + esc(colorName(it)) + ':</span>' + ["front", "back", "side"].map(sd => {
     const rec = photoFor(it, sd).rec;
-    return rec ? '<span class="sd" title="Saved"><img src="' + esc(photoSrc(rec)) + '" alt="">' + SIDE_EN[sd] + ' ✓</span>'
+    return rec ? '<span class="sd" title="Saved"><img src="' + esc(photoSrc(rec)) + '" alt="">' + SIDE_EN[sd] + ' ✓'
+        + (photoLib[photoKey(it.code, it.color, sd)] ? '<button type="button" class="pic-x" title="Remove this photo" onclick="removePhoto(\'' + photoKey(it.code, it.color, sd) + '\', this)">×</button>' : '') + '</span>'
       : '<button class="sd" onclick="pickGarment(\'' + it.id + '\',\'' + sd + '\')">+ ' + SIDE_EN[sd] + ' photo</button>';
   }).join("") + '</div>';
 }

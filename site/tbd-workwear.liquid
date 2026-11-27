@@ -305,6 +305,18 @@
     'Polo': 'M36 12 L22 16 L8 30 L18 40 L26 34 L26 90 L74 90 L74 34 L82 40 L92 30 L78 16 L64 12 L56 22 L50 34 L44 22 Z'
   };
   SHAPE['Scrub top'] = 'M34 12 L22 16 L8 30 L18 40 L26 34 L26 90 L74 90 L74 34 L82 40 L92 30 L78 16 L66 12 L50 38 Z';
+  // Side view (sleeve facing us) for a color with no side photo: the sleeve logo sits at DEF.sl (center, upper third).
+  var SIDE_SLEEVE = {
+    'short': 'M37 13 Q50 6 63 13 Q68 28 71 45 Q50 52 29 45 Q32 28 37 13 Z',
+    'long': 'M37 13 Q50 6 63 13 Q67 30 68 48 L63 84 Q55 88 47 84 L32 48 Q33 30 37 13 Z'
+  };
+  function sideSvg(type, hex) {
+    var f = hex || '#fff', ln = ' stroke="#c9d1da" stroke-width="1.2" stroke-linejoin="round"';
+    var body = 'M35 12 Q50 7 65 12 Q71 22 70 34 L71 90 L29 90 L30 34 Q29 22 35 12 Z', sl = SIDE_SLEEVE[type === 'Long sleeve' ? 'long' : 'short'];
+    var collar = type === 'Polo' ? '<path d="M39 12 L50 5 L61 12 L58 17 L42 17 Z" fill="' + f + '"' + ln + '/>' : '';
+    return '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="' + body + '" fill="' + f + '"' + ln + '/><path d="M29.5 85 L70.5 85" stroke="#000" stroke-opacity=".08" stroke-width="1"/>' + collar
+      + '<path d="' + sl + '" fill="' + f + '"' + ln + '/><path d="' + sl + '" fill="#000" opacity=".06"/></svg>';
+  }
   function shapeSvg(type, hex) { return '<svg viewBox="0 0 100 100" aria-hidden="true"><path d="' + (SHAPE[type] || SHAPE['T-shirt']) + '" fill="' + (hex || '#fff') + '" stroke="#c9d1da" stroke-width="1.2" stroke-linejoin="round"/></svg>'; }
 
   var MAT = { 'Performance': ['#1a5f78', '#e6f4f9'], '100% cotton': ['#4f7a1f', '#eef6e2'], 'Cotton blend': ['#6b4e1f', '#f7efe2'] };
@@ -933,7 +945,7 @@
     label += ' · ' + ({ emb: 'Embroidered', silk: 'Screen printed', dtf: 'DTF printed' })[method()] ;
     var logo = lurl ? '<img src="' + lurl + '" alt="">' : '<span style="background:' + (dark ? '#fff' : '#051024') + ';color:' + (dark ? '#051024' : '#fff') + '">LOGO</span>';
     var box = 'left:' + (pl.cx - pl.maxW / 2) * 100 + '%;top:' + (pl.cy - pl.maxH / 2) * 100 + '%;width:' + pl.maxW * 100 + '%;height:' + pl.maxH * 100 + '%';
-    var base = ph ? '<img src="' + esc(ph.url) + '" alt="" crossorigin="anonymous">' : (side === 'front' || side === 'back' ? shapeSvg(st.type, hex) : '');
+    var base = ph ? '<img src="' + esc(ph.url) + '" alt="" crossorigin="anonymous">' : (side === 'front' || side === 'back' ? shapeSvg(st.type, hex) : side === 'side' ? sideSvg(st.type, hex) : '');
     if (!base) return '';
     var fit = ph && REAL[spot] ? ' data-fit="' + spot + '" data-cx="' + pl.cx + '" data-cy="' + pl.cy + '" data-w="' + pl.maxW + '" data-h="' + pl.maxH + '"' : '';
     return '<div class="ww-prev"><div class="ww-pimg"' + fit + '>' + base + '<div class="ww-logo" style="' + box + '">' + logo + '</div></div><b>' + esc(st.name) + '</b><small>' + esc(color) + ' · ' + label + '</small></div>';
