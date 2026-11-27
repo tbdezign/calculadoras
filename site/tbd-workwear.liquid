@@ -1594,7 +1594,7 @@
     if (fr === 'circle') { var D = Math.sqrt(W * W + H * H) + 24 * K; cw = ch = D + 2 * b + 4 * K; ox = (cw - W) / 2; oy = (ch - H) / 2; }
     else { cw = W + pad[1] + pad[3] + 2 * b + 2 * K; ch = H + pad[0] + pad[2] + 2 * b + 2 * K; ox = K + b + pad[3]; oy = K + b + pad[0]; }
     c.width = Math.max(1, Math.min(Math.ceil(cw), 8000)); c.height = Math.max(1, Math.min(Math.ceil(ch), 8000));
-    var y = oy;
+    var y = oy; c.rows = [];
     rows.forEach(function (r, i) {
       if (i) y += gap;
       var left = T.align === 'left' ? ox : T.align === 'right' ? ox + W - r.full : ox + (W - r.full) / 2;
@@ -1602,6 +1602,7 @@
       x.fillStyle = r.ink; x.textBaseline = 'alphabetic'; x.textAlign = 'left';
       x.fillText(r.txt, left + r.bw + r.bg, y + r.a);
       if (r.ln.rule) { var by = y + r.a - (r.a * .38) - r.bh / 2; x.fillRect(left, by, r.bw, r.bh); x.fillRect(left + r.bw + r.bg + r.w + r.bg, by, r.bw, r.bh); }
+      c.rows.push({ id: r.ln.id, top: y, bottom: y + r.a + r.d });   // where each line sits, for picking it by clicking the preview
       y += r.a + r.d;
     });
     if (fr !== 'none') {
@@ -1631,6 +1632,19 @@
       var maxH = small ? 92 : 240, maxW = Math.max(100, s2.clientWidth - 24), k = Math.min(1, maxH / (c.height / 2), maxW / (c.width / 2));
       c.style.cssText = 'display:block;width:' + Math.round(c.width / 2 * k) + 'px;height:' + Math.round(c.height / 2 * k) + 'px';
       s2.innerHTML = ''; s2.appendChild(c);
+      // click a line in the preview to edit it
+      if (c.rows.length > 1) {
+        c.style.cursor = 'pointer'; c.title = 'Click a line to edit it';
+        c.addEventListener('click', function (e) {
+          var r = c.getBoundingClientRect(), y = (e.clientY - r.top) * c.height / r.height, best = null, bd = 1e9;
+          c.rows.forEach(function (row) { var d = y < row.top ? row.top - y : y > row.bottom ? y - row.bottom : 0; if (d < bd) { bd = d; best = row; } });
+          if (!best) return;
+          T.sel = best.id; O.tlFontsFor = null; O.tlHover = null;
+          var canHover = window.matchMedia && window.matchMedia('(hover: hover)').matches;
+          tlRender(canHover ? '#ww-tl-t' + best.id : null);
+          var el = document.getElementById('ww-tl-t' + best.id); if (el) el.closest('.ww-tlln').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      }
     };
     go(); tlFontsReady(T, hover).then(function () { if (O.tlDraft === T && O.tlHover === hover) go(); });
     var info = document.getElementById('ww-tl-info'); if (info) info.innerHTML = tlInfo(T, 'note');
@@ -1655,7 +1669,8 @@
       });
     });
     if (part === 'warn') return warn ? '<div class="ww-tlwarn" role="alert">⚠ ' + esc(warn) + '</div>' : '';
-    if (tn.mixed) h += '<div class="ww-tlnote"><b>Prints in full color.</b> Mixing light and dark shirts? No extra cost, and each shirt color can have its own text colors.</div>';
+    if (O.deco === 'emb') h += n ? '<div class="ww-tlnote"><b>Embroidered' + (tn.mixed ? '.' : ' in ' + n + (n === 1 ? ' thread color.' : ' thread colors.')) + '</b>' + (tn.mixed ? ' Each shirt color can have its own thread colors, at no extra cost.' : '') + '</div>' : '';
+    else if (tn.mixed) h += '<div class="ww-tlnote"><b>Prints in full color.</b> Mixing light and dark shirts? No extra cost, and each shirt color can have its own text colors.</div>';
     else if (n) h += '<div class="ww-tlnote"><b>' + n + (n === 1 ? ' color.' : ' colors.') + '</b> ' + (n <= 3 ? 'Could qualify for screen printing. We’ll check and refund the difference if it does.' : 'Prints in full color (DTF).') + '</div>';
     return h;
   }
